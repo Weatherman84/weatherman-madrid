@@ -1,0 +1,121 @@
+{
+  "LEMD": {
+    "name": "Madrid-Barajas",
+    "iata": "MAD",
+    "market_city": "madrid",
+    "tier": "trading",
+    "station_match": "verified station",
+    "market_unit": "C",
+    "market_bucket_width": 1,
+    "latitude": 40.466,
+    "longitude": -3.555,
+    "elevation_m": 610,
+    "timezone": "Europe/Madrid",
+    "metar_minutes": [
+      0,
+      30
+    ],
+    "pre_metar_guard_minutes": 7,
+    "critical_window_local": [
+      "12:30",
+      "18:30"
+    ],
+    "forecast_refresh_window_local": [
+      "08:00",
+      "20:20"
+    ],
+    "decision_checkpoints_local": [
+      {
+        "label": "D-1 Evening @20:00",
+        "target_day_offset": 1,
+        "time": "20:00",
+        "meteoblue_lead_minutes": 15,
+        "meteoblue_grace_minutes": 30
+      },
+      {
+        "label": "D0 Morning @09:00",
+        "target_day_offset": 0,
+        "time": "09:00",
+        "meteoblue_lead_minutes": 60,
+        "meteoblue_grace_minutes": 30
+      },
+      {
+        "label": "First Live @12:00",
+        "target_day_offset": 0,
+        "time": "12:00",
+        "meteoblue_lead_minutes": 15,
+        "meteoblue_grace_minutes": 30
+      },
+      {
+        "label": "Late Live @16:00",
+        "target_day_offset": 0,
+        "time": "16:00",
+        "meteoblue_lead_minutes": 15,
+        "meteoblue_grace_minutes": 30
+      }
+    ],
+    "final_metar_collection_end_local": "21:35",
+    "heat_regime": {
+      "enabled": true,
+      "positive_bias_multiplier": 0.4,
+      "spread_multiplier": 1.25,
+      "confidence_multiplier": 0.9,
+      "regional_models": [
+        "icon_eu",
+        "meteofrance_arpege_europe",
+        "meteofrance_arome_france",
+        "meteofrance_arome_france_hd"
+      ],
+      "regional_weight_multiplier": 1.4,
+      "unconfirmed_multiplier": 1.2,
+      "minimum_warm_gap_c": 0.6,
+      "persistent_hot": {
+        "enabled": true,
+        "minimum_latest_actual_c": 37.0,
+        "minimum_latest_anomaly_c": 3.0,
+        "maximum_actual_age_days": 1,
+        "maximum_forecast_drop_c": 2.5,
+        "minimum_recent_warm_error_c": 0.6,
+        "minimum_taf_gap_c": 1.0,
+        "minimum_confirmations": 2,
+        "positive_bias_multiplier": 0.15,
+        "spread_multiplier": 1.35,
+        "confidence_multiplier": 0.88,
+        "regional_models": [
+          "meteofrance_arome_france",
+          "meteofrance_arome_france_hd"
+        ],
+        "regional_weight_multiplier": 1.65
+      }
+    },
+    "heat_wind_profile": {
+      "warm_sectors": [
+        [
+          130,
+          250
+        ]
+      ],
+      "cool_sectors": [
+        [
+          300,
+          60
+        ]
+      ]
+    },
+    "research_models": [
+      "ecmwf_ifs025",
+      "gfs_global",
+      "icon_global"
+    ],
+    "models": [
+      "ecmwf_ifs025",
+      "gfs_global",
+      "icon_global",
+      "icon_eu",
+      "ukmo_global_deterministic_10km",
+      "meteofrance_arpege_europe",
+      "meteofrance_arome_france",
+      "meteofrance_arome_france_hd"
+    ]
+  }
+}

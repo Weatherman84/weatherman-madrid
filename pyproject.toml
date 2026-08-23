@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weatherman-madrid"
+version = "1.0.0"
+description = "Madrid maximum-temperature trading desk with Neon persistence"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx[socks]>=0.27,<1",
+  "pandas>=2.2,<3",
+  "python-dotenv>=1.0,<2",
+  "streamlit>=1.59,<2",
+  "sqlalchemy>=2.0,<3",
+  "psycopg[binary]>=3.2,<4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9", "ruff==0.15.22"]
+
+[project.scripts]
+weatherman = "weatherman.cli:main"
+
+[tool.setuptools]
+py-modules = ["runtime_bootstrap"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+weatherman = ["data/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".deps", ".venv"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"app.py" = ["E402"]
+"pages/*.py" = ["E402"]
