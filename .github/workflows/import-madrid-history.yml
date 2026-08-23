@@ -1,0 +1,38 @@
+name: 2 - Import Madrid history
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: madrid-neon-writer
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Download only the current legacy data snapshot
+        run: |
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            https://github.com/Weatherman84/beattheweather.git /tmp/beattheweather-legacy
+          git -C /tmp/beattheweather-legacy sparse-checkout init --cone
+          git -C /tmp/beattheweather-legacy sparse-checkout set data
+          git -C /tmp/beattheweather-legacy checkout main
+      - name: Import LEMD only into Neon
+        run: >-
+          python scripts/migrate_madrid_to_neon.py
+          --source-sqlite /tmp/beattheweather-legacy/data/weatherman.db
+          --archive-directory /tmp/beattheweather-legacy/data/history_archive
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+

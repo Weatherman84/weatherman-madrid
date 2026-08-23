@@ -1,0 +1,24 @@
+name: 4 - Prepare isolated replay lab
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Verify production/research isolation and prepare replay schema
+        run: python scripts/prepare_replay_lab.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REPLAY_DATABASE_URL: ${{ secrets.REPLAY_DATABASE_URL }}

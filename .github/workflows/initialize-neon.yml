@@ -1,0 +1,30 @@
+name: 1 - Initialize Neon database
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: madrid-neon-writer
+  cancel-in-progress: false
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Create and verify schema
+        run: |
+          python -m weatherman.cli init-db
+          python -m weatherman.cli database-health
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+

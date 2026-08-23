@@ -1,0 +1,38 @@
+name: 5 - Run 30-day Madrid replay
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Number of final Madrid days (maximum 90)"
+        required: true
+        default: "30"
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Run isolated research replay
+        run: >-
+          python scripts/run_madrid_replay_pilot.py
+          --days "${{ inputs.days }}"
+          --report madrid-replay-report.json
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REPLAY_DATABASE_URL: ${{ secrets.REPLAY_DATABASE_URL }}
+      - name: Upload replay report
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrid-replay-report
+          path: madrid-replay-report.json
+          if-no-files-found: error

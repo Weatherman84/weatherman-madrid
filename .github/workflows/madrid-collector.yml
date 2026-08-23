@@ -1,0 +1,41 @@
+name: 3 - Madrid collector
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Hourly safety coverage outside the active Madrid window.
+    - cron: "7 0-4,21-23 * * *"
+    # Fifteen-minute collection across both Madrid summer and winter trading windows.
+    - cron: "7,22,37,52 5-20 * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: madrid-neon-writer
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Record scheduler timestamps
+        run: |
+          echo "WEATHERMAN_EVENT_CREATED_AT=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }} --jq .created_at)" >> "$GITHUB_ENV"
+          echo "WEATHERMAN_RUN_STARTED_AT=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }} --jq .run_started_at)" >> "$GITHUB_ENV"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Collect and persist Madrid directly in Neon
+        run: python -m weatherman.cli run-collector --airports LEMD
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          METEOBLUE_API_KEY: ${{ secrets.METEOBLUE_API_KEY }}
+          METEOBLUE_DAILY_CALL_LIMIT: "4"
