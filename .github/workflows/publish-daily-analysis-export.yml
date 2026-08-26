@@ -1,0 +1,78 @@
+name: 6 - Publish Madrid daily-analysis export
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 21:15 Europe/Madrid: both UTC offsets are declared for DST safety.
+    - cron: "15 19,20 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: madrid-analysis-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      publish: ${{ steps.window.outputs.publish }}
+    steps:
+      - name: Select the single 21:15 Madrid run
+        id: window
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TZ: Europe/Madrid
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$(date +%H)" = "21" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v6
+        if: steps.window.outputs.publish == 'true'
+      - uses: actions/setup-python@v6
+        if: steps.window.outputs.publish == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+        if: steps.window.outputs.publish == 'true'
+      - name: Export seven Madrid days from Neon read-only
+        if: steps.window.outputs.publish == 'true'
+        run: >-
+          python scripts/export_madrid_daily_analysis.py
+          --days 7
+          --output _site/daily-analysis-latest.json
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Verify the public export contains no credentials
+        if: steps.window.outputs.publish == 'true'
+        run: |
+          python -m json.tool _site/daily-analysis-latest.json >/dev/null
+          test "$(python -c 'import json; print(json.load(open("_site/daily-analysis-latest.json"))["contains_credentials"])')" = "False"
+      - uses: actions/configure-pages@v5
+        if: steps.window.outputs.publish == 'true'
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.window.outputs.publish == 'true'
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish stable read-only URL
+        id: deployment
+        uses: actions/deploy-pages@v4
