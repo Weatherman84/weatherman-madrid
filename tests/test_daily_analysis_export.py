@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 from weatherman.daily_analysis_export import (
     _safe_error_text,
+    _sanitize_public_value,
     assert_export_safe,
     build_daily_analysis_export,
 )
@@ -153,3 +154,28 @@ def test_daily_analysis_export_redacts_provider_query_credentials() -> None:
     assert "do-not-publish-this" not in redacted
     assert "apikey=REDACTED" in redacted
     assert_export_safe({"reason": redacted})
+
+
+def test_daily_analysis_export_recursively_sanitizes_embedded_json() -> None:
+    payload = {
+        "collector_coverage": [
+            {
+                "metrics": {
+                    "diagnostic": (
+                        "HTTP 429 for https://example.invalid/weather?"
+                        "apikey=do-not-publish-this&format=json"
+                    ),
+                    "api_key": "also-do-not-publish-this",
+                }
+            }
+        ]
+    }
+
+    sanitized = _sanitize_public_value(payload)
+    serialized = json.dumps(sanitized)
+
+    assert "do-not-publish-this" not in serialized
+    assert "also-do-not-publish-this" not in serialized
+    assert "api_key" not in serialized
+    assert "apikey=REDACTED" in serialized
+    assert_export_safe(sanitized)
