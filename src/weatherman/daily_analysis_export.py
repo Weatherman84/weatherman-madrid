@@ -34,6 +34,18 @@ AIRPORT_TIMEZONE = "Europe/Madrid"
 ENGINE_BASELINE = "v10.7.10"
 EXPORT_SCHEMA_VERSION = "1.0"
 
+_CREDENTIAL_FIELD_NAMES = frozenset(
+    {
+        "database_url",
+        "password",
+        "api_key",
+        "apikey",
+        "access_token",
+        "token",
+        "secret",
+    }
+)
+
 
 def _iso(value: Any) -> str | None:
     if value is None:
@@ -75,6 +87,21 @@ def _safe_error_text(value: str | None) -> str | None:
         r"\1=REDACTED",
         str(value),
     )
+
+
+def _sanitize_public_value(value: Any) -> Any:
+    """Recursively remove credentials from database-owned export content."""
+    if isinstance(value, dict):
+        return {
+            str(key): _sanitize_public_value(item)
+            for key, item in value.items()
+            if str(key).lower() not in _CREDENTIAL_FIELD_NAMES
+        }
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_public_value(item) for item in value]
+    if isinstance(value, str):
+        return _safe_error_text(value)
+    return value
 
 
 def assert_export_safe(payload: dict[str, Any]) -> None:
@@ -460,7 +487,7 @@ def build_daily_analysis_export(
             )
         )
 
-    return {
+    payload = {
         "schema_version": EXPORT_SCHEMA_VERSION,
         "generated_at": _iso(generated),
         "airport": AIRPORT,
@@ -531,17 +558,25 @@ def build_daily_analysis_export(
             for row in coverage_rows
         ],
     }
+    return _sanitize_public_value(payload)
 
 
 def write_export(path: Path, payload: dict[str, Any]) -> None:
-    assert_export_safe(payload)
+    sanitized_payload = _sanitize_public_value(payload)
+    assert_export_safe(sanitized_payload)
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
     )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, sort_keys=True, ensure_ascii=False)
+            json.dump(
+                sanitized_payload,
+                handle,
+                indent=2,
+                sort_keys=True,
+                ensure_ascii=False,
+            )
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
