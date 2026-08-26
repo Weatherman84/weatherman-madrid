@@ -1,8 +1,8 @@
 # Weatherman Madrid
 
 Eine eigenständige, ressourcenschonende Streamlit-App für **LEMD / Madrid-Barajas**.
-Die Forecast-Engine bleibt auf dem produktiven Stand **v10.7.10** eingefroren; diese
-erste Madrid-Version heißt **v1.0.0**. Das neue Repository und die neuen Neon-
+Die Forecast-Engine bleibt auf dem produktiven Stand **v10.7.10** eingefroren; die
+aktuelle Madrid-App-Version heißt **v1.0.1**. Das neue Repository und die neuen Neon-
 Datenbanken sind vollständig vom bisherigen Sechs-Airport-System getrennt.
 
 ## Was diese Version löst
@@ -14,6 +14,7 @@ Datenbanken sind vollständig vom bisherigen Sechs-Airport-System getrennt.
 - maximal ein Meteoblue-Versuch je Checkpoint, transparent protokolliert;
 - Reliability mit erklärtem `N`, Exact Bucket, ±1 °C, MAE und Datenstand;
 - ein manueller, isolierter 30-Tage-Replay mit getrennten Evidenzklassen;
+- ein täglicher, bereinigter Read-only-Export für die Madrid-Research-Analyse;
 - kein produktiver Schreibzugriff durch den Replay und keine automatische Promotion.
 
 ## Feste Madrid-Checkpoints
@@ -48,6 +49,24 @@ aktualisiert werden.
 
 Diese Klassen werden nie vermischt. Replay-Ergebnisse sind `RESEARCH ONLY` und ändern
 weder Produktionsdaten noch Forecast-Gewichte, Regime, OOS-Zähler oder Promotionen.
+
+Der bestehende Replay ist ein Pilot auf den in Production gespeicherten Snapshots. Er ist
+kein vollständiger 360-Tage-Neuaufbau aus externen Wetterarchiven. Ein solcher Archive
+Replay bleibt eine getrennte spätere Ausbaustufe.
+
+## Täglicher Analyseexport
+
+Workflow **6 - Publish Madrid daily-analysis export** liest sieben Madrid-Tage in einer
+explizit schreibgeschützten Neon-Transaktion. Er veröffentlicht ausschließlich den
+bereinigten Research-Datensatz unter:
+
+`https://weatherman84.github.io/weatherman-madrid/daily-analysis-latest.json`
+
+Enthalten sind die festen Checkpoints, Zeitstempel, Evidence/Freshness, Forecast Ladder,
+Buckets, Forecast Drivers, Adjustment- und Regime-Impacts, Champion/Challenger,
+TAF-Provenienz, Actuals sowie Collector-Abdeckung. Connection Strings, Passwörter und
+interne Datenbank-IDs werden nicht ausgegeben. Der Export ist `RESEARCH ONLY`, schreibt
+nicht nach Production und ändert die Engine nicht.
 
 ## Installation
 

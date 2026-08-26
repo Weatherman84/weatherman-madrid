@@ -52,3 +52,18 @@ def test_replay_pilot_is_manual_read_only_and_downloadable() -> None:
     assert "SET TRANSACTION READ ONLY" in script
     assert 'transaction.rollback()' in script
     assert '"automatic_promotion": False' in script
+
+
+def test_daily_analysis_export_is_read_only_and_published_without_database_files() -> None:
+    source = workflow("publish-daily-analysis-export.yml")
+    script = (ROOT / "scripts" / "export_madrid_daily_analysis.py").read_text(
+        encoding="utf-8"
+    )
+    assert "secrets.DATABASE_URL" in source
+    assert "pages: write" in source
+    assert "actions/deploy-pages@v4" in source
+    assert "daily-analysis-latest.json" in source
+    assert "session.rollback()" in script
+    assert "init_db" not in script
+    assert "weatherman.db" not in source
+    assert "git push" not in source

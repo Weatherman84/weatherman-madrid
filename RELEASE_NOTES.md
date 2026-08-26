@@ -1,4 +1,23 @@
-# Release Notes – Madrid v1.0.0
+# Release Notes – Madrid v1.0.1
+
+## Neu in v1.0.1
+
+- täglicher, Madrid-only Read-only-Export aus Neon für die Research-Analyse;
+- stabile GitHub-Pages-URL statt Neon-Zugangsdaten in ChatGPT;
+- Checkpoints mit Recorded-at, Evidence Class, Freshness und Forecast Ladder;
+- Forecast Drivers, einzelne Adjustment-/Regime-Impacts und Regime Memory;
+- Champion/Challenger-Buckets, TAF-Provenienz, Actuals und METAR-Verlauf;
+- Collector-Run- und Quellenabdeckung zur Diagnose fehlender Schedule-Dispatches;
+- fail-closed Credential-Prüfung und pseudonymisierte Collector-Referenzen;
+- Forecast-Engine weiterhin byteidentisch v10.7.10.
+
+## Weiterhin bewusst getrennt
+
+- Der bestehende Workflow 5 bleibt ein Snapshot-Replay-Pilot und wird nicht als
+  vollständiger externer 360-Tage-Archive-Replay dargestellt.
+- Keine Änderung von Formel, Bias, Gewichten, Regimen, Locks oder Promotion-Gates.
+
+## Bereits enthalten seit v1.0.0
 
 ## Enthalten
 

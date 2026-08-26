@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "weatherman-madrid"
-version = "1.0.0"
+version = "1.0.1"
 description = "Madrid maximum-temperature trading desk with Neon persistence"
 readme = "README.md"
 requires-python = ">=3.11"

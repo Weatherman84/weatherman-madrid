@@ -1,4 +1,4 @@
-# Weatherman Madrid v1.0.0 – genaue Einrichtung
+# Weatherman Madrid v1.0.1 – genaue Einrichtung
 
 Diese Anleitung setzt keine Erfahrung mit Neon voraus. Arbeite die Schritte genau in
 der Reihenfolge ab. Die alte App und das alte Repository werden dabei **nicht** verändert.
@@ -8,7 +8,7 @@ der Reihenfolge ab. Die alte App und das alte Repository werden dabei **nicht** 
 - dein GitHub-Konto;
 - dein bestehender Meteoblue-API-Key;
 - Zugang zu [Streamlit Community Cloud](https://share.streamlit.io/);
-- das gelieferte ZIP `weatherman-madrid-v1.0.0.zip`.
+- das gelieferte ZIP `weatherman-madrid-v1.0.1.zip`.
 
 Wichtig: Eine Neon-Verbindungszeichenfolge enthält ein Passwort. Poste sie nicht in
 Chats, Issues oder Screenshots. Sie wird ausschließlich in GitHub Secrets und in den
@@ -16,7 +16,7 @@ Streamlit Secrets eingefügt.
 
 ## 1. ZIP entpacken
 
-1. Lade `weatherman-madrid-v1.0.0.zip` herunter.
+1. Lade `weatherman-madrid-v1.0.1.zip` herunter.
 2. Rechtsklick auf die Datei und **Alle extrahieren** wählen.
 3. Öffne anschließend den Ordner `UPLOAD_TO_GITHUB`.
 4. Darin müssen unter anderem `app.py`, `README.md`, `src`, `config`, `.github` und
@@ -39,7 +39,7 @@ keine historischen Einzeldateien, keinen Cache und keine Zugangsdaten.
    alles in das GitHub-Uploadfeld. Ziehe den **Inhalt**, nicht den übergeordneten Ordner.
 8. Kontrolliere vor dem Commit, dass `app.py` direkt auf Repository-Ebene liegt und nicht
    in einem zusätzlichen Unterordner.
-9. Bei Commit message trägst du `Initial Weatherman Madrid v1.0.0` ein.
+9. Bei Commit message trägst du `Weatherman Madrid v1.0.1` ein.
 10. Klicke **Commit changes**.
 
 Wenn `.github` oder `.streamlit` fehlen, den Upload noch nicht abschließen. Beide Ordner
@@ -134,6 +134,31 @@ dass die alte Pipeline am jeweiligen Zeitpunkt nicht genügend echte historische
 Snapshots gespeichert hatte. Solche Tage werden nicht künstlich als OOS-Evidenz gezählt.
 Der Replay schreibt ausschließlich in `weatherman-madrid-replay`, rollt seine
 Production-Transaktion zurück und kann keine Engine-Regel promoten.
+
+## 7a. Read-only-Export für die tägliche Madrid-Analyse aktivieren
+
+Dieser Schritt gibt der täglichen Research-Analyse Zugriff auf die benötigten Neon-Daten,
+ohne Zugangsdaten weiterzugeben und ohne der Analyse Schreibrechte einzuräumen.
+
+1. Öffne **Actions** → **6 - Publish Madrid daily-analysis export**.
+2. Klicke **Run workflow** → **Run workflow**.
+3. Warte, bis sowohl `build` als auch `deploy` grün sind.
+4. Öffne danach
+   `https://weatherman84.github.io/weatherman-madrid/daily-analysis-latest.json`.
+5. Wenn dort JSON mit `"airport": "LEMD"` und
+   `"classification": "READ-ONLY DAILY ANALYSIS EXPORT"` erscheint, ist der Zugriff
+   fertig eingerichtet.
+
+Der vorhandene GitHub-Secret `DATABASE_URL` genügt; in Neon muss nichts manuell geändert
+werden. Der Workflow läuft anschließend einmal täglich um 21:15 Uhr Madrid-Zeit. Zwei
+UTC-Cronzeiten decken Sommer- und Winterzeit ab; ein lokaler Zeit-Guard veröffentlicht
+pro Tag nur einmal. GitHub Pages ist öffentlich: Der Workflow prüft deshalb vor dem
+Upload, dass keine Datenbank-Credentials enthalten sind, und bricht bei einem Treffer ab.
+
+Der Export enthält sieben Tage sowie den Folgetag für D−1-Checkpoints. Damit kann die um
+21:30 Uhr laufende Madrid-Analyse Forecast Ladder, Evidence/Freshness, Forecast Drivers,
+Regime- und Adjustment-Impacts, Challenger, TAF-Provenienz und Collector-Abdeckung direkt
+auswerten.
 
 ## 8. Neue Streamlit-App erstellen
 
