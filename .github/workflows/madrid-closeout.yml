@@ -1,10 +1,10 @@
-name: 3 - Madrid collector
+name: 7 - Madrid day closeout
 
 on:
   workflow_dispatch:
     inputs:
       scheduled_slot:
-        description: Intended UTC slot in ISO-8601 format
+        description: Intended UTC closeout slot in ISO-8601 format
         required: false
         type: string
       source:
@@ -12,19 +12,22 @@ on:
         required: false
         type: string
   schedule:
-    # GitHub is only the hourly safety net. Cloudflare supplies the 15-minute slots.
-    - cron: "7 * * * *"
+    # DST-safe GitHub fallback attempts. Both run; neither can silently skip export.
+    - cron: "22 19 * * *"
+    - cron: "22 20 * * *"
 
 permissions:
   contents: read
   actions: read
+  pages: write
+  id-token: write
 
 concurrency:
-  group: madrid-neon-writer-${{ inputs.scheduled_slot || github.run_id }}
+  group: madrid-closeout-${{ inputs.scheduled_slot || github.run_id }}
   cancel-in-progress: false
 
 jobs:
-  collect:
+  closeout:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -40,7 +43,7 @@ jobs:
           echo "WEATHERMAN_RUN_STARTED_AT=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }} --jq .run_started_at)" >> "$GITHUB_ENV"
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Collect and persist Madrid directly in Neon
+      - name: Collect final METAR, Actual and post-peak snapshot
         run: python -m weatherman.cli run-collector --airports LEMD
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -48,4 +51,9 @@ jobs:
           METEOBLUE_DAILY_CALL_LIMIT: "4"
           LIVE_OPEN_METEO_REFRESH_MINUTES: "60"
           WEATHERMAN_EXPECTED_SLOT_AT: ${{ inputs.scheduled_slot }}
-          WEATHERMAN_TRIGGER_SOURCE: ${{ inputs.source }}
+          WEATHERMAN_TRIGGER_SOURCE: ${{ inputs.source || 'closeout-fallback' }}
+
+  publish:
+    needs: closeout
+    uses: ./.github/workflows/publish-daily-analysis-export.yml
+    secrets: inherit

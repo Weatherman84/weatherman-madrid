@@ -1,10 +1,8 @@
 name: 6 - Publish Madrid daily-analysis export
 
 on:
+  workflow_call:
   workflow_dispatch:
-  schedule:
-    # 21:15 Europe/Madrid: both UTC offsets are declared for DST safety.
-    - cron: "15 19,20 * * *"
 
 permissions:
   contents: read
@@ -13,60 +11,46 @@ permissions:
 
 concurrency:
   group: madrid-analysis-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      publish: ${{ steps.window.outputs.publish }}
+      generated_at: ${{ steps.export_meta.outputs.generated_at }}
     steps:
-      - name: Select the single 21:15 Madrid run
-        id: window
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          TZ: Europe/Madrid
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$(date +%H)" = "21" ]; then
-            echo "publish=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-          fi
       - uses: actions/checkout@v6
-        if: steps.window.outputs.publish == 'true'
       - uses: actions/setup-python@v6
-        if: steps.window.outputs.publish == 'true'
         with:
           python-version: "3.12"
           cache: pip
       - run: pip install -e .
-        if: steps.window.outputs.publish == 'true'
       - name: Export seven Madrid days from Neon read-only
-        if: steps.window.outputs.publish == 'true'
         run: >-
           python scripts/export_madrid_daily_analysis.py
           --days 7
           --output _site/daily-analysis-latest.json
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Verify the public export contains no credentials
-        if: steps.window.outputs.publish == 'true'
+      - name: Fail closed if the export is unsafe or stale
+        run: >-
+          python scripts/validate_madrid_daily_analysis_export.py
+          _site/daily-analysis-latest.json
+          --max-age-minutes 10
+      - name: Record expected publication timestamp
+        id: export_meta
         run: |
-          python -m json.tool _site/daily-analysis-latest.json >/dev/null
-          test "$(python -c 'import json; print(json.load(open("_site/daily-analysis-latest.json"))["contains_credentials"])')" = "False"
+          echo "generated_at=$(python -c 'import json; print(json.load(open("_site/daily-analysis-latest.json"))["generated_at"])')" >> "$GITHUB_OUTPUT"
       - uses: actions/configure-pages@v5
-        if: steps.window.outputs.publish == 'true'
         with:
           enablement: true
       - uses: actions/upload-pages-artifact@v4
-        if: steps.window.outputs.publish == 'true'
         with:
           path: _site
 
   deploy:
     needs: build
-    if: needs.build.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -76,3 +60,24 @@ jobs:
       - name: Publish stable read-only URL
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify the deployed export is current
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          RUN_ID: ${{ github.run_id }}
+          EXPECTED_GENERATED_AT: ${{ needs.build.outputs.generated_at }}
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error \
+              "${PAGE_URL}daily-analysis-latest.json?run=${RUN_ID}" \
+              --output /tmp/published-export.json; then
+              generated_at="$(python -c 'import json; print(json.load(open("/tmp/published-export.json"))["generated_at"])')"
+              if [ "$generated_at" = "$EXPECTED_GENERATED_AT" ]; then
+                echo "Published generated_at=${generated_at}"
+                exit 0
+              fi
+              echo "Pages still serves generated_at=${generated_at}; waiting for ${EXPECTED_GENERATED_AT}"
+            fi
+            sleep 10
+          done
+          echo "Published export could not be verified" >&2
+          exit 1
