@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from scripts.validate_madrid_daily_analysis_export import validate_export
+from weatherman.export_validation import validate_export
 
 
 def payload(generated_at: datetime) -> dict:
