@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -264,21 +265,27 @@ target = st.sidebar.date_input("Target date", value=local_today)
 st.sidebar.caption("All displayed operational times use Europe/Madrid local time.")
 
 if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=True):
+    manual_refresh_started = time.perf_counter()
     try:
         with st.spinner("Refreshing models, METAR, TAF and Polymarket…"):
             refresh_result = collect_live_trading_refresh(airport_code, target)
+            checkpoint_started = time.perf_counter()
             collect_research_checkpoints(
                 [airport_code],
                 window_minutes=35,
                 catchup_hours=48,
                 sync_universe=False,
             )
+            checkpoint_elapsed_seconds = time.perf_counter() - checkpoint_started
     except Exception as exc:
         st.sidebar.error(f"Refresh failed: {type(exc).__name__}: {exc}")
     else:
         errors = dict(refresh_result.get("errors") or {})
         message = (
-            f"Completed in {float(refresh_result.get('elapsed_seconds', 0)):.1f}s · "
+            f"Completed in {time.perf_counter() - manual_refresh_started:.1f}s · "
+            f"providers {float(refresh_result.get('provider_elapsed_seconds', 0)):.1f}s · "
+            f"Neon {float(refresh_result.get('storage_elapsed_seconds', 0)):.1f}s · "
+            f"checkpoint {checkpoint_elapsed_seconds:.1f}s · "
             f"models refreshed {int(refresh_result.get('models_refreshed', 0))} · "
             f"Meteoblue {refresh_result.get('meteoblue_status', 'not configured')}"
         )

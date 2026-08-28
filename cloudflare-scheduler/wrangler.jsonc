@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "weatherman-madrid-scheduler",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-28",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "GITHUB_OWNER": "weatherman84",
+    "GITHUB_REPO": "weatherman-madrid",
+    "GITHUB_REF": "main"
+  },
+  "triggers": {
+    "crons": [
+      "7,22,37,52 5-20 * * *",
+      "15 19,20 * * *"
+    ]
+  }
+}

@@ -1,6 +1,30 @@
-# Release Notes – Madrid v1.0.1
+# Release Notes – Madrid v1.0.3
 
-## Neu in v1.0.1
+## Neu in v1.0.3
+
+- kostenloser Cloudflare Worker als primärer 15-Minuten-Scheduler;
+- expliziter `scheduled_slot` für jede externe Ausführung;
+- idempotenter Schutz gegen parallele Cloudflare-/GitHub-Aufrufe desselben Slots;
+- GitHub-Cron bleibt als stündliches Sicherheitsnetz;
+- eigener DST-sicherer 21:15-LT-Tagesabschluss mit METAR, Actual, Post-Peak und Export;
+- Exportworkflow ohne reale-Uhrzeit-Gate und ohne grünen No-op;
+- lokale und veröffentlichte `generated_at`-Werte müssen nach dem Deployment identisch
+  sein;
+- Export enthält Pipeline-Health sowie aktuelle Strahlungs- und 850-hPa-Modellwerte;
+- vollständige Cloudflare-Einrichtungs- und Sicherheitsanleitung;
+- Forecast-Engine weiterhin unverändert v10.7.10.
+
+## Enthalten aus v1.0.2
+
+- PostgreSQL-Bulk-Upserts ersetzen hunderte zeilenweise Neon-Abfragen im Live-Refresh;
+- Upserts bleiben konfliktgesichert und atomar, doppelte Batch-Schlüssel werden stabil
+  zusammengeführt;
+- Provider-, Neon- und Checkpoint-Laufzeit werden im Cockpit getrennt ausgewiesen;
+- der Polymarket-Aufruf im nachgelagerten Checkpoint-Journal ist auf einen Versuch mit
+  sieben Sekunden Timeout begrenzt;
+- Forecast-Engine v10.7.10 und sämtliche Forecastregeln bleiben unverändert.
+
+## Enthalten aus v1.0.1
 
 - täglicher, Madrid-only Read-only-Export aus Neon für die Research-Analyse;
 - stabile GitHub-Pages-URL statt Neon-Zugangsdaten in ChatGPT;

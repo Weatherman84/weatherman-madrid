@@ -14,9 +14,11 @@ from weatherman.daily_analysis_export import (
 )
 from weatherman.db import (
     Base,
+    CollectionRun,
     DailyActual,
     ForecastSnapshot,
     ForecastVariantSnapshot,
+    HourlyForecast,
     Observation,
     RegimeMemorySnapshot,
 )
@@ -103,6 +105,38 @@ def test_daily_analysis_export_is_read_only_scoped_and_explainable() -> None:
                 raw="LEMD 251000Z test",
             )
         )
+        session.add(
+            HourlyForecast(
+                airport="LEMD",
+                model="ecmwf_ifs025",
+                run_at=datetime(2026, 8, 26, 8, tzinfo=timezone.utc),
+                valid_at=datetime(2026, 8, 26, 10, tzinfo=timezone.utc),
+                temp_c=27.0,
+                dewpoint_c=9.0,
+                cloud_cover=20.0,
+                wind_kph=18.0,
+                wind_direction=220.0,
+                radiation_wm2=700.0,
+                temp_850hpa_c=16.5,
+            )
+        )
+        session.add(
+            CollectionRun(
+                run_id="cloudflare-slot",
+                scheduled_at=datetime(2026, 8, 26, 5, 7, tzinfo=timezone.utc),
+                started_at=datetime(2026, 8, 26, 5, 7, 5, tzinfo=timezone.utc),
+                ended_at=datetime(2026, 8, 26, 5, 8, tzinfo=timezone.utc),
+                collector_version="1.0.3",
+                trigger="cloudflare",
+                overall_status="success",
+                airports_json='["LEMD"]',
+                source_status_json="{}",
+                rows_read_json="{}",
+                rows_written_json="{}",
+                source_age_json="{}",
+                persistence_status="persisted",
+            )
+        )
         session.commit()
 
         before = session.query(ForecastSnapshot).count()
@@ -118,6 +152,10 @@ def test_daily_analysis_export_is_read_only_scoped_and_explainable() -> None:
     assert payload["contains_credentials"] is False
     assert payload["writes_production_database"] is False
     assert payload["actuals"][0]["is_final_station_actual"] is True
+    assert payload["latest_hourly_model_forecasts"][0]["temp_850hpa_c"] == 16.5
+    assert payload["latest_hourly_model_forecasts"][0]["radiation_wm2"] == 700.0
+    assert payload["pipeline_health"]["expected_slots_full_day"] == 65
+    assert payload["pipeline_health"]["trigger_counts"] == {"cloudflare": 1}
     checkpoint = payload["checkpoints"][0]
     assert checkpoint["forecast_chain_c"]["champion"] == 28.4
     assert checkpoint["forecast_drivers"]["observed_heating_rate_cph"] == 1.1

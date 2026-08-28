@@ -1,11 +1,35 @@
-# Project Handoff – Weatherman Madrid v1.0.1
+# Project Handoff – Weatherman Madrid v1.0.3
 
 ## Basis
 
 - Ausgangscode: öffentliches Weatherman v10.7.10, geprüfter Quell-HEAD `8b194c2`.
 - Produktiver Engine-Stand: v10.7.10, unverändert.
 - Neuer Produktscope: ausschließlich LEMD / Madrid-Barajas.
-- Neue App-Version: v1.0.1.
+- Neue App-Version: v1.0.3.
+
+## Scheduler- und Export-P0-Fix v1.0.3
+
+- Cloudflare Cron Triggers erzeugen die primären 15-Minuten-Dispatches.
+- Jeder externe Aufruf übergibt seinen unveränderlichen UTC-`scheduled_slot`.
+- PostgreSQL Advisory Locks und vorhandene CollectionRun-Daten verhindern eine
+  Doppelverarbeitung desselben Airport-/Slot-Paars.
+- GitHub-Cron läuft nur noch stündlich als Safety Net.
+- Ein eigener 21:15-LT-Closeout sammelt den letzten METAR-/Actual-/Post-Peak-Stand und
+  ruft anschließend den Read-only-Export auf.
+- Der Export kann nicht mehr anhand der tatsächlichen Runner-Uhrzeit übersprungen werden.
+- Build und veröffentlichte Pages-Datei müssen denselben aktuellen
+  `generated_at`-Zeitpunkt besitzen.
+- Pipeline-Health, Strahlung und 850-hPa-Temperatur werden exportiert.
+- Keine Forecast-Engine-, Bias-, Weight-, Regime- oder Lock-Änderung.
+
+## Technischer P0-Fix v1.0.2
+
+- Live-Forecasts, Stundenwerte, METARs und Marktpreise werden unter PostgreSQL/Neon
+  in konfliktgesicherten Batches von höchstens 500 Zeilen gespeichert.
+- SQLite behält den bisherigen, getesteten Speicherpfad.
+- Das Cockpit trennt Provider-, Neon- und Checkpoint-Laufzeit.
+- Der Checkpoint-Marktaufruf ist auf einen Versuch und sieben Sekunden begrenzt.
+- Keine Forecast-Engine-, Bias-, Weight-, Regime- oder Lock-Änderung.
 
 ## Architekturentscheidung
 

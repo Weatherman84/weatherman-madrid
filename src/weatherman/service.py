@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 from sqlalchemy import func, select, text
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.exc import IntegrityError
 
 from .analytics import (
@@ -87,8 +88,43 @@ def _upsert_batch(
         return 0
     try:
         with session.begin_nested():
-            for item in items:
-                _upsert(session, model, keys(item), values(item))
+            if session.get_bind().dialect.name == "postgresql":
+                prepared: dict[tuple[object, ...], dict] = {}
+                key_names: tuple[str, ...] | None = None
+                value_names: tuple[str, ...] | None = None
+                for item in items:
+                    item_keys = keys(item)
+                    item_values = values(item)
+                    if key_names is None:
+                        key_names = tuple(item_keys)
+                        value_names = tuple(item_values)
+                    identity = tuple(item_keys[name] for name in key_names)
+                    # Keep the last occurrence, matching the previous row-wise
+                    # upsert semantics while avoiding PostgreSQL's cardinality
+                    # violation when one batch contains a duplicate key.
+                    prepared[identity] = {**item_keys, **item_values}
+
+                assert key_names is not None
+                assert value_names is not None
+                prepared_rows = list(prepared.values())
+                # Bound statement size while reducing hundreds of Neon round-trips
+                # to only a handful. 500 rows remain well below PostgreSQL's bind
+                # parameter limit for the widest live-refresh table.
+                for offset in range(0, len(prepared_rows), 500):
+                    statement = postgresql_insert(model).values(
+                        prepared_rows[offset : offset + 500]
+                    )
+                    statement = statement.on_conflict_do_update(
+                        index_elements=list(key_names),
+                        set_={
+                            name: getattr(statement.excluded, name)
+                            for name in value_names
+                        },
+                    )
+                    session.execute(statement)
+            else:
+                for item in items:
+                    _upsert(session, model, keys(item), values(item))
             session.flush()
     except Exception as exc:
         print(f"WARN {label} storage rolled back: {type(exc).__name__}: {exc}")
@@ -2565,7 +2601,15 @@ def collect_research_checkpoints(
                     market_snapshot_at = None
                     if not bool(metadata["checkpoint_reconstructed"]):
                         try:
-                            market_rows = list(polymarket_prices(airport, target) or [])
+                            market_rows = list(
+                                polymarket_prices(
+                                    airport,
+                                    target,
+                                    attempts=1,
+                                    timeout=7,
+                                )
+                                or []
+                            )
                         except Exception as exc:
                             market_status = f"provider-error:{type(exc).__name__}"
                             counts["checkpoint_market_missing"] += 1
@@ -2779,6 +2823,7 @@ def collect_live_trading_refresh(
             ),
         }
     )
+    provider_started = time.perf_counter()
     results: dict[str, list[dict]] = {}
     errors: dict[str, str] = {}
     workers = max(1, min(int(maximum_workers), len(tasks)))
@@ -2795,6 +2840,7 @@ def collect_live_trading_refresh(
                 errors[label] = f"{type(exc).__name__}: {exc}"
             else:
                 results[label] = list(payload or [])
+    provider_elapsed_seconds = time.perf_counter() - provider_started
 
     forecast_rows = [
         row
@@ -2826,6 +2872,7 @@ def collect_live_trading_refresh(
         "meteoblue_status": meteoblue_policy,
         "errors": errors,
     }
+    storage_started = time.perf_counter()
     with Session() as session:
         counts["forecasts"] = _upsert_batch(
             session,
@@ -2936,12 +2983,15 @@ def collect_live_trading_refresh(
                 )
             )
         session.commit()
+    storage_elapsed_seconds = time.perf_counter() - storage_started
     target_models = {
         str(row["model"])
         for row in forecast_rows
         if row.get("target_date") == target
     }
     counts["models_refreshed"] = len(target_models)
+    counts["provider_elapsed_seconds"] = round(provider_elapsed_seconds, 2)
+    counts["storage_elapsed_seconds"] = round(storage_elapsed_seconds, 2)
     counts["elapsed_seconds"] = round(time.perf_counter() - started, 2)
     return counts
 

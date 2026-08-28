@@ -1,7 +1,9 @@
+from contextlib import nullcontext
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from sqlalchemy import create_engine, func, select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import sessionmaker
 
 from weatherman import service
@@ -163,6 +165,66 @@ def test_failed_batch_does_not_poison_following_database_work():
         session.commit()
         assert stored == 1
         assert session.scalar(select(func.count()).select_from(Forecast)) == 1
+
+
+def test_postgresql_upsert_batch_uses_bounded_bulk_statements():
+    class FakePostgresSession:
+        def __init__(self):
+            self.statements = []
+            self.flushes = 0
+
+        def begin_nested(self):
+            return nullcontext()
+
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        def execute(self, statement):
+            self.statements.append(statement)
+
+        def flush(self):
+            self.flushes += 1
+
+    session = FakePostgresSession()
+    run_at = datetime(2026, 8, 27, tzinfo=timezone.utc)
+    rows = [
+        {
+            "model": "test-model",
+            "valid_at": run_at + timedelta(hours=index),
+            "temperature": 20.0 + index / 100,
+        }
+        for index in range(501)
+    ]
+
+    stored = _upsert_batch(
+        session,
+        service.HourlyForecast,
+        rows,
+        lambda item: {
+            "airport": "LEMD",
+            "model": item["model"],
+            "run_at": run_at,
+            "valid_at": item["valid_at"],
+        },
+        lambda item: {
+            "temp_c": item["temperature"],
+            "dewpoint_c": None,
+            "cloud_cover": None,
+            "wind_kph": None,
+            "wind_direction": None,
+            "radiation_wm2": None,
+            "temp_850hpa_c": None,
+        },
+        "postgres bulk upsert",
+    )
+
+    assert stored == 501
+    assert len(session.statements) == 2
+    assert session.flushes == 1
+    compiled = str(
+        session.statements[0].compile(dialect=postgresql.dialect())
+    )
+    assert "ON CONFLICT (airport, model, run_at, valid_at) DO UPDATE" in compiled
 
 
 def test_live_provider_refresh_age_is_checked_against_real_fetch_time():

@@ -18,10 +18,13 @@ def test_collector_writes_to_neon_without_committing_a_sqlite_file() -> None:
     assert "weatherman.db" not in source
 
 
-def test_collector_has_hourly_safety_and_fifteen_minute_active_windows() -> None:
+def test_collector_uses_external_slots_with_hourly_github_safety() -> None:
     source = workflow("madrid-collector.yml")
-    assert 'cron: "7 0-4,21-23 * * *"' in source
-    assert 'cron: "7,22,37,52 5-20 * * *"' in source
+    assert 'cron: "7 * * * *"' in source
+    assert "scheduled_slot:" in source
+    assert "WEATHERMAN_EXPECTED_SLOT_AT" in source
+    assert "WEATHERMAN_TRIGGER_SOURCE" in source
+    assert 'LIVE_OPEN_METEO_REFRESH_MINUTES: "60"' in source
     assert 'METEOBLUE_DAILY_CALL_LIMIT: "4"' in source
 
 
@@ -63,7 +66,39 @@ def test_daily_analysis_export_is_read_only_and_published_without_database_files
     assert "pages: write" in source
     assert "actions/deploy-pages@v4" in source
     assert "daily-analysis-latest.json" in source
+    assert "validate_madrid_daily_analysis_export.py" in source
+    assert "EXPECTED_GENERATED_AT" in source
+    assert "$(date +%H)" not in source
+    assert "publish=false" not in source
     assert "session.rollback()" in script
     assert "init_db" not in script
     assert "weatherman.db" not in source
     assert "git push" not in source
+
+
+def test_closeout_always_collects_then_calls_export() -> None:
+    source = workflow("madrid-closeout.yml")
+    assert "workflow_dispatch" in source
+    assert 'cron: "22 19 * * *"' in source
+    assert 'cron: "22 20 * * *"' in source
+    assert "run-collector --airports LEMD" in source
+    assert "publish-daily-analysis-export.yml" in source
+    assert "needs: closeout" in source
+
+
+def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials() -> None:
+    worker = (ROOT / "cloudflare-scheduler" / "src" / "index.js").read_text(
+        encoding="utf-8"
+    )
+    config = (ROOT / "cloudflare-scheduler" / "wrangler.jsonc").read_text(
+        encoding="utf-8"
+    )
+    assert "scheduled_slot: scheduledSlot" in worker
+    assert 'source: "cloudflare"' in worker
+    assert "madrid-collector.yml" in worker
+    assert "madrid-closeout.yml" in worker
+    assert "Europe/Madrid" in worker
+    assert '"7,22,37,52 5-20 * * *"' in config
+    assert '"15 19,20 * * *"' in config
+    assert "DATABASE_URL" not in worker
+    assert "METEOBLUE_API_KEY" not in worker

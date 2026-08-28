@@ -2,7 +2,7 @@
 
 Eine eigenständige, ressourcenschonende Streamlit-App für **LEMD / Madrid-Barajas**.
 Die Forecast-Engine bleibt auf dem produktiven Stand **v10.7.10** eingefroren; die
-aktuelle Madrid-App-Version heißt **v1.0.1**. Das neue Repository und die neuen Neon-
+aktuelle Madrid-App-Version heißt **v1.0.3**. Das neue Repository und die neuen Neon-
 Datenbanken sind vollständig vom bisherigen Sechs-Airport-System getrennt.
 
 ## Was diese Version löst
@@ -15,6 +15,8 @@ Datenbanken sind vollständig vom bisherigen Sechs-Airport-System getrennt.
 - Reliability mit erklärtem `N`, Exact Bucket, ±1 °C, MAE und Datenstand;
 - ein manueller, isolierter 30-Tage-Replay mit getrennten Evidenzklassen;
 - ein täglicher, bereinigter Read-only-Export für die Madrid-Research-Analyse;
+- Cloudflare als primärer kostenloser 15-Minuten-Scheduler mit expliziten Soll-Slots;
+- stündlicher GitHub-Fallback und ein garantierter 21:15-LT-Tagesabschluss;
 - kein produktiver Schreibzugriff durch den Replay und keine automatische Promotion.
 
 ## Feste Madrid-Checkpoints

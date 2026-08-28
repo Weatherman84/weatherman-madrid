@@ -43,6 +43,40 @@ def test_scheduler_lineage_separates_expected_event_queue_and_python_start(
     assert queue_started == datetime(2026, 8, 15, 10, 25, 30, tzinfo=timezone.utc)
 
 
+def test_same_airport_and_scheduled_slot_is_idempotent(monkeypatch) -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine, expire_on_commit=False)
+    monkeypatch.setattr(collector, "Session", factory)
+    scheduled = datetime(2026, 8, 28, 10, 22, tzinfo=timezone.utc)
+
+    first = collector._start_run(
+        "cloudflare-run",
+        scheduled_at=scheduled,
+        event_created_at=scheduled + timedelta(seconds=2),
+        queue_started_at=scheduled + timedelta(seconds=3),
+        started_at=scheduled + timedelta(seconds=4),
+        trigger="cloudflare",
+        airport_codes=["LEMD"],
+    )
+    duplicate = collector._start_run(
+        "github-fallback-run",
+        scheduled_at=scheduled,
+        event_created_at=scheduled + timedelta(seconds=5),
+        queue_started_at=scheduled + timedelta(seconds=6),
+        started_at=scheduled + timedelta(seconds=7),
+        trigger="schedule",
+        airport_codes=["LEMD"],
+    )
+
+    with factory() as session:
+        stored_runs = session.scalar(select(func.count()).select_from(CollectionRun))
+
+    assert first is None
+    assert duplicate == "cloudflare-run"
+    assert stored_runs == 1
+
+
 def test_collector_failure_metrics_remain_consistent_after_resume(
     tmp_path: Path,
     monkeypatch,

@@ -9,7 +9,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from . import __version__
 from .db import (
@@ -194,8 +194,18 @@ def _start_run(
     started_at: datetime,
     trigger: str,
     airport_codes: list[str],
-) -> None:
+) -> str | None:
     with Session() as session:
+        airport_scope = _json(sorted(airport_codes))
+        slot_lock_key = f"weatherman-collector:{scheduled_at.isoformat()}:{airport_scope}"
+        if session.get_bind().dialect.name == "postgresql":
+            # Serialize Cloudflare and GitHub fallback invocations for the same
+            # intended slot without requiring a production schema migration.
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                {"key": slot_lock_key},
+            )
+
         # If a prior pending row is present in the database checked out by this
         # run, its Git commit necessarily reached main successfully.
         prior = list(
@@ -218,6 +228,21 @@ def _start_run(
             )
             for coverage in prior_coverage:
                 coverage.status = "stored_persisted"
+        existing = session.scalar(
+            select(CollectionRun)
+            .where(
+                CollectionRun.scheduled_at == scheduled_at,
+                CollectionRun.airports_json == airport_scope,
+                CollectionRun.overall_status.in_(["running", "success"]),
+            )
+            .order_by(CollectionRun.started_at.desc())
+        )
+        if existing is not None and (
+            existing.overall_status == "success"
+            or _utc(existing.started_at) >= started_at - timedelta(minutes=30)
+        ):
+            session.commit()
+            return existing.run_id
         session.add(
             CollectionRun(
                 run_id=run_id,
@@ -241,7 +266,7 @@ def _start_run(
                     if event_created_at is not None and queue_started_at is not None
                     else None
                 ),
-                airports_json=_json(airport_codes),
+                airports_json=airport_scope,
                 source_status_json="{}",
                 rows_read_json="{}",
                 rows_written_json="{}",
@@ -250,6 +275,7 @@ def _start_run(
             )
         )
         session.commit()
+    return None
 
 
 def _finish_run(
@@ -381,7 +407,11 @@ def run_collector(
     """Run every scheduled write through one auditable Python entry point."""
     init_db()
     started_at = _utc(now or datetime.now(timezone.utc))
-    run_trigger = trigger or os.getenv("GITHUB_EVENT_NAME", "manual")
+    run_trigger = (
+        trigger
+        or os.getenv("WEATHERMAN_TRIGGER_SOURCE", "").strip()
+        or os.getenv("GITHUB_EVENT_NAME", "manual")
+    )
     scheduled_at, event_created_at, queue_started_at = _scheduler_times(
         started_at,
         trigger=run_trigger,
@@ -389,7 +419,7 @@ def run_collector(
     run_id = _run_id()
     catalog = trading_airports()
     requested = [code for code in (airport_codes or list(catalog)) if code in catalog]
-    _start_run(
+    duplicate_run_id = _start_run(
         run_id,
         scheduled_at=scheduled_at,
         event_created_at=event_created_at,
@@ -398,6 +428,16 @@ def run_collector(
         trigger=run_trigger,
         airport_codes=requested,
     )
+    if duplicate_run_id is not None:
+        return {
+            "run_id": run_id,
+            "duplicate_of": duplicate_run_id,
+            "scheduled_at": scheduled_at.isoformat(),
+            "event_created_at": event_created_at.isoformat(),
+            "queue_started_at": queue_started_at.isoformat(),
+            "started_at": started_at.isoformat(),
+            "status": "duplicate-skipped",
+        }
     coverage: list[dict[str, object]] = []
     results: dict[str, object] = {}
     try:

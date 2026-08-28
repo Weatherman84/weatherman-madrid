@@ -194,6 +194,8 @@ def test_live_trading_refresh_updates_every_decision_source_with_bounded_calls(
     assert result["observations"] == 1
     assert result["market_prices"] == 1
     assert result["errors"] == {}
+    assert result["provider_elapsed_seconds"] >= 0
+    assert result["storage_elapsed_seconds"] >= 0
     assert {label for label, _kwargs in calls} == {
         "forecast/model-a",
         "forecast/model-b",

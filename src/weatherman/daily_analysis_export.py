@@ -22,6 +22,7 @@ from .db import (
     Forecast,
     ForecastSnapshot,
     ForecastVariantSnapshot,
+    HourlyForecast,
     Observation,
     ProviderCall,
     RegimeMemorySnapshot,
@@ -166,6 +167,99 @@ def _forecast_payload(row: Forecast) -> dict[str, Any]:
         "available_at": _iso(row.available_at),
         "fetched_at": _iso(row.fetched_at),
         "provenance_status": row.provenance_status,
+    }
+
+
+def _hourly_forecast_payload(row: HourlyForecast) -> dict[str, Any]:
+    return {
+        "model": row.model,
+        "run_at": _iso(row.run_at),
+        "valid_at": _iso(row.valid_at),
+        "temp_c": row.temp_c,
+        "dewpoint_c": row.dewpoint_c,
+        "cloud_cover": row.cloud_cover,
+        "wind_kph": row.wind_kph,
+        "wind_direction": row.wind_direction,
+        "radiation_wm2": row.radiation_wm2,
+        "temp_850hpa_c": row.temp_850hpa_c,
+    }
+
+
+def _utc_datetime(value: datetime) -> datetime:
+    return value.astimezone(timezone.utc) if value.tzinfo else value.replace(
+        tzinfo=timezone.utc
+    )
+
+
+def _pipeline_health_payload(
+    generated: datetime,
+    local_today: date,
+    collection_runs: list[CollectionRun],
+) -> dict[str, Any]:
+    primary_slots = [
+        datetime(
+            local_today.year,
+            local_today.month,
+            local_today.day,
+            hour,
+            minute,
+            tzinfo=timezone.utc,
+        )
+        for hour in range(5, 21)
+        for minute in (7, 22, 37, 52)
+    ]
+    closeout_slot = datetime.combine(
+        local_today,
+        time(hour=21, minute=15),
+        tzinfo=ZoneInfo(AIRPORT_TIMEZONE),
+    ).astimezone(timezone.utc)
+    expected_slots = sorted([*primary_slots, closeout_slot])
+    due_slots = [slot for slot in expected_slots if slot <= generated.astimezone(timezone.utc)]
+    observed = {
+        _utc_datetime(row.scheduled_at): row
+        for row in collection_runs
+        if _utc_datetime(row.scheduled_at).date() == local_today
+    }
+    successful = {
+        slot
+        for slot, row in observed.items()
+        if row.overall_status == "success"
+    }
+    missing = [slot for slot in due_slots if slot not in observed]
+    failed = [
+        slot
+        for slot in due_slots
+        if slot in observed and observed[slot].overall_status != "success"
+    ]
+    trigger_counts: dict[str, int] = defaultdict(int)
+    for row in collection_runs:
+        if _utc_datetime(row.scheduled_at).date() == local_today:
+            trigger_counts[str(row.trigger or "unknown")] += 1
+    last_success = max(
+        (
+            _utc_datetime(row.ended_at or row.started_at)
+            for row in collection_runs
+            if row.overall_status == "success"
+        ),
+        default=None,
+    )
+    return {
+        "local_date": local_today.isoformat(),
+        "expected_slots_full_day": len(expected_slots),
+        "expected_slots_due": len(due_slots),
+        "processed_expected_slots": len(set(due_slots) & set(observed)),
+        "successful_expected_slots": len(set(due_slots) & successful),
+        "coverage_ratio_due": (
+            round(len(set(due_slots) & successful) / len(due_slots), 4)
+            if due_slots
+            else 1.0
+        ),
+        "missing_slots": [_iso(slot) for slot in missing],
+        "failed_slots": [_iso(slot) for slot in failed],
+        "trigger_counts": dict(sorted(trigger_counts.items())),
+        "last_successful_collector_at": _iso(last_success),
+        "closeout_slot": _iso(closeout_slot),
+        "closeout_success": closeout_slot in successful,
     }
 
 
@@ -427,6 +521,31 @@ def build_daily_analysis_export(
             .order_by(Forecast.target_date, Forecast.model, Forecast.run_at)
         )
     )
+    hourly_start = datetime.combine(
+        local_today,
+        time.min,
+        tzinfo=ZoneInfo(AIRPORT_TIMEZONE),
+    ).astimezone(timezone.utc)
+    hourly_end = hourly_start + timedelta(days=2)
+    hourly_rows = list(
+        session.scalars(
+            select(HourlyForecast)
+            .where(
+                HourlyForecast.airport == AIRPORT,
+                HourlyForecast.valid_at >= hourly_start,
+                HourlyForecast.valid_at < hourly_end,
+                HourlyForecast.run_at <= generated.astimezone(timezone.utc),
+            )
+            .order_by(
+                HourlyForecast.model,
+                HourlyForecast.valid_at,
+                HourlyForecast.run_at,
+            )
+        )
+    )
+    latest_hourly: dict[tuple[str, datetime], HourlyForecast] = {}
+    for row in hourly_rows:
+        latest_hourly[(row.model, _utc_datetime(row.valid_at))] = row
     tafs = list(
         session.scalars(
             select(TafReport)
@@ -506,6 +625,13 @@ def build_daily_analysis_export(
         "actuals": [_actual_payload(row) for row in actuals],
         "observations": [_observation_payload(row) for row in observations],
         "model_forecasts": [_forecast_payload(row) for row in forecasts],
+        "latest_hourly_model_forecasts": [
+            _hourly_forecast_payload(row)
+            for row in sorted(
+                latest_hourly.values(),
+                key=lambda item: (item.model, _utc_datetime(item.valid_at)),
+            )
+        ],
         "taf_revision_journal": [_taf_payload(row) for row in tafs],
         "checkpoints": checkpoints,
         "provider_calls": [
@@ -557,6 +683,11 @@ def build_daily_analysis_export(
             }
             for row in coverage_rows
         ],
+        "pipeline_health": _pipeline_health_payload(
+            generated,
+            local_today,
+            collection_runs,
+        ),
     }
     return _sanitize_public_value(payload)
 
