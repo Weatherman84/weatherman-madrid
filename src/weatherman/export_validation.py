@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -41,10 +41,12 @@ def validate_export(
             f"Export is stale: generated_at age is {age_minutes:.1f} minutes"
         )
 
-    madrid_today = current.astimezone(ZoneInfo("Europe/Madrid")).date().isoformat()
+    madrid_today = current.astimezone(ZoneInfo("Europe/Madrid")).date()
+    expected_last_target = (madrid_today + timedelta(days=1)).isoformat()
     last_target_date = str((payload.get("window") or {}).get("last_target_date") or "")
-    if last_target_date != madrid_today:
+    if last_target_date != expected_last_target:
         raise ValueError(
-            f"Export window ends at {last_target_date or 'missing'}, expected {madrid_today}"
+            "Export window ends at "
+            f"{last_target_date or 'missing'}, expected {expected_last_target}"
         )
     return payload
