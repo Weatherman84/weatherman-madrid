@@ -186,9 +186,27 @@ def test_live_lineage_records_model_exclusion_reason() -> None:
     captured = pd.Timestamp("2026-08-18T12:00:00Z")
     freshness = pd.DataFrame(
         [
-            {"model": "fresh", "age_minutes": 5, "data_timestamp": captured},
-            {"model": "stale", "age_minutes": 180, "data_timestamp": captured},
-            {"model": "extra", "age_minutes": 5, "data_timestamp": captured},
+            {
+                "model": "fresh",
+                "age_minutes": 5,
+                "data_timestamp": captured,
+                "freshness_state": "current_latest_run",
+                "is_fresh": True,
+            },
+            {
+                "model": "stale",
+                "age_minutes": 900,
+                "data_timestamp": captured,
+                "freshness_state": "hard_stale",
+                "is_fresh": False,
+            },
+            {
+                "model": "extra",
+                "age_minutes": 5,
+                "data_timestamp": captured,
+                "freshness_state": "current_latest_run",
+                "is_fresh": True,
+            },
         ]
     )
     nowcast = SimpleNamespace(
@@ -203,7 +221,9 @@ def test_live_lineage_records_model_exclusion_reason() -> None:
     }
     assert provenance["fresh"]["selection_status"] == "used"
     assert provenance["fresh"]["exclusion_reason"] is None
-    assert provenance["stale"]["exclusion_reason"] == "stale at this checkpoint"
+    assert provenance["stale"]["exclusion_reason"] == (
+        "multiple expected model updates missing"
+    )
     assert provenance["extra"]["selection_status"] == "available-not-expected"
 
 

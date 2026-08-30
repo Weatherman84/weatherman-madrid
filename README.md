@@ -1,9 +1,11 @@
 # Weatherman Madrid
 
 Eine eigenständige, ressourcenschonende Streamlit-App für **LEMD / Madrid-Barajas**.
-Die Forecast-Engine bleibt auf dem produktiven Stand **v10.7.10** eingefroren; die
-aktuelle Madrid-App-Version heißt **v1.0.3**. Das neue Repository und die neuen Neon-
-Datenbanken sind vollständig vom bisherigen Sechs-Airport-System getrennt.
+Die aktuelle Madrid-App-Version heißt **v1.0.4** und verwendet Engine **v10.7.11**.
+Forecastformeln, Gewichte, Biases, Regime und Locks bleiben auf dem Stand v10.7.10;
+v10.7.11 ersetzt ausschließlich die starre 90-Minuten-Modellzulassung durch eine
+modellabhängige Laufkadenz. Das Repository und die Neon-Datenbanken sind vollständig
+vom bisherigen Sechs-Airport-System getrennt.
 
 ## Was diese Version löst
 
@@ -15,6 +17,9 @@ Datenbanken sind vollständig vom bisherigen Sechs-Airport-System getrennt.
 - Reliability mit erklärtem `N`, Exact Bucket, ±1 °C, MAE und Datenstand;
 - ein manueller, isolierter 30-Tage-Replay mit getrennten Evidenzklassen;
 - ein täglicher, bereinigter Read-only-Export für die Madrid-Research-Analyse;
+- pro Modell der neueste kausal verfügbare Lauf innerhalb seiner offiziellen Kadenz;
+- getrennte Status `current_latest_run`, `awaiting_next_run`, `missing_expected_run`
+  und `hard_stale` statt eines pauschalen 90-Minuten-Ausschlusses;
 - Cloudflare als primärer kostenloser 15-Minuten-Scheduler mit expliziten Soll-Slots;
 - stündlicher GitHub-Fallback und ein garantierter 21:15-LT-Tagesabschluss;
 - kein produktiver Schreibzugriff durch den Replay und keine automatische Promotion.
@@ -47,10 +52,13 @@ aktualisiert werden.
   Checkpoint abgerufen.
 - `reconstructed-research`: Die Daten waren fachlich zum Checkpoint verfügbar, wurden
   aber erst später abgerufen und anschließend kausal rekonstruiert.
-- `unavailable`: Es existieren nicht mindestens zwei frische, kausal nutzbare Modelle.
+- `unavailable`: Es existieren nicht mindestens zwei kadenzgültige, kausal nutzbare
+  Modelle.
 
 Diese Klassen werden nie vermischt. Replay-Ergebnisse sind `RESEARCH ONLY` und ändern
 weder Produktionsdaten noch Forecast-Gewichte, Regime, OOS-Zähler oder Promotionen.
+Da v10.7.11 die Champion-Eingangsmenge ändert, beginnt sein sequenzieller OOS-Zähler
+am 31. August 2026 neu; frühere v10.7.10-Tage werden nicht für eine Promotion angerechnet.
 
 Der bestehende Replay ist ein Pilot auf den in Production gespeicherten Snapshots. Er ist
 kein vollständiger 360-Tage-Neuaufbau aus externen Wetterarchiven. Ein solcher Archive
@@ -82,4 +90,5 @@ Reihenfolge ausführen.
 - [Streamlit Community Cloud: App deployen](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy)
 - [Streamlit Secrets](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
 - [GitHub Actions Runner für öffentliche Repositories](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+- [Open-Meteo Model Updates und Verfügbarkeitsmetadaten](https://open-meteo.com/en/docs/model-updates)
 - [meteoblue Free Weather API](https://docs.meteoblue.com/en/weather-apis/free-weather-api/overview)

@@ -1,4 +1,4 @@
-# Weatherman Madrid v1.0.3 – genaue Einrichtung
+# Weatherman Madrid v1.0.4 – genaue Einrichtung
 
 Diese Anleitung setzt keine Erfahrung mit Neon voraus. Arbeite die Schritte genau in
 der Reihenfolge ab. Die alte App und das alte Repository werden dabei **nicht** verändert.
@@ -8,7 +8,7 @@ der Reihenfolge ab. Die alte App und das alte Repository werden dabei **nicht** 
 - dein GitHub-Konto;
 - dein bestehender Meteoblue-API-Key;
 - Zugang zu [Streamlit Community Cloud](https://share.streamlit.io/);
-- das gelieferte ZIP `weatherman-madrid-v1.0.3.zip`.
+- das gelieferte ZIP `weatherman-madrid-v1.0.4.zip`.
 
 Wichtig: Eine Neon-Verbindungszeichenfolge enthält ein Passwort. Poste sie nicht in
 Chats, Issues oder Screenshots. Sie wird ausschließlich in GitHub Secrets und in den
@@ -16,7 +16,7 @@ Streamlit Secrets eingefügt.
 
 ## 1. ZIP entpacken
 
-1. Lade `weatherman-madrid-v1.0.3.zip` herunter.
+1. Lade `weatherman-madrid-v1.0.4.zip` herunter.
 2. Rechtsklick auf die Datei und **Alle extrahieren** wählen.
 3. Öffne anschließend den Ordner `UPLOAD_TO_GITHUB`.
 4. Darin müssen unter anderem `app.py`, `README.md`, `src`, `config`, `.github` und
@@ -39,7 +39,7 @@ keine historischen Einzeldateien, keinen Cache und keine Zugangsdaten.
    alles in das GitHub-Uploadfeld. Ziehe den **Inhalt**, nicht den übergeordneten Ordner.
 8. Kontrolliere vor dem Commit, dass `app.py` direkt auf Repository-Ebene liegt und nicht
    in einem zusätzlichen Unterordner.
-9. Bei Commit message trägst du `Weatherman Madrid v1.0.3` ein.
+9. Bei Commit message trägst du `Weatherman Madrid v1.0.4` ein.
 10. Klicke **Commit changes**.
 
 Wenn `.github` oder `.streamlit` fehlen, den Upload noch nicht abschließen. Beide Ordner

@@ -707,29 +707,49 @@ def _checkpoint_lineage_view(
     if expected and records:
         maximum_age = ages[-1] if ages else None
         coverage = min(1.0, len({str(item.get("model")) for item in relevant}) / len(expected))
-        freshness = (
-            "unavailable"
-            if maximum_age is None
-            else "fresh"
-            if maximum_age <= 30
-            else "aging"
-            if maximum_age <= 90
-            else "stale"
-        )
+        states = {
+            str(item.get("freshness_state"))
+            for item in relevant
+            if item.get("freshness_state")
+        }
+        if states:
+            freshness = (
+                "stale"
+                if states & {"missing_expected_run", "hard_stale"}
+                else "aging"
+                if "awaiting_next_run" in states
+                else "fresh"
+            )
+            usable_models = {
+                str(item.get("model"))
+                for item in relevant
+                if bool(item.get("usable_at_checkpoint", False))
+            }
+        else:
+            # Historical snapshots created before model-cadence freshness retain
+            # their original 90-minute interpretation; evidence is not rewritten.
+            freshness = (
+                "unavailable"
+                if maximum_age is None
+                else "fresh"
+                if maximum_age <= 30
+                else "aging"
+                if maximum_age <= 90
+                else "stale"
+            )
+            usable_models = {
+                str(item.get("model"))
+                for item in relevant
+                if item.get("age_at_cutoff_minutes") is not None
+                and float(item["age_at_cutoff_minutes"]) <= 90
+            }
         return {
             "source_age_minutes": maximum_age,
             "freshness_status": freshness,
             "coverage_ratio": coverage,
             "expected_model_count": len(expected),
             "available_model_count": len(available),
-            "fresh_model_count": len(
-                {
-                    str(item.get("model"))
-                    for item in relevant
-                    if item.get("age_at_cutoff_minutes") is not None
-                    and float(item["age_at_cutoff_minutes"]) <= 90
-                }
-            ),
+            "fresh_model_count": len(usable_models),
             "used_model_count": int(
                 row.get("used_model_count")
                 if pd.notna(row.get("used_model_count"))

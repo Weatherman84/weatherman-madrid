@@ -1,11 +1,25 @@
-# Project Handoff – Weatherman Madrid v1.0.3
+# Project Handoff – Weatherman Madrid v1.0.4
 
 ## Basis
 
 - Ausgangscode: öffentliches Weatherman v10.7.10, geprüfter Quell-HEAD `8b194c2`.
-- Produktiver Engine-Stand: v10.7.10, unverändert.
+- Produktiver Engine-Stand: v10.7.11; nur die Modell-Freshness-Auswahl wurde geändert.
 - Neuer Produktscope: ausschließlich LEMD / Madrid-Barajas.
-- Neue App-Version: v1.0.3.
+- Neue App-Version: v1.0.4.
+
+## Modellabhängige Freshness v1.0.4
+
+- Je Modell wird der neueste am Checkpoint kausal verfügbare Lauf verwendet.
+- ECMWF, GFS, ICON Global, UKMO und ARPEGE folgen einer 6-Stunden-Kadenz.
+- ICON-EU und AROME/AROME-HD folgen einer 3-Stunden-Kadenz.
+- Ein Lauf bleibt während des normalen Veröffentlichungsfensters verwendbar.
+- Sobald ein neuer Lauf über die Toleranz hinaus fehlt, wird der alte Lauf
+  ausgeschlossen; mehrere verpasste Zyklen ergeben `hard_stale`.
+- Die Checkpoint-Provenienz speichert Status, Referenzzeit, Kadenz, Toleranz,
+  nächsten erwarteten Lauf und Zahl verpasster Updates.
+- Sequenzielle Promotionsevidenz beginnt für v10.7.11 am 31. August 2026 neu; die
+  bisherigen v10.7.10-Tage werden nicht angerechnet.
+- Forecastformeln, Biases, Gewichte, Regime, Locks und Promotion-Gates sind unverändert.
 
 ## Scheduler- und Export-P0-Fix v1.0.3
 

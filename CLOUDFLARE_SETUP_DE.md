@@ -1,4 +1,4 @@
-# Cloudflare Scheduler für Weatherman Madrid v1.0.3
+# Cloudflare Scheduler für Weatherman Madrid v1.0.4
 
 ## Ziel
 
@@ -11,9 +11,9 @@ Cloudflare erhält niemals Neon-, Meteoblue- oder Streamlit-Zugangsdaten. Der Wo
 bekommt ausschließlich einen auf ein Repository begrenzten GitHub-Token, der Workflows
 starten darf.
 
-## Teil A – zuerst v1.0.3 in GitHub installieren
+## Teil A – zuerst v1.0.4 in GitHub installieren
 
-1. Lade das v1.0.3-Paket herunter und entpacke es.
+1. Lade das v1.0.4-Paket herunter und entpacke es.
 2. Lade den Inhalt von `UPLOAD_TO_GITHUB` in die Wurzel des vorhandenen Repositorys
    `weatherman84/weatherman-madrid`.
 3. Kontrolliere besonders den versteckten Ordner `.github/workflows`. Dort müssen
@@ -24,7 +24,7 @@ starten darf.
 4. Falls der Browser den versteckten Ordner wieder auslässt, lade die drei im Paket
    zusätzlich bereitgestellten Workflow-Dateien einzeln direkt unter
    `.github/workflows` hoch.
-5. Commit-Nachricht: `Weatherman Madrid v1.0.3 – external scheduler`.
+5. Commit-Nachricht: `Weatherman Madrid v1.0.4 – cadence freshness`.
 6. Warte auf **0 – Tests**. Alle Tests müssen grün sein.
 7. Öffne **Actions → 6 – Publish Madrid daily-analysis export** und starte den Workflow
    einmal manuell. Build, Deploy und die Prüfung der veröffentlichten Datei müssen grün

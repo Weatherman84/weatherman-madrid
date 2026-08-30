@@ -1,6 +1,20 @@
-# Release Notes – Madrid v1.0.3
+# Release Notes – Madrid v1.0.4
 
-## Neu in v1.0.3
+## Neu in v1.0.4
+
+- Engine v10.7.11 verwendet je Modell den neuesten kausal verfügbaren Lauf;
+- die starre 90-Minuten-Ausschlussgrenze entfällt für bekannte NWP-Modelle;
+- offizielle Modellkadenz: sechs Stunden für ECMWF, GFS, ICON Global, UKMO und
+  ARPEGE; drei Stunden für ICON-EU und AROME/AROME-HD;
+- ein normales Veröffentlichungsfenster wird als `awaiting_next_run` weiterverwendet;
+- `missing_expected_run` und `hard_stale` bleiben vom Champion ausgeschlossen;
+- Checkpoint-Provenienz, Analyseexport und Cockpit zeigen Status, Kadenz, nächsten
+  erwarteten Lauf und Zahl verpasster Updates;
+- der sequenzielle Promotion-Zähler startet für v10.7.11 am 31. August 2026 neu;
+- Forecastformeln, Biases, Gewichte, Regime, Locks und Promotion-Gates bleiben
+  unverändert auf dem bisherigen Stand.
+
+## Enthalten aus v1.0.3
 
 - kostenloser Cloudflare Worker als primärer 15-Minuten-Scheduler;
 - expliziter `scheduled_slot` für jede externe Ausführung;

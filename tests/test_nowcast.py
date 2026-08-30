@@ -50,7 +50,7 @@ def test_stale_meteoblue_is_omitted_when_current_models_are_available():
     assert not bool(meteoblue.used_in_forecast)
 
 
-def test_all_old_models_cannot_create_a_live_champion():
+def test_models_missing_multiple_expected_runs_cannot_create_a_live_champion():
     as_of = datetime(2026, 7, 30, 8, tzinfo=timezone.utc)
     target = as_of.date()
     forecasts = pd.DataFrame(
@@ -58,8 +58,8 @@ def test_all_old_models_cannot_create_a_live_champion():
             {
                 "airport": "EHAM",
                 "model": model,
-                "run_at": as_of - timedelta(hours=3),
-                "fetched_at": as_of - timedelta(hours=3),
+                "run_at": as_of - timedelta(hours=15),
+                "fetched_at": as_of - timedelta(hours=15),
                 "target_date": target,
                 "max_temp_c": maximum,
                 "source": "open-meteo",
@@ -79,6 +79,57 @@ def test_all_old_models_cannot_create_a_live_champion():
         as_of=as_of,
     )
     assert result is None
+
+
+def test_latest_causal_gfs_and_arome_runs_survive_the_old_90_minute_limit():
+    as_of = datetime(2026, 8, 29, 10, tzinfo=timezone.utc)
+    target = as_of.date()
+    forecasts = pd.DataFrame(
+        [
+            {
+                "airport": "LEMD",
+                "model": "gfs_global",
+                "run_at": as_of - timedelta(minutes=210),
+                "available_at": as_of - timedelta(minutes=210),
+                "fetched_at": as_of - timedelta(minutes=20),
+                "target_date": target,
+                "max_temp_c": 33.0,
+                "source": "open-meteo",
+                "horizon": "Live",
+            },
+            {
+                "airport": "LEMD",
+                "model": "meteofrance_arome_france",
+                "run_at": as_of - timedelta(minutes=260),
+                "available_at": as_of - timedelta(minutes=260),
+                "fetched_at": as_of - timedelta(minutes=20),
+                "target_date": target,
+                "max_temp_c": 34.0,
+                "source": "open-meteo",
+                "horizon": "Live",
+            },
+        ]
+    )
+
+    result = build_live_nowcast(
+        forecasts=forecasts,
+        actuals=pd.DataFrame(),
+        observations=pd.DataFrame(),
+        hourly=pd.DataFrame(),
+        markets=pd.DataFrame(),
+        timezone_name="Europe/Madrid",
+        target=target,
+        as_of=as_of,
+    )
+
+    assert result is not None
+    assert set(result.current.model) == {
+        "gfs_global",
+        "meteofrance_arome_france",
+    }
+    states = result.model_freshness.set_index("model").freshness_state.to_dict()
+    assert states["gfs_global"] == "current_latest_run"
+    assert states["meteofrance_arome_france"] == "awaiting_next_run"
 
 
 def test_one_fresh_model_is_diagnostic_only_and_stale_model_is_never_used():

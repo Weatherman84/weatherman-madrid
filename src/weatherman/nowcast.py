@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from .model_freshness import assess_model_freshness
+
 from .actual_quality import nonprovisional_actuals, settlement_grade_actuals
 
 from .analytics import (
@@ -2111,26 +2113,58 @@ def build_live_nowcast(
     if current.empty:
         return None
     current = current.sort_values("run_at").drop_duplicates("model", keep="last")
-    fetched = (
-        pd.to_datetime(current.fetched_at, utc=True, errors="coerce")
-        if "fetched_at" in current
-        else pd.Series(pd.NaT, index=current.index, dtype="datetime64[ns, UTC]")
-    )
-    fetched = fetched.fillna(pd.to_datetime(current.run_at, utc=True, errors="coerce"))
-    current["data_timestamp"] = fetched
-    current["age_minutes"] = (
-        (as_of_utc - current.data_timestamp).dt.total_seconds() / 60
-    ).clip(lower=0)
-    freshness_limit = max(1, int(maximum_model_age_minutes))
-    current["is_fresh"] = current.age_minutes <= freshness_limit
+    assessments = []
+    for row in current.itertuples():
+        assessment = assess_model_freshness(
+            str(row.model),
+            as_of=as_of_utc.to_pydatetime(),
+            available_at=getattr(row, "available_at", None),
+            fetched_at=getattr(row, "fetched_at", None),
+            run_at=getattr(row, "run_at", None),
+            fallback_interval_minutes=maximum_model_age_minutes,
+        )
+        assessments.append(assessment)
+    current["data_timestamp"] = [
+        assessment.reference_at if assessment is not None else pd.NaT
+        for assessment in assessments
+    ]
+    current["age_minutes"] = [
+        assessment.age_minutes if assessment is not None else float("nan")
+        for assessment in assessments
+    ]
+    current["freshness_state"] = [
+        assessment.status if assessment is not None else "hard_stale"
+        for assessment in assessments
+    ]
+    current["freshness_reference"] = [
+        assessment.reference_kind if assessment is not None else "unavailable"
+        for assessment in assessments
+    ]
+    current["update_interval_minutes"] = [
+        assessment.update_interval_minutes if assessment is not None else None
+        for assessment in assessments
+    ]
+    current["publication_tolerance_minutes"] = [
+        assessment.publication_tolerance_minutes if assessment is not None else None
+        for assessment in assessments
+    ]
+    current["next_expected_at"] = [
+        assessment.next_expected_at if assessment is not None else pd.NaT
+        for assessment in assessments
+    ]
+    current["expected_updates_missed"] = [
+        assessment.expected_updates_missed if assessment is not None else None
+        for assessment in assessments
+    ]
+    current["is_fresh"] = [
+        assessment.usable if assessment is not None else False
+        for assessment in assessments
+    ]
     fresh_current = current[current.is_fresh].copy()
     forecast_data_stale = len(fresh_current) < 2
-    # A stale row is diagnostic evidence, never a production forecast input.  The
-    # former fallback to ``current`` when fewer than two fresh feeds were present
-    # made old Meteoblue/Open-Meteo rows part of the Champion while simultaneously
-    # labelling them stale in provenance.  Keep the two concepts consistent: one
-    # fresh model may still produce a visibly blocked diagnostic nowcast, while no
-    # fresh model means there is no defensible current nowcast at all.
+    # A missing expected run is diagnostic evidence, never a production input.
+    # Runs inside their model-specific cadence (or its normal publication window)
+    # remain usable even when their absolute age exceeds the former 90-minute cap.
     selected_models = set(fresh_current.model.astype(str))
     current["used_in_forecast"] = current.model.astype(str).isin(selected_models)
     model_freshness = current.copy()
@@ -3195,16 +3229,18 @@ def build_live_nowcast(
         live_score = 35.0
     else:
         live_score = max(0.0, min(100.0, 110 - 30 * observation_age_hours))
+    freshness_scores = current.freshness_state.map(
+        {"current_latest_run": 100.0, "awaiting_next_run": 70.0}
+    ).dropna()
+    cadence_freshness_score = (
+        float(freshness_scores.mean()) if not freshness_scores.empty else 0.0
+    )
     confidence_factors = {
         "historical_accuracy": history_score,
         "model_agreement": spread_score,
         "sample_size": sample_score,
         "live_data": live_score,
-        "model_freshness": (
-            max(0.0, min(100.0, 115 - latest_forecast_age_minutes))
-            if latest_forecast_age_minutes is not None
-            else 0.0
-        ),
+        "model_freshness": cadence_freshness_score,
     }
     base_confidence = (
         0.40 * history_score + 0.30 * spread_score + 0.20 * sample_score + 0.10 * live_score

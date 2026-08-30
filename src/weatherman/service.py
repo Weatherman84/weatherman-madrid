@@ -43,6 +43,7 @@ from .db import (
     init_db,
 )
 from .history import read_archive_live
+from .model_freshness import assess_model_freshness
 from .nowcast import build_live_nowcast, complete_metar_actuals
 from .post_peak_diagnostics import post_peak_diagnostic
 from .regime_memory import enrich_nowcast_with_regime_memory
@@ -914,11 +915,23 @@ def _checkpoint_provenance(
         str(model) for model in (expected_models or latest_by_model) if str(model)
     }
     selected = [item for item in selected_all if str(item[1].model) in expected]
+    assessed_selected = [
+        (
+            effective,
+            row,
+            assess_model_freshness(
+                str(row.model),
+                as_of=cutoff,
+                available_at=row.available_at,
+                fetched_at=row.fetched_at,
+                run_at=row.run_at,
+                fallback_interval_minutes=settings.maximum_live_model_age_minutes,
+            ),
+        )
+        for effective, row in selected
+    ]
     fresh_selected = [
-        item
-        for item in selected
-        if max(0.0, (cutoff - item[0]).total_seconds() / 60)
-        <= settings.maximum_live_model_age_minutes
+        item for item in assessed_selected if item[2] is not None and item[2].usable
     ]
     available_models = {str(item[1].model) for item in selected_all}
     relevant_models = {str(item[1].model) for item in selected}
@@ -953,14 +966,19 @@ def _checkpoint_provenance(
         if coverage_ratio >= 0.6
         else "insufficient"
     )
+    selected_states = {
+        assessment.status
+        for _effective, _row, assessment in assessed_selected
+        if assessment is not None
+    }
     freshness_status = (
         "unavailable"
-        if maximum_age is None
-        else "fresh"
-        if maximum_age <= 30
-        else "aging"
-        if maximum_age <= 90
+        if not selected_states
         else "stale"
+        if selected_states & {"missing_expected_run", "hard_stale"}
+        else "aging"
+        if "awaiting_next_run" in selected_states
+        else "fresh"
     )
     available_times = [
         _as_utc(row.available_at)
@@ -977,8 +995,33 @@ def _checkpoint_provenance(
         for _effective, row in selected
         if present(row.model_run_at)
     ]
-    provenance = [
-        {
+    provenance = []
+    for effective, row in selected_all:
+        assessment = assess_model_freshness(
+            str(row.model),
+            as_of=cutoff,
+            available_at=row.available_at,
+            fetched_at=row.fetched_at,
+            run_at=row.run_at,
+            fallback_interval_minutes=settings.maximum_live_model_age_minutes,
+        )
+        expected_model = str(row.model) in expected
+        usable = bool(assessment is not None and assessment.usable)
+        state = assessment.status if assessment is not None else "hard_stale"
+        if not expected_model:
+            selection_status = "available-not-expected"
+            exclusion_reason = "extra model outside checkpoint expectation set"
+        elif usable:
+            selection_status = "eligible-for-checkpoint"
+            exclusion_reason = None
+        else:
+            selection_status = "excluded"
+            exclusion_reason = (
+                "newer model run expected but unavailable"
+                if state == "missing_expected_run"
+                else "multiple expected model updates missing"
+            )
+        provenance.append({
             "model": row.model,
             "source": row.source,
             "model_run_at": row.model_run_at.isoformat() if row.model_run_at else None,
@@ -988,21 +1031,32 @@ def _checkpoint_provenance(
             "age_at_cutoff_minutes": max(
                 0.0, (cutoff - effective).total_seconds() / 60
             ),
-            "relevant_to_checkpoint": str(row.model) in expected,
-            "selection_status": (
-                "eligible-for-checkpoint"
-                if str(row.model) in expected
-                else "available-not-expected"
+            "freshness_state": state,
+            "freshness_reference": (
+                assessment.reference_kind if assessment is not None else None
             ),
-            "exclusion_reason": (
-                None
-                if str(row.model) in expected
-                else "extra model outside checkpoint expectation set"
+            "update_interval_minutes": (
+                assessment.update_interval_minutes if assessment is not None else None
             ),
+            "publication_tolerance_minutes": (
+                assessment.publication_tolerance_minutes
+                if assessment is not None
+                else None
+            ),
+            "next_expected_at": (
+                assessment.next_expected_at.isoformat()
+                if assessment is not None
+                else None
+            ),
+            "expected_updates_missed": (
+                assessment.expected_updates_missed if assessment is not None else None
+            ),
+            "usable_at_checkpoint": usable,
+            "relevant_to_checkpoint": expected_model,
+            "selection_status": selection_status,
+            "exclusion_reason": exclusion_reason,
             "provenance_status": row.provenance_status,
-        }
-        for effective, row in selected_all
-    ]
+        })
     recorded_at = _as_utc(current_time)
     reconstructed = recorded_at > cutoff + timedelta(
         minutes=max(1, settings.checkpoint_capture_grace_minutes)
@@ -1207,6 +1261,10 @@ def build_current_live_nowcast(
     memory_config.setdefault(
         "minimum_oos_days",
         settings.regime_memory_minimum_oos_days,
+    )
+    memory_config.setdefault(
+        "oos_start_date",
+        settings.regime_memory_oos_start_date,
     )
     return enrich_nowcast_with_regime_memory(
         nowcast,
@@ -1427,14 +1485,15 @@ def _live_snapshot_provenance(nowcast, airport: dict) -> dict[str, object]:
         if ages
         else None
     )
+    used_states = set(used_rows.get("freshness_state", pd.Series(dtype=str)).dropna())
     freshness = (
         "unavailable"
-        if maximum_age is None
-        else "fresh"
-        if maximum_age <= 30
-        else "aging"
-        if maximum_age <= 90
+        if not used_states
         else "stale"
+        if used_states & {"missing_expected_run", "hard_stale"}
+        else "aging"
+        if "awaiting_next_run" in used_states
+        else "fresh"
     )
 
     def latest_timestamp(column: str) -> datetime | None:
@@ -1453,14 +1512,18 @@ def _live_snapshot_provenance(nowcast, airport: dict) -> dict[str, object]:
         model = str(row.model)
         age = getattr(row, "age_minutes", None)
         age_value = float(age) if age is not None and not pd.isna(age) else None
+        freshness_state = str(getattr(row, "freshness_state", "hard_stale"))
         if model in used:
             exclusion_reason = None
             selection_status = "used"
         elif model not in expected:
             exclusion_reason = "extra model outside configured Champion set"
             selection_status = "available-not-expected"
-        elif age_value is not None and age_value > settings.maximum_live_model_age_minutes:
-            exclusion_reason = "stale at this checkpoint"
+        elif freshness_state == "missing_expected_run":
+            exclusion_reason = "newer model run expected but unavailable"
+            selection_status = "excluded"
+        elif freshness_state == "hard_stale":
+            exclusion_reason = "multiple expected model updates missing"
             selection_status = "excluded"
         else:
             exclusion_reason = "not selected by current Champion input filter"
@@ -1473,6 +1536,21 @@ def _live_snapshot_provenance(nowcast, airport: dict) -> dict[str, object]:
                 "available_at": timestamp_text(getattr(row, "available_at", None)),
                 "fetched_at": timestamp_text(getattr(row, "fetched_at", None)),
                 "age_minutes": age_value,
+                "freshness_state": freshness_state,
+                "freshness_reference": getattr(row, "freshness_reference", None),
+                "update_interval_minutes": getattr(
+                    row, "update_interval_minutes", None
+                ),
+                "publication_tolerance_minutes": getattr(
+                    row, "publication_tolerance_minutes", None
+                ),
+                "next_expected_at": timestamp_text(
+                    getattr(row, "next_expected_at", None)
+                ),
+                "expected_updates_missed": getattr(
+                    row, "expected_updates_missed", None
+                ),
+                "usable_at_checkpoint": bool(getattr(row, "is_fresh", False)),
                 "used_by_champion": model in used,
                 "expected": model in expected,
                 "selection_status": selection_status,

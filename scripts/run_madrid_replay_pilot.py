@@ -22,7 +22,7 @@ from weatherman.settings import trading_airports
 
 
 AIRPORT = "LEMD"
-FORMULA_BASELINE = "v10.7.10"
+FORMULA_BASELINE = "v10.7.11"
 
 
 def replay_evidence(metadata: dict[str, object], cutoff: datetime) -> str:

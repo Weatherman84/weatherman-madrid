@@ -240,7 +240,7 @@ def forecast_driver_rows(nowcast: object) -> list[dict[str, str]]:
         {
             "Area": "Models & bias",
             "Current observation": (
-                f"{len(getattr(nowcast, 'current'))} fresh/used models · "
+                f"{len(getattr(nowcast, 'current'))} cadence-valid/used models · "
                 f"weighted spread {getattr(nowcast, 'weighted_raw_spread'):.1f} °C"
             ),
             "Effect": f"Base center {corrected_mean - weighted_mean:+.2f} °C",

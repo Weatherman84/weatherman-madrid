@@ -68,6 +68,9 @@ class Settings:
     regime_memory_minimum_oos_days: int = int(
         os.getenv("REGIME_MEMORY_MINIMUM_OOS_DAYS", "30")
     )
+    regime_memory_oos_start_date: str = os.getenv(
+        "REGIME_MEMORY_OOS_START_DATE", "2026-08-31"
+    )
     replay_database_url: str = os.getenv("REPLAY_DATABASE_URL", "")
 
 

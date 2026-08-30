@@ -41,6 +41,12 @@ def model_maxima_diagnostics(nowcast: object, timezone_name: str) -> pd.DataFram
         "available_at",
         "fetched_at",
         "age_minutes",
+        "freshness_state",
+        "freshness_reference",
+        "update_interval_minutes",
+        "publication_tolerance_minutes",
+        "next_expected_at",
+        "expected_updates_missed",
         "used_in_forecast",
         "provenance_status",
     ]
@@ -83,9 +89,20 @@ def model_maxima_diagnostics(nowcast: object, timezone_name: str) -> pd.DataFram
     table["fetched_at"] = table.fetched_at.map(
         lambda value: _local_timestamp(value, timezone_name)
     )
+    table["next_expected_at"] = table.next_expected_at.map(
+        lambda value: _local_timestamp(value, timezone_name)
+    )
     table["age_minutes"] = table.age_minutes.map(
         lambda value: round(float(value)) if pd.notna(value) else None
     )
+    table["freshness_state"] = table.freshness_state.map(
+        {
+            "current_latest_run": "Current latest run",
+            "awaiting_next_run": "Awaiting next run",
+            "missing_expected_run": "Expected run missing",
+            "hard_stale": "Hard stale",
+        }
+    ).fillna("Unavailable")
     return table.rename(
         columns={
             "model": "Model",
@@ -96,7 +113,13 @@ def model_maxima_diagnostics(nowcast: object, timezone_name: str) -> pd.DataFram
             "model_run_at": "Model run · local",
             "available_at": "Provider available · local",
             "fetched_at": "Fetched · local",
-            "age_minutes": "Fetch age min",
+            "age_minutes": "Availability age min",
+            "freshness_state": "Cadence status",
+            "freshness_reference": "Freshness reference",
+            "update_interval_minutes": "Update cadence min",
+            "publication_tolerance_minutes": "Publication tolerance min",
+            "next_expected_at": "Next run expected · local",
+            "expected_updates_missed": "Expected updates missed",
             "used_in_forecast": "Used",
             "provenance_status": "Run provenance",
         }
@@ -742,7 +765,8 @@ def render_compact_live_forecast(
         st.caption(
             "Model run is the provider reference time; provider availability is when Open-Meteo "
             "or meteoblue exposed that run; fetched is when Weatherman stored the displayed value. "
-            "All three timestamps are shown in airport local time."
+            "A model remains usable through its own update cadence and publication tolerance. "
+            "All timestamps are shown in airport local time."
         )
 
         st.markdown("**Confidence and Heat Spike diagnostics**")

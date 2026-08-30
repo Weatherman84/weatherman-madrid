@@ -372,6 +372,7 @@ def evaluate_promotion_gate(
     minimum_oos_days: int = 30,
     minimum_mae_gain_c: float = 0.12,
     minimum_brier_gain: float = 0.003,
+    oos_start_date: date | str | None = None,
 ) -> PromotionGate:
     """Evaluate sequential challenger forecasts that were made before their outcomes."""
     empty = PromotionGate(
@@ -408,6 +409,10 @@ def evaluate_promotion_gate(
     frame = variants.copy()
     frame["target_date"] = pd.to_datetime(frame.target_date, errors="coerce").dt.date
     frame["captured_at"] = pd.to_datetime(frame.captured_at, utc=True, errors="coerce")
+    if oos_start_date:
+        start = pd.to_datetime(oos_start_date, errors="coerce")
+        if not pd.isna(start):
+            frame = frame[frame.target_date >= start.date()]
     frame = frame[frame.timing.map(_timing_group) == timing_group]
     champion = frame[frame.variant == "Champion"]
     challenger = frame[frame.factor == factor]
@@ -602,6 +607,7 @@ def assess_anchor_transfer(
         minimum_oos_days=int(configured.get("anchor_minimum_oos_days", 30)),
         minimum_mae_gain_c=float(configured.get("anchor_minimum_mae_gain_c", 0.10)),
         minimum_brier_gain=float(configured.get("anchor_minimum_brier_gain", 0.002)),
+        oos_start_date=configured.get("oos_start_date"),
     )
     bucket = _anchor_hours_bucket(current_hours)
     empty_reason = (
@@ -1314,6 +1320,7 @@ def assess_regime_memory(
         minimum_oos_days=int(configured.get("minimum_oos_days", 30)),
         minimum_mae_gain_c=float(configured.get("minimum_mae_gain_c", 0.12)),
         minimum_brier_gain=float(configured.get("minimum_brier_gain", 0.003)),
+        oos_start_date=configured.get("oos_start_date"),
     )
     states = list(
         _known_regime_states(

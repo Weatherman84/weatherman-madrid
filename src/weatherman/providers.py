@@ -66,7 +66,7 @@ def _get(
     with httpx.Client(
         timeout=settings.timeout if timeout is None else timeout,
         follow_redirects=True,
-        headers={"User-Agent": "Weatherman/10.7.10 temperature-market research"},
+        headers={"User-Agent": "Weatherman/10.7.11 temperature-market research"},
     ) as client:
         for attempt in range(attempts):
             try:
@@ -106,7 +106,7 @@ def _post(
     with httpx.Client(
         timeout=settings.timeout if timeout is None else timeout,
         follow_redirects=True,
-        headers={"User-Agent": "Weatherman/10.7.10 temperature-market research"},
+        headers={"User-Agent": "Weatherman/10.7.11 temperature-market research"},
     ) as client:
         for attempt in range(attempts):
             try:

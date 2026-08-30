@@ -159,7 +159,7 @@ def test_collector_failure_metrics_remain_consistent_after_resume(
     assert json.loads(coverage.metrics_json) == {"tasks": 2}
 
 
-def test_checkpoint_freshness_uses_conservative_oldest_model_age() -> None:
+def test_checkpoint_freshness_respects_model_update_window() -> None:
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine)
@@ -180,12 +180,12 @@ def test_checkpoint_freshness_uses_conservative_oldest_model_age() -> None:
                 ),
                 Forecast(
                     airport="EDDM",
-                    model="old-model",
+                    model="meteofrance_arome_france",
                     run_at=cutoff + timedelta(minutes=12),
                     target_date=target,
                     max_temp_c=31,
                     source="open-meteo",
-                    available_at=cutoff - timedelta(minutes=120),
+                    available_at=cutoff - timedelta(minutes=260),
                     fetched_at=cutoff + timedelta(minutes=12),
                 ),
             ]
@@ -198,17 +198,30 @@ def test_checkpoint_freshness_uses_conservative_oldest_model_age() -> None:
             checkpoint_at=cutoff,
             current_time=cutoff + timedelta(hours=2),
             label="D0 @10",
-            expected_models=["fresh-model", "old-model", "missing-model"],
+            expected_models=[
+                "fresh-model",
+                "meteofrance_arome_france",
+                "missing-model",
+            ],
         )
     assert metadata["checkpoint_status"] == "reconstructed-causal"
-    assert metadata["freshness_status"] == "stale"
+    assert metadata["freshness_status"] == "aging"
     assert metadata["evidence_class"] == "partial"
     assert metadata["source_age_min_minutes"] == 15
-    assert metadata["source_age_max_minutes"] == 120
-    assert metadata["source_age_at_checkpoint_minutes"] == 120
+    assert metadata["source_age_max_minutes"] == 260
+    assert metadata["source_age_at_checkpoint_minutes"] == 260
     assert metadata["source_model_count"] == 2
     assert metadata["expected_model_count"] == 3
     assert round(float(metadata["source_coverage_ratio"]), 3) == 0.667
+    assert metadata["fresh_model_count"] == 2
+    provenance = {
+        item["model"]: item
+        for item in json.loads(str(metadata["source_provenance_json"]))
+    }
+    arome = provenance["meteofrance_arome_france"]
+    assert arome["freshness_state"] == "awaiting_next_run"
+    assert arome["usable_at_checkpoint"] is True
+    assert arome["update_interval_minutes"] == 180
 
 
 def test_checkpoint_without_causal_guidance_is_unavailable() -> None:
@@ -404,6 +417,55 @@ def test_provisional_actual_does_not_increment_oos_promotion_days() -> None:
         timing_group="D0 live",
     )
     assert gate.oos_days == 0
+    assert not gate.eligible
+
+
+def test_new_engine_oos_cutoff_does_not_reuse_prior_version_days() -> None:
+    variants = []
+    actuals = []
+    for target in (date(2026, 8, 30), date(2026, 8, 31)):
+        captured = datetime.combine(target, datetime.min.time(), tzinfo=timezone.utc)
+        common = {
+            "airport": "LEMD",
+            "target_date": target,
+            "captured_at": captured,
+            "timing": "D0 live",
+        }
+        variants.extend(
+            [
+                {
+                    **common,
+                    "variant": "Champion",
+                    "factor": None,
+                    "forecast_c": 32.0,
+                    "probabilities_json": '{"32":1.0}',
+                },
+                {
+                    **common,
+                    "variant": "Analog Memory Challenger",
+                    "factor": "regime_memory_analog",
+                    "forecast_c": 33.0,
+                    "probabilities_json": '{"33":1.0}',
+                },
+            ]
+        )
+        actuals.append(
+            {
+                "airport": "LEMD",
+                "target_date": target,
+                "max_temp_c": 33.0,
+                "source": "stored-metar-station",
+            }
+        )
+
+    gate = evaluate_promotion_gate(
+        pd.DataFrame(variants),
+        pd.DataFrame(actuals),
+        timing_group="D0 live",
+        oos_start_date="2026-08-31",
+    )
+
+    assert gate.oos_days == 1
     assert not gate.eligible
 
 

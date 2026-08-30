@@ -257,8 +257,8 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "One-airport production cockpit · Engine formulas frozen at the v10.7.10 baseline · "
-    "Neon/PostgreSQL persistence"
+    "One-airport production cockpit · Engine v10.7.11 with cadence-aware model "
+    "freshness · Neon/PostgreSQL persistence"
 )
 
 target = st.sidebar.date_input("Target date", value=local_today)

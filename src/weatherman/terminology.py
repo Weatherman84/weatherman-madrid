@@ -40,9 +40,9 @@ EVIDENCE_GLOSSARY: Mapping[str, str] = {
 }
 
 FRESHNESS_GLOSSARY: Mapping[str, str] = {
-    "fresh": "All Champion-relevant sources are at most 30 minutes old.",
-    "aging": "The oldest Champion-relevant source is 31–90 minutes old.",
-    "stale": "At least one Champion-relevant source is more than 90 minutes old.",
+    "fresh": "All Champion-relevant models are on their current expected run.",
+    "aging": "At least one model is inside its normal next-run publication window.",
+    "stale": "At least one expected model update is missing beyond its tolerance.",
     "unavailable": "Source age cannot be established or no relevant source is available.",
 }
 
