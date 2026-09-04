@@ -44,7 +44,7 @@ from .service import (
 from .settings import ROOT, trading_airports
 
 
-COLLECTOR_INTERVAL_MINUTES = 15
+COLLECTOR_INTERVAL_MINUTES = 30
 COLLECTOR_SLOT_OFFSET_MINUTES = 7
 ACTIVE_UTC_HOURS = tuple(range(5, 21))
 SAFETY_UTC_HOURS = (0, 1, 2, 3, 4, 21, 22, 23)
@@ -153,6 +153,30 @@ def _scheduler_times(
 def _scheduled_at(started_at: datetime) -> datetime:
     """Backward-compatible helper used by older callers and tests."""
     return _scheduler_times(started_at, trigger="schedule")[0]
+
+
+def _collection_mode(
+    requested_mode: str | None,
+    *,
+    scheduled_at: datetime,
+    trigger: str,
+) -> str:
+    """Choose a lightweight aviation pass or one of the auditable full runs."""
+    configured = (
+        requested_mode
+        or os.getenv("WEATHERMAN_COLLECTION_MODE", "")
+        or "auto"
+    ).strip().casefold()
+    if configured in {"aviation", "fixed", "closeout"}:
+        return configured
+    if configured != "auto":
+        raise ValueError(f"Unknown collection mode: {configured}")
+    if "closeout" in trigger.casefold():
+        return "closeout"
+    madrid_local = _utc(scheduled_at).astimezone(ZoneInfo("Europe/Madrid"))
+    if madrid_local.hour in {9, 12, 16, 20} and 0 <= madrid_local.minute <= 20:
+        return "fixed"
+    return "aviation"
 
 
 def _run_id() -> str:
@@ -401,6 +425,7 @@ def run_collector(
     *,
     now: datetime | None = None,
     trigger: str | None = None,
+    collection_mode: str | None = None,
     force_models: bool = False,
     recover_known_gap: bool = False,
 ) -> dict[str, object]:
@@ -414,6 +439,11 @@ def run_collector(
     )
     scheduled_at, event_created_at, queue_started_at = _scheduler_times(
         started_at,
+        trigger=run_trigger,
+    )
+    mode = _collection_mode(
+        collection_mode,
+        scheduled_at=scheduled_at,
         trigger=run_trigger,
     )
     run_id = _run_id()
@@ -437,6 +467,7 @@ def run_collector(
             "queue_started_at": queue_started_at.isoformat(),
             "started_at": started_at.isoformat(),
             "status": "duplicate-skipped",
+            "collection_mode": mode,
         }
     coverage: list[dict[str, object]] = []
     results: dict[str, object] = {}
@@ -450,22 +481,41 @@ def run_collector(
         )
         if force_models:
             results["forced_models"] = collect(requested, days=3)
-        results["live_decisions"] = collect_live_decision_checkpoints(
-            requested,
-            now=started_at,
-            aviation_already_collected=True,
-        )
-        coverage.extend(results["live_decisions"].get("provider_coverage", []))
-        # Fixed decision snapshots are recorded after provider refresh. Their
-        # provenance still excludes every source that became available after the
-        # checkpoint target time.
-        results["checkpoints"] = collect_research_checkpoints(
-            requested,
-            window_minutes=35,
-            catchup_hours=48,
-            sync_universe=False,
-            now=started_at,
-        )
+        if mode == "fixed":
+            results["live_decisions"] = collect_live_decision_checkpoints(
+                requested,
+                now=started_at,
+                aviation_already_collected=True,
+                force_forecast_refresh=True,
+                record_live_snapshots=False,
+            )
+            coverage.extend(results["live_decisions"].get("provider_coverage", []))
+            # The standardized checkpoint is the only full forecast snapshot for
+            # this scheduled pass. Its cutoff remains the configured local time.
+            results["checkpoints"] = collect_research_checkpoints(
+                requested,
+                window_minutes=35,
+                catchup_hours=48,
+                sync_universe=False,
+                now=started_at,
+            )
+        elif mode == "closeout":
+            results["live_decisions"] = collect_live_decision_checkpoints(
+                requested,
+                now=started_at,
+                aviation_already_collected=True,
+            )
+            coverage.extend(results["live_decisions"].get("provider_coverage", []))
+            results["checkpoints"] = collect_research_checkpoints(
+                requested,
+                window_minutes=35,
+                catchup_hours=48,
+                sync_universe=False,
+                now=started_at,
+            )
+        else:
+            results["live_decisions"] = {"status": "skipped-lightweight-aviation"}
+            results["checkpoints"] = {"status": "not-due"}
         _finish_run(run_id, status="success", results=results, coverage=coverage)
     except Exception as exc:
         reason = f"{type(exc).__name__}: {exc}"
@@ -484,6 +534,7 @@ def run_collector(
         "queue_started_at": queue_started_at.isoformat(),
         "started_at": started_at.isoformat(),
         "status": "success",
+        "collection_mode": mode,
         **results,
     }
 

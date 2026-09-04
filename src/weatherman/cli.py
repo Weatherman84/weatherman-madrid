@@ -31,6 +31,11 @@ def main() -> None:
     collect_cmd.add_argument("--days", type=int, default=3)
     collector_cmd = subs.add_parser("run-collector")
     collector_cmd.add_argument("--airports", nargs="*")
+    collector_cmd.add_argument(
+        "--mode",
+        choices=("auto", "aviation", "fixed", "closeout"),
+        default="auto",
+    )
     collector_cmd.add_argument("--force-models", action="store_true")
     collector_cmd.add_argument("--recover-known-taf-gap", action="store_true")
     backfill_cmd = subs.add_parser("backfill")
@@ -77,6 +82,7 @@ def main() -> None:
     if args.command == "run-collector":
         result = run_collector(
             args.airports,
+            collection_mode=args.mode,
             force_models=args.force_models,
             recover_known_gap=args.recover_known_taf_gap,
         )

@@ -22,6 +22,7 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///data/weatherman.db")
     meteoblue_api_key: str = os.getenv("METEOBLUE_API_KEY", "")
     meteoblue_url_template: str = os.getenv("METEOBLUE_URL_TEMPLATE", DEFAULT_METEOBLUE_URL)
+    aemet_public_base_url: str = os.getenv("AEMET_PUBLIC_BASE_URL", "")
     timeout: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "30"))
     live_open_meteo_refresh_minutes: int = int(
         os.getenv("LIVE_OPEN_METEO_REFRESH_MINUTES", "30")

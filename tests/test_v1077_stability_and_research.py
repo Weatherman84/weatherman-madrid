@@ -38,7 +38,7 @@ def test_scheduler_lineage_separates_expected_event_queue_and_python_start(
         trigger="schedule",
     )
 
-    assert expected == datetime(2026, 8, 15, 10, 22, tzinfo=timezone.utc)
+    assert expected == datetime(2026, 8, 15, 10, 7, tzinfo=timezone.utc)
     assert created == datetime(2026, 8, 15, 10, 24, tzinfo=timezone.utc)
     assert queue_started == datetime(2026, 8, 15, 10, 25, 30, tzinfo=timezone.utc)
 

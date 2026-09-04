@@ -9,9 +9,13 @@ from weatherman.db import (
     Base,
     DailyActual,
     Forecast,
+    ForecastSnapshot,
+    ForecastVariantSnapshot,
     HourlyForecast,
     MarketSnapshot,
     Observation,
+    RegimeMemorySnapshot,
+    SignalSnapshot,
 )
 
 
@@ -27,6 +31,21 @@ def test_streamlit_refresh_uses_bounded_live_trading_path() -> None:
     assert "Refresh forecasts + METAR + TAF" not in app
     assert "repository_dispatch" not in app
     assert "workflow_dispatch" not in app
+    assert "@st.fragment(run_every=timedelta(minutes=5))" in app
+    assert "render_aemet_station_panel" in app
+    assert "collect_live_trading_refresh" not in app.split(
+        "def render_aemet_station_panel", 1
+    )[1].split("if not settings.database_url", 1)[0]
+
+
+def test_storage_keys_reuse_known_model_cycle_for_daily_and_hourly_rows() -> None:
+    fetched = datetime(2026, 8, 31, 10, 17, tzinfo=timezone.utc)
+    cycle = datetime(2026, 8, 31, 6, 0, tzinfo=timezone.utc)
+    daily = [{"model": "gfs_global", "run_at": fetched, "model_run_at": cycle}]
+    hourly = [{"model": "gfs_global", "run_at": fetched, "valid_at": fetched}]
+
+    assert service._forecast_storage_run_at(daily[0]) == cycle
+    assert service._align_hourly_run_keys(hourly, daily)[0]["run_at"] == cycle
 
 
 def test_aviation_journal_repairs_actual_outside_trading_window(monkeypatch) -> None:
@@ -193,6 +212,10 @@ def test_live_trading_refresh_updates_every_decision_source_with_bounded_calls(
     assert result["hourly_forecasts"] == 2
     assert result["observations"] == 1
     assert result["market_prices"] == 1
+    assert result["manual_live_snapshots"] == 1
+    assert result["manual_live_variants"] >= 1
+    assert result["manual_live_regime_snapshots"] == 1
+    assert result["manual_live_signals"] == 1
     assert result["errors"] == {}
     assert result["provider_elapsed_seconds"] >= 0
     assert result["storage_elapsed_seconds"] >= 0
@@ -214,3 +237,11 @@ def test_live_trading_refresh_updates_every_decision_source_with_bounded_calls(
         assert session.scalar(select(func.count()).select_from(HourlyForecast)) == 2
         assert session.scalar(select(func.count()).select_from(Observation)) == 1
         assert session.scalar(select(func.count()).select_from(MarketSnapshot)) == 1
+        snapshot = session.scalar(select(ForecastSnapshot))
+        assert snapshot is not None
+        assert snapshot.checkpoint_label == "Manual Live"
+        assert snapshot.checkpoint_status == "manual-causal-oos"
+        assert snapshot.checkpoint_reconstructed is False
+        assert session.scalar(select(func.count()).select_from(ForecastVariantSnapshot)) >= 1
+        assert session.scalar(select(func.count()).select_from(RegimeMemorySnapshot)) == 1
+        assert session.scalar(select(func.count()).select_from(SignalSnapshot)) == 1

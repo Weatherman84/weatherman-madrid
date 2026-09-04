@@ -98,7 +98,14 @@ def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials
     assert "madrid-collector.yml" in worker
     assert "madrid-closeout.yml" in worker
     assert "Europe/Madrid" in worker
-    assert '"7,22,37,52 5-20 * * *"' in config
+    assert '"7,37 5-20 * * *"' in config
+    assert "collection_mode: collectionMode" in worker
+    assert '"fixed" : "aviation"' in worker
     assert '"15 19,20 * * *"' in config
+    assert '"*/10 * * * *"' in config
+    assert "AEMET_API_KEY" in worker
+    assert "AEMET_HOT" in worker
+    assert "aemet-live.json" in worker
+    assert "AEMET PHYSICAL OBSERVATIONS — NOT MARKET RESOLUTION" in worker
     assert "DATABASE_URL" not in worker
     assert "METEOBLUE_API_KEY" not in worker

@@ -1,175 +1,186 @@
-# Cloudflare Scheduler für Weatherman Madrid v1.0.4
+# Cloudflare Scheduler und AEMET-Livecache – Madrid v1.0.7
 
-## Ziel
+## Zielarchitektur
 
-Cloudflare erzeugt im aktiven Madrid-Fenster alle 15 Minuten einen gezielten
-GitHub-`workflow_dispatch` mit einem expliziten UTC-Soll-Slot. Um 21:15 Europe/Madrid
-wird zusätzlich der Tagesabschluss ausgelöst. GitHub-Cron bleibt als stündliches
-Sicherheitsnetz aktiv.
+Der bestehende Cloudflare Worker erfüllt ab v1.0.7 zwei voneinander unabhängige Aufgaben:
 
-Cloudflare erhält niemals Neon-, Meteoblue- oder Streamlit-Zugangsdaten. Der Worker
-bekommt ausschließlich einen auf ein Repository begrenzten GitHub-Token, der Workflows
-starten darf.
+1. Er dispatcht den leichten Madrid-Collector alle 30 Minuten, die vier vollständigen
+   Fixpunkte und den 21:15-LT-Tagesabschluss nach GitHub Actions.
+2. Er ruft AEMET Station `3129` alle zehn Minuten direkt ab und speichert ausschließlich
+   zwei kleine öffentliche Zustände in Workers KV:
+   - `aemet-live.json`: letzter Status, wird überschrieben;
+   - `aemet-today.json`: heutige deduplizierte Dezimalkurve, wird nur bei einer neuen
+     Messung aktualisiert.
 
-## Teil A – zuerst v1.0.4 in GitHub installieren
+Beim Datumswechsel wird der abgeschlossene Tag unter
+`archive/aemet/YYYY/MM/DD.json.gz` komprimiert archiviert. AEMET schreibt nicht nach
+Neon und startet keine GitHub Action. Ein AEMET-Fehler berührt weder Collector noch
+Champion.
 
-1. Lade das v1.0.4-Paket herunter und entpacke es.
-2. Lade den Inhalt von `UPLOAD_TO_GITHUB` in die Wurzel des vorhandenen Repositorys
-   `weatherman84/weatherman-madrid`.
-3. Kontrolliere besonders den versteckten Ordner `.github/workflows`. Dort müssen
-   anschließend diese Dateien liegen:
+## 1. Zuerst v1.0.7 nach GitHub hochladen
+
+1. Das vollständige v1.0.7-Paket entpacken.
+2. Den Inhalt von `UPLOAD_TO_GITHUB` in die Wurzel von
+   `weatherman84/weatherman-madrid` hochladen und vorhandene Dateien ersetzen.
+3. Weil `.github` beim Browser-Upload häufig ausgelassen wird, danach ausdrücklich
+   `.github/workflows` öffnen und die vier Dateien aus
+   `UPLOAD_WORKFLOWS_SEPARATELY` einzeln hochladen:
    - `madrid-collector.yml`;
+   - `madrid-closeout.yml`;
    - `publish-daily-analysis-export.yml`;
-   - `madrid-closeout.yml`.
-4. Falls der Browser den versteckten Ordner wieder auslässt, lade die drei im Paket
-   zusätzlich bereitgestellten Workflow-Dateien einzeln direkt unter
-   `.github/workflows` hoch.
-5. Commit-Nachricht: `Weatherman Madrid v1.0.4 – cadence freshness`.
-6. Warte auf **0 – Tests**. Alle Tests müssen grün sein.
-7. Öffne **Actions → 6 – Publish Madrid daily-analysis export** und starte den Workflow
-   einmal manuell. Build, Deploy und die Prüfung der veröffentlichten Datei müssen grün
-   sein.
+   - `test.yml`.
+4. Commit-Nachricht: `Weatherman Madrid v1.0.7 AEMET live observations`.
+5. **Actions → 0 - Tests** abwarten. Erwartet werden 225 Python-Tests und drei
+   Cloudflare-Worker-Tests.
 
-Cloudflare erst einrichten, nachdem die neuen Workflows auf dem GitHub-`main`-Branch
-liegen. Andernfalls kann GitHub die von Cloudflare genannten Workflow-Dateien noch
-nicht finden.
+## 2. AEMET-API-Key anfordern
 
-## Teil B – eingeschränkten GitHub-Token erstellen
+1. [AEMET OpenData](https://opendata.aemet.es/centrodedescargas/inicio) öffnen.
+2. Unter **Obtención de API Key** auf **Solicitar** klicken.
+3. E-Mail-Adresse eingeben und die zugesandten Bestätigungsschritte ausführen.
+4. Den endgültigen API-Key kopieren.
 
-1. Öffne GitHub und gehe über dein Profilbild zu
-   **Settings → Developer settings → Personal access tokens → Fine-grained tokens**.
-2. Wähle **Generate new token**.
-3. Empfohlene Angaben:
-   - Token name: `weatherman-cloudflare-dispatch`;
-   - Expiration: möglichst lang, beispielsweise 12 Monate, sofern GitHub dies erlaubt;
-   - Resource owner: `weatherman84`;
-   - Repository access: **Only select repositories**;
-   - ausgewähltes Repository: **weatherman-madrid**.
-4. Unter **Repository permissions** setze ausschließlich:
-   - **Actions: Read and write**.
-5. Alle anderen veränderbaren Berechtigungen bleiben auf **No access**. Die automatisch
-   gesetzte Metadata-Leseberechtigung ist normal.
-6. Erzeuge den Token und kopiere ihn einmalig. Poste ihn niemals in ChatGPT, GitHub-Code,
-   Issues oder Workflow-Logs.
+Der Key wird ausschließlich als Cloudflare-Secret gespeichert. Er kommt nicht in
+GitHub, Streamlit, Repository-Dateien oder ChatGPT.
 
-Der Token kann nur Actions im ausgewählten Repository auslösen. Er erhält keinen
-Schreibzugriff auf Repository-Inhalte und keinen Zugriff auf Neon oder Meteoblue.
+## 3. Workers-KV-Namespace anlegen
 
-## Teil C – kostenlosen Cloudflare Worker anlegen
+1. Cloudflare-Dashboard öffnen.
+2. **Storage & Databases → KV** beziehungsweise **Workers KV** öffnen.
+3. **Create namespace** wählen.
+4. Name: `weatherman-madrid-aemet-hot`.
+5. Namespace erstellen.
 
-1. Öffne <https://dash.cloudflare.com/> und erstelle bei Bedarf ein kostenloses Konto.
-2. Öffne **Workers & Pages**.
-3. Wähle **Create** beziehungsweise **Create application**, danach **Worker**.
-4. Worker-Name: `weatherman-madrid-scheduler`.
-5. Erstelle den Worker und öffne anschließend **Edit code**.
-6. Ersetze den Beispielcode vollständig durch den Inhalt von:
-   `cloudflare-scheduler/src/index.js`.
-7. Wähle **Deploy**.
+Dieser Namespace enthält nur die zwei kleinen Livewerte und komprimierte Tagesarchive.
+Es wird keine Datenbankdatei gespeichert.
 
-Für diese Lösung wird keine Domain, Datenbank, KV-Instanz oder kostenpflichtige
-Cloudflare-Funktion benötigt.
+## 4. KV an den bestehenden Worker binden
 
-## Teil D – Variablen und GitHub-Token hinterlegen
+1. **Workers & Pages → weatherman-madrid-scheduler** öffnen.
+2. **Settings → Bindings** öffnen.
+3. **Add binding → KV namespace** wählen.
+4. Variable name exakt: `AEMET_HOT`.
+5. KV namespace: `weatherman-madrid-aemet-hot`.
+6. Speichern beziehungsweise deployen.
 
-1. Öffne im Worker **Settings → Variables and Secrets**.
-2. Lege diese normalen Textvariablen an:
+Der Variablenname ist technisch verbindlich. Ein anderer Name wird vom Worker nicht
+erkannt.
 
-   | Name | Wert |
-   |---|---|
-   | `GITHUB_OWNER` | `weatherman84` |
-   | `GITHUB_REPO` | `weatherman-madrid` |
-   | `GITHUB_REF` | `main` |
+## 5. AEMET-Key als Worker-Secret speichern
 
-3. Lege zusätzlich eine Variable mit Typ **Secret** an:
+1. Im selben Worker **Settings → Variables and Secrets** öffnen.
+2. **Add** wählen.
+3. Name exakt: `AEMET_API_KEY`.
+4. Typ ausdrücklich **Secret**.
+5. Als Wert den AEMET-OpenData-Key einsetzen.
+6. Speichern und deployen.
 
-   | Name | Wert |
-   |---|---|
-   | `GITHUB_TOKEN` | der eben erzeugte Fine-grained GitHub-Token |
+Die vorhandenen Werte bleiben unverändert:
 
-4. Achte ausdrücklich auf den Typ **Secret**, nicht Plaintext.
-5. Wähle **Deploy**, damit die Variablen in der aktiven Worker-Version verfügbar sind.
+| Name | Typ |
+|---|---|
+| `GITHUB_OWNER=weatherman84` | Text |
+| `GITHUB_REPO=weatherman-madrid` | Text |
+| `GITHUB_REF=main` | Text |
+| `GITHUB_TOKEN` | Secret |
+| `AEMET_API_KEY` | Secret |
 
-## Teil E – Cron Trigger einrichten
+## 6. Worker-Code aktualisieren
 
-1. Öffne den Worker und gehe zu **Settings → Triggers → Cron Triggers**.
-2. Füge diesen Collector-Trigger hinzu:
+1. Im Worker **Edit code** öffnen.
+2. Den bisherigen Code vollständig durch
+   `cloudflare-scheduler/src/index.js` aus dem v1.0.7-Paket ersetzen.
+3. **Deploy** wählen.
 
-   `7,22,37,52 5-20 * * *`
+Der Worker gibt weder AEMET- noch GitHub-Key aus. Öffentlich sind nur die bereinigten
+Stationsbeobachtungen.
 
-3. Füge diesen DST-sicheren Tagesabschluss-Trigger hinzu:
+## 7. Drei Cron Trigger einstellen
 
-   `15 19,20 * * *`
+Unter **Settings → Triggers → Cron Triggers** müssen exakt diese drei Trigger stehen:
 
-4. Speichere beide Trigger.
+| Zweck | Cron (UTC) |
+|---|---|
+| AEMET Station 3129 | `*/10 * * * *` |
+| Madrid Aviation/Fixpunkte | `7,37 5-20 * * *` |
+| DST-sicherer Closeout | `15 19,20 * * *` |
 
-Cloudflare-Cron verwendet UTC. Der erste Trigger erzeugt die vier 15-Minuten-Slots
-zwischen 05:00 und 20:59 UTC. Der zweite wird zweimal täglich aufgerufen. Der Worker
-rechnet beide vorgesehenen UTC-Zeitpunkte nach Europe/Madrid um und dispatcht nur
-denjenigen, der tatsächlich 21:15 Madrid-Zeit entspricht. Damit funktioniert die
-Umstellung zwischen Sommer- und Winterzeit ohne manuelle Änderung.
+Den vorübergehend eingestellten stündlichen Collector-Trigger `7 5-20 * * *` löschen.
+Einen alten 15-Minuten-Trigger `7,22,37,52 5-20 * * *` ebenfalls löschen.
 
-## Teil F – Verbindung prüfen
+Der AEMET-Cron läuft unabhängig von GitHub. Der Closeout-Cron wird zweimal in UTC
+ausgelöst; der Worker verwendet nur den Lauf, der tatsächlich 21:15 Madrid-Zeit ist.
 
-1. Warte auf den nächsten Zeitpunkt mit Minute 07, 22, 37 oder 52 innerhalb von
-   05:00–20:59 UTC.
-2. Öffne in GitHub **Actions → 3 – Madrid collector**.
-3. Ein neuer Lauf muss erscheinen:
-   - Event: `workflow_dispatch`;
-   - Input `source`: `cloudflare`;
-   - Input `scheduled_slot`: exakter UTC-Zeitpunkt des Cron-Slots.
-4. Der Lauf muss grün enden. Im Collector-Ergebnis muss der übergebene
-   `scheduled_at`-Wert stehen.
-5. Öffne in Cloudflare den Worker und prüfe unter **Logs** beziehungsweise
-   **Settings → Trigger Events → View events** den Status `dispatched`.
+## 8. Öffentliche Worker-Adresse prüfen
 
-Cloudflare kann neue Cron-Ereignisse in der Verlaufsansicht zeitverzögert anzeigen.
-Für die Funktionsprüfung ist der tatsächlich erzeugte GitHub-Workflow-Run maßgeblich.
+1. Auf der Worker-Übersicht die `workers.dev`-Adresse öffnen, zum Beispiel:
+   `https://weatherman-madrid-scheduler.DEIN-SUBDOMAIN.workers.dev`
+2. Die Startantwort muss enthalten:
+   - `aemet_station: "3129"`;
+   - `aemet_hot_store_configured: true`;
+   - `aemet_key_configured: true`;
+   - `aemet_cron_utc: "*/10 * * * *"`.
+3. Nach spätestens zehn Minuten öffnen:
+   - `/aemet-live.json`;
+   - `/aemet-today.json`.
+4. Beide Antworten müssen Station `3129` und die Klassifikation
+   `AEMET PHYSICAL OBSERVATIONS — NOT MARKET RESOLUTION` enthalten.
 
-## Teil G – Tagesabschluss prüfen
+Wenn `not found` erscheint, zuerst zehn Minuten warten und dann unter **Logs** nach
+`aemet-stored` beziehungsweise einem klaren `AEMET refresh failed` suchen.
 
-Nach dem ersten 21:15-LT-Lauf:
+## 9. Öffentliche Worker-Origin in Streamlit eintragen
 
-1. Öffne GitHub **Actions → 7 – Madrid day closeout**.
-2. Der Lauf muss zuerst `closeout` und anschließend `publish` erfolgreich abschließen.
-3. Öffne:
-   <https://weatherman84.github.io/weatherman-madrid/daily-analysis-latest.json>
-4. `generated_at` muss zum aktuellen Tagesabschluss gehören.
-5. `window.last_target_date` muss dem aktuellen Madrid-Datum entsprechen.
-6. Falls GitHub Pages noch die alte Datei ausliefert, schlägt die neue
-   Deployment-Prüfung fehl, statt einen falschen grünen Erfolg zu melden.
+1. Streamlit Community Cloud öffnen.
+2. Madrid-App → **Settings → Secrets**.
+3. Diese Zeile ergänzen; nur die Origin einsetzen, keinen Dateipfad:
 
-## Sicherheits- und Wartungshinweise
+```toml
+AEMET_PUBLIC_BASE_URL = "https://weatherman-madrid-scheduler.DEIN-SUBDOMAIN.workers.dev"
+```
 
-- GitHub-Token niemals in `wrangler.jsonc`, JavaScript, GitHub-Secrets oder ChatGPT
-  einfügen. Er gehört ausschließlich als Cloudflare-Secret `GITHUB_TOKEN` hinterlegt.
-- Wenn der Token abläuft oder widerrufen wird, meldet der Worker einen GitHub-Fehler
-  401 beziehungsweise 403 und es entstehen keine Cloudflare-Dispatches mehr.
-- Vor Ablauf einen neuen Fine-grained Token mit denselben Minimalrechten erstellen und
-  nur das Cloudflare-Secret aktualisieren.
-- GitHub-Cron bleibt stündlich aktiv und bietet bei einem Cloudflare-Ausfall weiterhin
-  Grundabdeckung.
-- Gleiche Soll-Slots werden in Neon idempotent behandelt. Ein paralleler Cloudflare-
-  und GitHub-Aufruf erzeugt deshalb keinen doppelten produktiven Collector-Lauf.
+4. Speichern.
 
-## Abnahmekriterien
+Kein AEMET-Key kommt in Streamlit. Die App liest nur die bereinigten öffentlichen
+Dateien. Streamlit übernimmt den neuen GitHub-Commit automatisch; ein Reboot ist im
+Normalfall nicht erforderlich.
 
-Die Pipeline gilt erst nach zwei vollständigen Madrid-Tagen als repariert:
+## 10. Worker-Origin als GitHub-Variable eintragen
 
-- mindestens 90 % der vorgesehenen Slots;
-- alle vier festen Checkpoints vorhanden;
-- kein Checkpoint ausschließlich wegen Scheduler-Drift rekonstruiert;
-- aktueller Tagesabschluss-Export;
-- vollständiger Actual-Pfad;
-- Providerfehler separat gekennzeichnet;
-- keine Änderung an der Forecast-Engine.
+Damit Workflow 6 die physischen AEMET-Tage in den Research-Export einbezieht:
 
-## Optionale CLI-Installation
+1. GitHub-Repository → **Settings → Secrets and variables → Actions**.
+2. Den Reiter **Variables** öffnen.
+3. **New repository variable** wählen.
+4. Name: `AEMET_PUBLIC_BASE_URL`.
+5. Wert: dieselbe `https://...workers.dev`-Origin ohne Dateipfad.
 
-Wer Cloudflare lieber reproduzierbar per Terminal bereitstellt:
+Das ist bewusst eine normale Variable und kein Secret: Die URL ist öffentlich. Der
+AEMET-Key bleibt ausschließlich in Cloudflare.
 
-1. Im Ordner `cloudflare-scheduler` ausführen: `npm install`.
-2. Cloudflare-Anmeldung: `npx wrangler login`.
-3. Secret setzen: `npx wrangler secret put GITHUB_TOKEN`.
-4. Deployment einschließlich Cron Trigger: `npm run deploy`.
+## 11. Funktionsprüfung
 
-Die Dashboard-Anleitung oben ist für die einmalige Einrichtung ausreichend.
+1. Streamlit-App neu öffnen.
+2. Der Bereich **AEMET 3129 · Physical station observations** muss erscheinen.
+3. Prüfen:
+   - aktuelle Dezimaltemperatur;
+   - Physical Tmax und Zeitpunkt;
+   - Messzeit, Datenalter und Status;
+   - rote AEMET-Linie und blaue ganzzahlige METAR-Punkte.
+4. Die Seite fünf Minuten offen lassen. Nur der AEMET-Bereich wird aktualisiert; der
+   Zeitstempel `Calculated` der Current Decision darf sich dadurch nicht verändern.
+5. **Actions → 6 - Publish Madrid daily-analysis export** einmal manuell starten.
+6. Im Export muss `schema_version: "1.3"` und
+   `aemet_physical_observations.configured: true` stehen.
+
+## Verbrauch und Sicherheit
+
+- Erfolgreicher Zehn-Minuten-Betrieb verursacht höchstens ungefähr 288 KV-Writes pro
+  Tag: ein kleiner Livewert je Abruf und die Tageskurve nur bei neuer Messung.
+- Das liegt unter dem Cloudflare-Free-Limit von 1.000 KV-Writes pro Tag.
+- AEMET-Archive benötigen voraussichtlich nur wenige Megabyte pro Jahr.
+- Workers KV berechnet im Free-Tier keinen Datentransfer für diese Werte.
+- AEMET erzeugt keine Neon-Abfragen, keine Modellabrufe und keine zusätzlichen
+  GitHub-Workflow-Runs.
+- AEMET Physical Tmax, LEMD METAR und ein später bestätigter Polymarket-Resolution-Wert
+  bleiben drei klar getrennte Rollen.

@@ -8,7 +8,11 @@ from pathlib import Path
 import pandas as pd
 
 from weatherman.analytics import fixed_checkpoint_reliability
-from weatherman.collector import _declared_slots_for_day, _expected_slot_at
+from weatherman.collector import (
+    _collection_mode,
+    _declared_slots_for_day,
+    _expected_slot_at,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,8 +116,26 @@ def test_replay_evidence_distinguishes_stored_from_reconstructed_inputs() -> Non
 
 def test_adaptive_collector_cadence_counts_only_declared_slots() -> None:
     slots = _declared_slots_for_day(date(2026, 8, 20))
-    assert len(slots) == 72
+    assert len(slots) == 40
     delayed = datetime(2026, 8, 20, 22, 57, tzinfo=timezone.utc)
     assert _expected_slot_at(delayed) == datetime(
         2026, 8, 20, 22, 7, tzinfo=timezone.utc
     )
+
+
+def test_hybrid_collector_marks_only_local_fixed_slots_as_full() -> None:
+    assert _collection_mode(
+        "auto",
+        scheduled_at=datetime(2026, 8, 20, 7, 7, tzinfo=timezone.utc),
+        trigger="cloudflare",
+    ) == "fixed"
+    assert _collection_mode(
+        "auto",
+        scheduled_at=datetime(2026, 8, 20, 7, 37, tzinfo=timezone.utc),
+        trigger="cloudflare",
+    ) == "aviation"
+    assert _collection_mode(
+        "closeout",
+        scheduled_at=datetime(2026, 8, 20, 19, 15, tzinfo=timezone.utc),
+        trigger="cloudflare",
+    ) == "closeout"

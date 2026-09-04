@@ -1,11 +1,65 @@
-# Project Handoff – Weatherman Madrid v1.0.4
+# Project Handoff – Weatherman Madrid v1.0.7
 
 ## Basis
 
 - Ausgangscode: öffentliches Weatherman v10.7.10, geprüfter Quell-HEAD `8b194c2`.
 - Produktiver Engine-Stand: v10.7.11; nur die Modell-Freshness-Auswahl wurde geändert.
 - Neuer Produktscope: ausschließlich LEMD / Madrid-Barajas.
-- Neue App-Version: v1.0.4.
+- Neue App-Version: v1.0.7.
+
+## AEMET Physical Observations und Ground Truth v1.0.7
+
+- Cloudflare ruft ausschließlich AEMET Madrid Aeropuerto `3129` alle zehn Minuten ab.
+- Zwei kleine KV-Werte halten Live-Status und heutige Kurve; abgeschlossene Tage werden
+  als `archive/aemet/YYYY/MM/DD.json.gz` komprimiert archiviert.
+- Das Streamlit-Cockpit prüft den Status alle fünf Minuten in einem isolierten Fragment.
+  Champion, Modelle, TAF und Neon werden dadurch nicht neu geladen.
+- AEMET-Dezimaltemperatur, Physical Tmax und LEMD-METAR-Punkte werden getrennt gezeigt.
+- Export-Schema 1.3 führt AEMET Physical Observations getrennt. Ein
+  `market_resolution_actual` bleibt leer, bis Polymarket-Quelle und Rundungsregel
+  bestätigt sind.
+- `stored_metar_max`, `aemet_physical_tmax` und `market_resolution_actual` sind drei
+  getrennte Evaluation Targets und dürfen nicht in einer Scorecard vermischt werden.
+- `daily_max_series_gap_c` ist eine Differenz zwischen Datenreihen und kein erlernter
+  Sensor-Bias; sie kann Standort-, Sensor-, Zeit- und Verarbeitungsunterschiede bündeln.
+- Zeitnahe AEMET-/METAR-Paare werden mit ihrem Zeitabstand exportiert, bleiben aber
+  ebenfalls reine Reihenvergleiche.
+
+## Stall- und METAR-Persistence-Shadow
+
+- `physical_stall_shadow` beschreibt ausschließlich, ob die physische AEMET-Reihe
+  steigt, flach ist oder bereits zurückgeht.
+- `metar_bucket_persistence_shadow` trennt davon die Frage, ob der bisher höchste
+  ganzzahlige METAR-Wert bestehen bleiben könnte.
+- Beide Signale sind unkalibriert, liefern bis zu ausreichender sequenzieller
+  OOS-Evidenz keine Prozentwahrscheinlichkeit und greifen nicht in Champion, Buckets,
+  Peak-Lock, Regime oder Marktentscheidung ein.
+- AEMET-Ausfälle sind isoliert und können Collector oder Champion nicht stoppen.
+- Keine Forecast-, Bias-, Weight-, Regime-, Lock- oder Promotion-Änderung.
+
+## Transferarme Hybrid-Kadenz v1.0.5
+
+- Cloudflare dispatcht im aktiven Fenster alle 30 Minuten einen leichten
+  Aviation-Lauf für METAR, TAF und Actual-Reparatur.
+- Nur D−1 @20:00, D0 @09:00, First Live @12:00 und Late Live @16:00 führen
+  automatisch einen vollständigen Modell-, Champion- und Regimelauf aus.
+- Der 21:15-LT-Tagesabschluss bleibt ein eigener vollständiger Post-Peak-/Actual-Lauf
+  und veröffentlicht anschließend den Analyseexport.
+- Pipeline-Health ordnet verspätete geplante Läufe innerhalb von 20 Minuten
+  triggerbasiert dem kanonischen Sollslot zu. Damit erfüllt der GitHub-Fallback um
+  21:22 LT den 21:15-LT-Closeout, ohne manuelle Runs als Coverage zu zählen.
+- Der Export nennt cadence-gültige Modelle `usable` und trennt
+  `current_latest_run`, `awaiting_next_run`, `missing_expected_run` und `hard_stale`.
+  Die interne Bestands-Spalte `fresh_model_count` bleibt nur aus Datenbankkompatibilität
+  bestehen und wird nicht mehr mit dieser missverständlichen Bezeichnung exportiert.
+- Jeder manuelle Streamlit-Refresh speichert Forecast Ladder, Buckets, Modellprovenienz,
+  Forecast Drivers, Regimes, Champion/Challenger und Polymarket als `Manual Live`.
+- `Manual Live` ist kausal OOS, bleibt aber eine eigene nicht standardisierte Kohorte;
+  mehrere Klicks können den sequenziellen 30-Tage-Zähler nicht aufblasen.
+- Bekannte Open-Meteo-Modellzyklen dienen als persistenter Speicherschlüssel. Ein
+  identischer Lauf wird nicht pro Fetch-Zeitpunkt vollständig dupliziert.
+- Cockpit-Lesehistorie ist auf 120 Tage begrenzt; Replay und Export bleiben getrennt.
+- Engine v10.7.11, Formeln, Gewichte, Biases, Regimes und Locks sind unverändert.
 
 ## Modellabhängige Freshness v1.0.4
 
@@ -23,7 +77,7 @@
 
 ## Scheduler- und Export-P0-Fix v1.0.3
 
-- Cloudflare Cron Triggers erzeugen die primären 15-Minuten-Dispatches.
+- Cloudflare Cron Triggers erzeugten bis v1.0.4 die primären 15-Minuten-Dispatches.
 - Jeder externe Aufruf übergibt seinen unveränderlichen UTC-`scheduled_slot`.
 - PostgreSQL Advisory Locks und vorhandene CollectionRun-Daten verhindern eine
   Doppelverarbeitung desselben Airport-/Slot-Paars.

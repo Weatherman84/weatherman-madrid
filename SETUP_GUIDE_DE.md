@@ -1,4 +1,4 @@
-# Weatherman Madrid v1.0.4 – genaue Einrichtung
+# Weatherman Madrid v1.0.7 – genaue Einrichtung
 
 Diese Anleitung setzt keine Erfahrung mit Neon voraus. Arbeite die Schritte genau in
 der Reihenfolge ab. Die alte App und das alte Repository werden dabei **nicht** verändert.
@@ -8,7 +8,7 @@ der Reihenfolge ab. Die alte App und das alte Repository werden dabei **nicht** 
 - dein GitHub-Konto;
 - dein bestehender Meteoblue-API-Key;
 - Zugang zu [Streamlit Community Cloud](https://share.streamlit.io/);
-- das gelieferte ZIP `weatherman-madrid-v1.0.4.zip`.
+- das gelieferte ZIP `weatherman-madrid-v1.0.7.zip`.
 
 Wichtig: Eine Neon-Verbindungszeichenfolge enthält ein Passwort. Poste sie nicht in
 Chats, Issues oder Screenshots. Sie wird ausschließlich in GitHub Secrets und in den
@@ -16,7 +16,7 @@ Streamlit Secrets eingefügt.
 
 ## 1. ZIP entpacken
 
-1. Lade `weatherman-madrid-v1.0.4.zip` herunter.
+1. Lade `weatherman-madrid-v1.0.7.zip` herunter.
 2. Rechtsklick auf die Datei und **Alle extrahieren** wählen.
 3. Öffne anschließend den Ordner `UPLOAD_TO_GITHUB`.
 4. Darin müssen unter anderem `app.py`, `README.md`, `src`, `config`, `.github` und
@@ -39,7 +39,7 @@ keine historischen Einzeldateien, keinen Cache und keine Zugangsdaten.
    alles in das GitHub-Uploadfeld. Ziehe den **Inhalt**, nicht den übergeordneten Ordner.
 8. Kontrolliere vor dem Commit, dass `app.py` direkt auf Repository-Ebene liegt und nicht
    in einem zusätzlichen Unterordner.
-9. Bei Commit message trägst du `Weatherman Madrid v1.0.4` ein.
+9. Bei Commit message trägst du `Weatherman Madrid v1.0.7` ein.
 10. Klicke **Commit changes**.
 
 Wenn `.github` oder `.streamlit` fehlen, den Upload noch nicht abschließen. Beide Ordner
@@ -173,11 +173,12 @@ auswerten.
 8. Optionaler App-Name: zum Beispiel `weatherman-madrid`.
 9. Öffne **Advanced settings**.
 10. Python version: `3.12`.
-11. Füge im Feld **Secrets** exakt dieses TOML ein und ersetze nur die zwei Platzhalter:
+11. Füge im Feld **Secrets** exakt dieses TOML ein und ersetze die drei Platzhalter:
 
 ```toml
 DATABASE_URL = "DEINE_POOLED_PROD_DATABASE_URL"
 METEOBLUE_API_KEY = "DEIN_BESTEHENDER_METEOBLUE_KEY"
+AEMET_PUBLIC_BASE_URL = "https://weatherman-madrid-scheduler.DEIN-SUBDOMAIN.workers.dev"
 METEOBLUE_DAILY_CALL_LIMIT = "4"
 EDGE_RECOMMENDATIONS_ENABLED = "false"
 REGIME_MEMORY_ALLOW_PROMOTED = "false"
@@ -204,6 +205,8 @@ Nach dem Start prüfst du in dieser Reihenfolge:
 6. Unter **Fixed decision checkpoints** siehst du vier feste Zeilen.
 7. Unter **Model, TAF and Meteoblue diagnostics** werden Quellenalter und – nach einem
    Checkpoint-Fenster – die Meteoblue-Versuche angezeigt.
+8. Für die AEMET-Einrichtung einschließlich KV-Binding, Worker-Secret und Cron die
+   separate Anleitung `CLOUDFLARE_SETUP_DE.md` vollständig abarbeiten.
 
 Wenn zunächst `fewer than two fresh model sources` erscheint, den manuellen Collector in
 GitHub prüfen und danach einmal refreshen. Ein altes Modell wird nicht mehr stillschweigend
@@ -245,7 +248,9 @@ Nach drei und nach sieben Tagen:
 1. Neon öffnen → Projekt `weatherman-madrid-prod` → **Usage**.
 2. Compute und Storage kontrollieren.
 3. Das Produktionsprojekt enthält nur Madrid und sollte weit unter 0,5 GB bleiben.
-4. Der aktive Collector läuft alle 15 Minuten, außerhalb stündlich. Neon soll zwischen
+4. Der leichte Aviation-Collector läuft alle 30 Minuten, GitHub bleibt stündliches
+   Sicherheitsnetz. Vollständige Forecastläufe erfolgen nur an Fixpunkten, beim
+   Tagesabschluss und durch manuellen Refresh. Neon soll zwischen
    kurzen Zugriffen auf null skalieren.
 5. Falls der hochgerechnete Compute-Verbrauch ungewöhnlich hoch ist, die App nicht
    kostenpflichtig upgraden. Zuerst gemeinsam den aktiven Cron auf 20 oder 30 Minuten

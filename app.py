@@ -12,11 +12,18 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.0")
+discard_stale_weatherman_modules("1.0.7")
 
 import pandas as pd
 import streamlit as st
 
+from weatherman.aemet_live import (
+    archive_path as aemet_archive_path,
+    curve_rows as aemet_curve_rows,
+    fetch_public_aemet_json,
+    normalized_public_base_url,
+)
+from weatherman.aemet_metar_shadow import build_shadow_diagnostics
 from weatherman.analytics import (
     detect_market_model_conflict,
     fixed_checkpoint_reliability,
@@ -130,7 +137,7 @@ def load_madrid_data(target, airport: str, zone: str) -> dict[str, pd.DataFrame]
                 ForecastSnapshot,
                 bind,
                 filters={"airport": airport},
-                minimums={"target_date": target - timedelta(days=400)},
+                minimums={"target_date": target - timedelta(days=120)},
             ),
             "variants": read_archive_live(
                 ForecastVariantSnapshot,
@@ -228,6 +235,249 @@ def checkpoint_rows(
     return pd.DataFrame(rows)
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def load_aemet_live(base_url: str) -> dict:
+    return fetch_public_aemet_json(base_url, "aemet-live.json")
+
+
+@st.cache_data(max_entries=24, show_spinner=False)
+def load_aemet_curve(base_url: str, path: str, version: str) -> dict:
+    del version  # The observation timestamp is deliberately part of the cache key.
+    return fetch_public_aemet_json(base_url, path)
+
+
+@st.fragment(run_every=timedelta(minutes=5))
+def render_aemet_station_panel(
+    target_date,
+    metar_records: list[dict],
+    timezone_name: str,
+) -> None:
+    st.subheader("AEMET 3129 · Physical station observations")
+    base_url = normalized_public_base_url(settings.aemet_public_base_url)
+    if base_url is None:
+        st.info(
+            "AEMET live data is not configured yet. Add the credential-free Worker "
+            "origin as AEMET_PUBLIC_BASE_URL in Streamlit Secrets."
+        )
+        return
+
+    today_local = datetime.now(ZoneInfo(timezone_name)).date()
+    live: dict = {}
+    try:
+        if target_date == today_local:
+            live = load_aemet_live(base_url)
+            version = str(
+                (live.get("latest_observation") or {}).get("observed_at")
+                or live.get("last_successful_fetch_at")
+                or "initial"
+            )
+            day = load_aemet_curve(base_url, "aemet-today.json", version)
+        else:
+            path = aemet_archive_path(target_date)
+            day = load_aemet_curve(base_url, path, target_date.isoformat())
+    except Exception as exc:
+        st.warning(f"AEMET data unavailable: {type(exc).__name__}: {exc}")
+        return
+
+    latest = live.get("latest_observation") or day.get("latest_observation") or {}
+    physical_max = day.get("physical_tmax") or live.get("physical_tmax") or {}
+    diagnostics = build_shadow_diagnostics(day, metar_records)
+    ground_truth = diagnostics["ground_truth"]
+    provider_status = str(live.get("provider_status") or "archived")
+    freshness = str(live.get("freshness_status") or "archived")
+    age = pd.to_numeric(live.get("data_age_minutes"), errors="coerce")
+    age_label = f"{float(age):.0f} min" if pd.notna(age) else "—"
+
+    a1, a2, a3, a4, a5, a6 = st.columns(6)
+    a1.metric("AEMET now", temperature(latest.get("temperature_c")))
+    a2.metric("Physical Tmax", temperature(physical_max.get("value_c")))
+    a3.metric(
+        "Tmax time",
+        local_time(physical_max.get("observed_at"), timezone_name),
+    )
+    a4.metric("Latest observation", local_time(latest.get("observed_at"), timezone_name))
+    a5.metric("Data age", age_label)
+    a6.metric("AEMET status", f"{freshness} · {provider_status}")
+
+    metar_max = (ground_truth.get("stored_metar_max") or {}).get("value_c")
+    daily_gap = ground_truth.get("daily_max_series_gap_c")
+    g1, g2, g3 = st.columns(3)
+    g1.metric("Stored METAR max", temperature(metar_max, digits=0))
+    g2.metric("AEMET physical Tmax", temperature(physical_max.get("value_c")))
+    g3.metric("Daily max series gap", temperature(daily_gap))
+    st.caption(
+        "The daily max series gap is AEMET physical Tmax minus the highest stored "
+        "LEMD METAR value. It can combine station, sensor, timing and reporting "
+        "differences and is not a calibrated sensor bias."
+    )
+
+    physical_shadow = diagnostics["physical_stall"]
+    persistence_shadow = diagnostics["metar_bucket_persistence"]
+    s1, s2 = st.columns(2)
+    s1.metric(
+        "Physical stall · SHADOW",
+        str(physical_shadow.get("stall_level") or "insufficient_data"),
+    )
+    s1.caption(str(physical_shadow.get("interpretation") or "—"))
+    s2.metric(
+        "METAR bucket persistence · SHADOW",
+        str(persistence_shadow.get("persistence_state") or "insufficient_data"),
+    )
+    s2.caption(str(persistence_shadow.get("interpretation") or "—"))
+    next_metar_at = persistence_shadow.get("next_nominal_metar_at")
+    if next_metar_at:
+        s2.caption(f"Next nominal routine METAR: {local_time(next_metar_at, timezone_name)}")
+    st.caption(
+        "Both diagnostics are uncalibrated RESEARCH ONLY signals. Probability is "
+        "intentionally unavailable until sufficient sequential OOS evidence exists; "
+        "Champion impact is always 0.0 °C."
+    )
+    comparisons = ground_truth.get("time_aligned_series_comparisons") or []
+    if comparisons:
+        with st.expander("Time-aligned AEMET/METAR series comparisons"):
+            comparison_rows = []
+            for item in comparisons:
+                comparison_rows.append(
+                    {
+                        "METAR time": local_time(
+                            item.get("metar_observed_at"), timezone_name
+                        ),
+                        "METAR °C": item.get("metar_temperature_c"),
+                        "AEMET time": local_time(
+                            item.get("aemet_observed_at"), timezone_name
+                        ),
+                        "AEMET °C": item.get("aemet_temperature_c"),
+                        "Time gap min": item.get("timestamp_gap_minutes"),
+                        "AEMET − METAR K": item.get("aemet_minus_metar_c"),
+                    }
+                )
+            st.dataframe(pd.DataFrame(comparison_rows), hide_index=True, width="stretch")
+            st.caption(
+                "These are nearby readings from distinct data series, not sensor "
+                "calibration pairs."
+            )
+    st.info(
+        "Market bucket boundary unavailable: the Polymarket resolution source and "
+        "rounding rule have not been confirmed."
+    )
+
+    if provider_status == "failed":
+        st.warning(
+            "The latest AEMET fetch failed; the last successful physical observation "
+            "remains visible. Other providers and the Champion are unaffected."
+        )
+    st.caption(
+        "Last successful AEMET fetch: "
+        f"{local_time(live.get('last_successful_fetch_at'), timezone_name)} · "
+        "last attempt: "
+        f"{local_time(live.get('last_attempt_at'), timezone_name)}."
+    )
+
+    chart_rows = aemet_curve_rows(
+        day,
+        metar_records,
+        timezone_name=timezone_name,
+    )
+    if chart_rows:
+        chart_spec = {
+            "data": {"values": chart_rows},
+            "height": 320,
+            "layer": [
+                {
+                    "transform": [
+                        {"filter": "datum.series === 'AEMET 3129 (physical)'"}
+                    ],
+                    "mark": {"type": "line", "point": True, "color": "#e45756"},
+                    "encoding": {
+                        "x": {
+                            "field": "timestamp",
+                            "type": "temporal",
+                            "title": "Madrid local time",
+                            "axis": {"format": "%H:%M"},
+                        },
+                        "y": {
+                            "field": "temperature_c",
+                            "type": "quantitative",
+                            "title": "Temperature (°C)",
+                            "scale": {"zero": False},
+                        },
+                        "tooltip": [
+                            {"field": "timestamp", "type": "temporal", "title": "Time"},
+                            {
+                                "field": "temperature_c",
+                                "type": "quantitative",
+                                "title": "AEMET °C",
+                                "format": ".1f",
+                            },
+                        ],
+                    },
+                },
+                {
+                    "transform": [
+                        {"filter": "datum.series === 'LEMD METAR (integer)'"}
+                    ],
+                    "mark": {
+                        "type": "point",
+                        "filled": True,
+                        "shape": "diamond",
+                        "size": 65,
+                        "color": "#4c78a8",
+                    },
+                    "encoding": {
+                        "x": {"field": "timestamp", "type": "temporal"},
+                        "y": {"field": "temperature_c", "type": "quantitative"},
+                        "tooltip": [
+                            {"field": "timestamp", "type": "temporal", "title": "Time"},
+                            {
+                                "field": "temperature_c",
+                                "type": "quantitative",
+                                "title": "METAR °C",
+                                "format": ".0f",
+                            },
+                        ],
+                    },
+                },
+                {
+                    "transform": [
+                        {"filter": "datum.series === 'AEMET physical Tmax'"}
+                    ],
+                    "mark": {
+                        "type": "point",
+                        "filled": True,
+                        "shape": "triangle-up",
+                        "size": 180,
+                        "color": "#f2cf5b",
+                        "stroke": "#7a5b00",
+                    },
+                    "encoding": {
+                        "x": {"field": "timestamp", "type": "temporal"},
+                        "y": {"field": "temperature_c", "type": "quantitative"},
+                        "tooltip": [
+                            {"field": "timestamp", "type": "temporal", "title": "Tmax time"},
+                            {
+                                "field": "temperature_c",
+                                "type": "quantitative",
+                                "title": "Physical Tmax °C",
+                                "format": ".1f",
+                            },
+                        ],
+                    },
+                },
+            ],
+        }
+        st.vega_lite_chart(chart_spec, width="stretch")
+    else:
+        st.info("No AEMET curve observations are available for this date.")
+
+    st.caption(
+        "AEMET 3129 is an independent physical station series with decimal values. "
+        "It may differ from the LEMD METAR sensor, site, timing or processing. It does "
+        "not replace LEMD METAR and is not used as the Polymarket resolution Actual "
+        "until the market source and rounding rule are confirmed. This panel "
+        "updates every five minutes without recalculating the Champion."
+    )
+
+
 if not settings.database_url.startswith(("postgres://", "postgresql://")):
     st.error(
         "Safety stop: this Madrid deployment requires the pooled Neon PostgreSQL "
@@ -287,6 +537,8 @@ if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=T
             f"Neon {float(refresh_result.get('storage_elapsed_seconds', 0)):.1f}s · "
             f"checkpoint {checkpoint_elapsed_seconds:.1f}s · "
             f"models refreshed {int(refresh_result.get('models_refreshed', 0))} · "
+            f"manual-live saved "
+            f"{int(refresh_result.get('manual_live_snapshots', 0))} · "
             f"Meteoblue {refresh_result.get('meteoblue_status', 'not configured')}"
         )
         if errors:
@@ -295,6 +547,12 @@ if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=T
             st.sidebar.success(message)
 
 data = load_madrid_data(target, airport_code, timezone_name)
+metar_curve_records = (
+    data["observations"][["observed_at", "temp_c"]].to_dict("records")
+    if not data["observations"].empty
+    else []
+)
+render_aemet_station_panel(target, metar_curve_records, timezone_name)
 markets = latest_market_frame(data["markets"])
 now = datetime.now(timezone.utc)
 nowcast = build_current_live_nowcast(

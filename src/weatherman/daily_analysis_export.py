@@ -15,6 +15,14 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import select, text
 
 from . import __version__
+from .aemet_live import (
+    AEMET_CLASSIFICATION,
+    AEMET_STATION_ID,
+    archive_path as aemet_archive_path,
+    fetch_public_aemet_json,
+    normalized_public_base_url,
+)
+from .aemet_metar_shadow import build_shadow_diagnostics
 from .db import (
     CollectionCoverage,
     CollectionRun,
@@ -28,12 +36,21 @@ from .db import (
     RegimeMemorySnapshot,
     TafReport,
 )
+from .settings import settings
 
 
 AIRPORT = "LEMD"
 AIRPORT_TIMEZONE = "Europe/Madrid"
 ENGINE_BASELINE = "v10.7.11"
-EXPORT_SCHEMA_VERSION = "1.0"
+EXPORT_SCHEMA_VERSION = "1.3"
+FIXED_CHECKPOINT_LABELS = (
+    "D-1 Evening @20:00",
+    "D0 Morning @09:00",
+    "First Live @12:00",
+    "Late Live @16:00",
+)
+MANUAL_LIVE_LABEL = "Manual Live"
+SLOT_MATCH_TOLERANCE_MINUTES = 20
 
 _CREDENTIAL_FIELD_NAMES = frozenset(
     {
@@ -134,12 +151,82 @@ def assert_export_safe(payload: dict[str, Any]) -> None:
 
 
 def _actual_payload(row: DailyActual) -> dict[str, Any]:
+    is_stored_metar = row.source == "stored-metar-station"
     return {
         "target_date": row.target_date.isoformat(),
         "max_temp_c": row.max_temp_c,
+        "stored_metar_max_c": row.max_temp_c if is_stored_metar else None,
+        "market_resolution_actual": None,
         "source": row.source,
-        "is_final_station_actual": row.source == "stored-metar-station",
+        "is_final_station_actual": is_stored_metar,
+        "ground_truth_role": (
+            "stored_metar_max_not_confirmed_market_resolution"
+            if is_stored_metar
+            else "nonfinal_or_fallback_station_actual"
+        ),
+        "legacy_max_temp_c_notice": (
+            "max_temp_c is retained for compatibility and must not be interpreted "
+            "as market resolution unless the market source is confirmed."
+        ),
     }
+
+
+def _aemet_physical_payload(
+    first_target: date,
+    local_today: date,
+    metars_by_local_date: dict[date, list[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    base_url = normalized_public_base_url(settings.aemet_public_base_url)
+    result: dict[str, Any] = {
+        "configured": base_url is not None,
+        "station_id": AEMET_STATION_ID,
+        "classification": AEMET_CLASSIFICATION,
+        "source_role": "physical-station-observation-only",
+        "market_resolution_actual": None,
+        "market_resolution_status": "unverified-source-and-rounding-rule",
+        "metar_replacement": False,
+        "days": [],
+    }
+    if base_url is None:
+        result["status"] = "unconfigured"
+        return result
+
+    result.update(
+        {
+            "status": "available-with-provider-isolation",
+            "live_url": f"{base_url}/aemet-live.json",
+            "today_url": f"{base_url}/aemet-today.json",
+            "archive_url_template": f"{base_url}/archive/aemet/YYYY/MM/DD.json.gz",
+        }
+    )
+    current = first_target
+    while current <= local_today:
+        path = "aemet-today.json" if current == local_today else aemet_archive_path(current)
+        try:
+            payload = fetch_public_aemet_json(base_url, path)
+        except Exception as exc:
+            result["days"].append(
+                {
+                    "local_date": current.isoformat(),
+                    "status": "unavailable",
+                    "reason": _safe_error_text(f"{type(exc).__name__}: {exc}"),
+                }
+            )
+        else:
+            public_data = dict(payload)
+            public_data["research_diagnostics"] = build_shadow_diagnostics(
+                payload,
+                (metars_by_local_date or {}).get(current, []),
+            )
+            result["days"].append(
+                {
+                    "local_date": current.isoformat(),
+                    "status": "available",
+                    "data": public_data,
+                }
+            )
+        current += timedelta(days=1)
+    return result
 
 
 def _observation_payload(row: Observation) -> dict[str, Any]:
@@ -191,6 +278,40 @@ def _utc_datetime(value: datetime) -> datetime:
     )
 
 
+def _normalized_expected_slot(
+    row: CollectionRun,
+    *,
+    primary_slots: list[datetime],
+    closeout_slot: datetime,
+) -> tuple[datetime, float] | None:
+    """Map a scheduled collector run to its intended slot within a small grace.
+
+    GitHub's closeout fallback is intentionally scheduled seven minutes after the
+    canonical 21:15-LT slot. Older collectors can therefore persist the preceding
+    regular slot even though the run itself is the closeout. Trigger-aware matching
+    keeps that successful fallback visible without treating arbitrary manual runs as
+    scheduled coverage.
+    """
+    trigger = str(row.trigger or "").strip().casefold()
+    scheduled_triggers = {"cloudflare", "schedule", "closeout-fallback"}
+    if trigger not in scheduled_triggers and "closeout" not in trigger:
+        return None
+    reported = _utc_datetime(row.scheduled_at)
+    candidates = (
+        [closeout_slot]
+        if "closeout" in trigger
+        else [*primary_slots, closeout_slot]
+    )
+    nearest = min(
+        candidates,
+        key=lambda slot: abs((reported - slot).total_seconds()),
+    )
+    offset_minutes = (reported - nearest).total_seconds() / 60
+    if abs(offset_minutes) > SLOT_MATCH_TOLERANCE_MINUTES:
+        return None
+    return nearest, offset_minutes
+
+
 def _pipeline_health_payload(
     generated: datetime,
     local_today: date,
@@ -206,7 +327,7 @@ def _pipeline_health_payload(
             tzinfo=timezone.utc,
         )
         for hour in range(5, 21)
-        for minute in (7, 22, 37, 52)
+        for minute in (7, 37)
     ]
     closeout_slot = datetime.combine(
         local_today,
@@ -215,11 +336,37 @@ def _pipeline_health_payload(
     ).astimezone(timezone.utc)
     expected_slots = sorted([*primary_slots, closeout_slot])
     due_slots = [slot for slot in expected_slots if slot <= generated.astimezone(timezone.utc)]
-    observed = {
-        _utc_datetime(row.scheduled_at): row
+    runs_for_day = [
+        row
         for row in collection_runs
         if _utc_datetime(row.scheduled_at).date() == local_today
-    }
+    ]
+    observed: dict[datetime, CollectionRun] = {}
+    match_offsets: dict[datetime, float] = {}
+    unmatched_scheduled_runs = 0
+    for row in runs_for_day:
+        match = _normalized_expected_slot(
+            row,
+            primary_slots=primary_slots,
+            closeout_slot=closeout_slot,
+        )
+        if match is None:
+            unmatched_scheduled_runs += 1
+            continue
+        slot, offset_minutes = match
+        existing = observed.get(slot)
+        if existing is not None:
+            existing_offset = abs(match_offsets[slot])
+            existing_success = existing.overall_status == "success"
+            candidate_success = row.overall_status == "success"
+            if existing_success and not candidate_success:
+                continue
+            if existing_success == candidate_success and existing_offset <= abs(
+                offset_minutes
+            ):
+                continue
+        observed[slot] = row
+        match_offsets[slot] = offset_minutes
     successful = {
         slot
         for slot, row in observed.items()
@@ -232,9 +379,8 @@ def _pipeline_health_payload(
         if slot in observed and observed[slot].overall_status != "success"
     ]
     trigger_counts: dict[str, int] = defaultdict(int)
-    for row in collection_runs:
-        if _utc_datetime(row.scheduled_at).date() == local_today:
-            trigger_counts[str(row.trigger or "unknown")] += 1
+    for row in runs_for_day:
+        trigger_counts[str(row.trigger or "unknown")] += 1
     last_success = max(
         (
             _utc_datetime(row.ended_at or row.started_at)
@@ -256,6 +402,18 @@ def _pipeline_health_payload(
         ),
         "missing_slots": [_iso(slot) for slot in missing],
         "failed_slots": [_iso(slot) for slot in failed],
+        "slot_match_tolerance_minutes": SLOT_MATCH_TOLERANCE_MINUTES,
+        "normalized_slot_matches": [
+            {
+                "expected_slot": _iso(slot),
+                "reported_scheduled_at": _iso(observed[slot].scheduled_at),
+                "offset_minutes": round(match_offsets[slot], 3),
+                "trigger": str(observed[slot].trigger or "unknown"),
+                "status": observed[slot].overall_status,
+            }
+            for slot in sorted(observed)
+        ],
+        "unmatched_runs": unmatched_scheduled_runs,
         "trigger_counts": dict(sorted(trigger_counts.items())),
         "last_successful_collector_at": _iso(last_success),
         "closeout_slot": _iso(closeout_slot),
@@ -325,6 +483,16 @@ def _checkpoint_payload(
     variants: list[dict[str, Any]],
     regime_memory: dict[str, Any] | None,
 ) -> dict[str, Any]:
+    source_provenance = _json_value(row.source_provenance_json, [])
+    freshness_state_counts: dict[str, int] = defaultdict(int)
+    for item in source_provenance:
+        if not isinstance(item, dict):
+            continue
+        relevant = item.get("relevant_to_checkpoint", item.get("expected", True))
+        if not relevant:
+            continue
+        state = str(item.get("freshness_state") or "unclassified")
+        freshness_state_counts[state] += 1
     adjustments = {
         "temperature_anchor_c": row.temp_anchor_adjustment_c,
         "dryness_c": row.dryness_adjustment_c,
@@ -368,6 +536,19 @@ def _checkpoint_payload(
         "checkpoint_gap_minutes": row.checkpoint_gap_minutes,
         "checkpoint_reconstructed": row.checkpoint_reconstructed,
         "checkpoint_status": row.checkpoint_status,
+        "oos": {
+            "causal": bool(
+                not row.checkpoint_reconstructed
+                and str(row.checkpoint_status or "")
+                in {"scheduled-causal", "manual-causal-oos"}
+            ),
+            "standardized": row.checkpoint_label in FIXED_CHECKPOINT_LABELS,
+            "cohort": (
+                "manual-live"
+                if row.checkpoint_label == MANUAL_LIVE_LABEL
+                else "fixed-checkpoint"
+            ),
+        },
         "evidence_class": row.evidence_class,
         "freshness_status": row.freshness_status,
         "source_age_minutes": {
@@ -378,15 +559,26 @@ def _checkpoint_payload(
         "model_counts": {
             "expected": row.expected_model_count,
             "available": row.available_model_count,
-            "fresh": row.fresh_model_count,
+            "usable": row.fresh_model_count,
             "used": row.used_model_count,
+            "current_latest_run": freshness_state_counts.get(
+                "current_latest_run", 0
+            ),
+            "awaiting_next_run": freshness_state_counts.get(
+                "awaiting_next_run", 0
+            ),
+            "missing_expected_run": freshness_state_counts.get(
+                "missing_expected_run", 0
+            ),
+            "hard_stale": freshness_state_counts.get("hard_stale", 0),
+            "unclassified": freshness_state_counts.get("unclassified", 0),
         },
         "source_coverage_ratio": row.source_coverage_ratio,
         "expected_models": _json_value(row.expected_models_json, []),
         "available_models": _json_value(row.available_models_json, []),
         "used_models": _json_value(row.used_models_json, []),
         "extra_models": _json_value(row.extra_models_json, []),
-        "source_provenance": _json_value(row.source_provenance_json, []),
+        "source_provenance": source_provenance,
         "forecast_chain_c": {
             "raw_ensemble": row.raw_model_mean_c,
             "weighted_raw": row.weighted_raw_c,
@@ -460,9 +652,21 @@ def build_daily_analysis_export(
                 ForecastSnapshot.airport == AIRPORT,
                 ForecastSnapshot.target_date >= first_target,
                 ForecastSnapshot.target_date <= last_target,
-                ForecastSnapshot.checkpoint_label.is_not(None),
+                ForecastSnapshot.checkpoint_label.in_(FIXED_CHECKPOINT_LABELS),
             )
             .order_by(ForecastSnapshot.checkpoint_at, ForecastSnapshot.captured_at)
+        )
+    )
+    manual_live_rows = list(
+        session.scalars(
+            select(ForecastSnapshot)
+            .where(
+                ForecastSnapshot.airport == AIRPORT,
+                ForecastSnapshot.target_date >= first_target,
+                ForecastSnapshot.target_date <= last_target,
+                ForecastSnapshot.checkpoint_label == MANUAL_LIVE_LABEL,
+            )
+            .order_by(ForecastSnapshot.captured_at)
         )
     )
     variants_by_capture: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -510,6 +714,16 @@ def build_daily_analysis_export(
             .order_by(Observation.observed_at)
         )
     )
+    metars_by_local_date: dict[date, list[dict[str, Any]]] = defaultdict(list)
+    madrid_zone = ZoneInfo(AIRPORT_TIMEZONE)
+    for row in observations:
+        local_date = _utc_datetime(row.observed_at).astimezone(madrid_zone).date()
+        metars_by_local_date[local_date].append(
+            {
+                "observed_at": _iso(row.observed_at),
+                "temp_c": row.temp_c,
+            }
+        )
     forecasts = list(
         session.scalars(
             select(Forecast)
@@ -606,6 +820,21 @@ def build_daily_analysis_export(
             )
         )
 
+    manual_live_checkpoints = []
+    for row in manual_live_rows:
+        key = _captured_key(row.captured_at)
+        variants = sorted(
+            variants_by_capture.get(key or "", []),
+            key=lambda item: str(item["variant"]),
+        )
+        manual_live_checkpoints.append(
+            _checkpoint_payload(
+                row,
+                variants=variants,
+                regime_memory=regimes_by_capture.get(key or ""),
+            )
+        )
+
     payload = {
         "schema_version": EXPORT_SCHEMA_VERSION,
         "generated_at": _iso(generated),
@@ -617,12 +846,41 @@ def build_daily_analysis_export(
         "research_only": True,
         "contains_credentials": False,
         "writes_production_database": False,
+        "ground_truth_policy": {
+            "market_resolution_actual": (
+                "Unset until Polymarket's explicit resolution source and rounding "
+                "rule are confirmed."
+            ),
+            "stored_metar_max": (
+                "Highest integer airport METAR value in the local archive; retained "
+                "separately and not assumed to be market resolution."
+            ),
+            "aemet_physical_tmax": (
+                "Official AEMET station 3129 physical maximum with decimals; research "
+                "only and never substituted for market resolution."
+            ),
+            "daily_max_series_gap_c": (
+                "AEMET physical Tmax minus stored METAR max. This is a series gap, "
+                "not a calibrated sensor bias."
+            ),
+        },
+        "evaluation_targets": {
+            "meteorological_physical_target": "aemet_physical_tmax",
+            "reported_metar_target": "stored_metar_max",
+            "market_target": "market_resolution_actual",
+            "mixing_targets_permitted": False,
+        },
         "window": {
             "first_target_date": first_target.isoformat(),
             "last_target_date": last_target.isoformat(),
             "days_requested": safe_days,
         },
         "actuals": [_actual_payload(row) for row in actuals],
+        "aemet_physical_observations": _aemet_physical_payload(
+            first_target,
+            local_today,
+            metars_by_local_date,
+        ),
         "observations": [_observation_payload(row) for row in observations],
         "model_forecasts": [_forecast_payload(row) for row in forecasts],
         "latest_hourly_model_forecasts": [
@@ -634,6 +892,7 @@ def build_daily_analysis_export(
         ],
         "taf_revision_journal": [_taf_payload(row) for row in tafs],
         "checkpoints": checkpoints,
+        "manual_live_checkpoints": manual_live_checkpoints,
         "provider_calls": [
             {
                 "local_date": row.local_date.isoformat(),

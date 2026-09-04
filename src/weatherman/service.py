@@ -133,6 +133,31 @@ def _upsert_batch(
     return len(items)
 
 
+def _forecast_storage_run_at(item: dict) -> datetime:
+    """Use the provider model cycle as the durable row key when it is known."""
+    model_run = item.get("model_run_at")
+    return model_run if isinstance(model_run, datetime) else item["run_at"]
+
+
+def _align_hourly_run_keys(
+    hourly_rows: Iterable[dict],
+    forecast_rows: Iterable[dict],
+) -> list[dict]:
+    """Prevent identical hourly payloads from being stored once per fetch time."""
+    cycles = {
+        str(item["model"]): item.get("model_run_at")
+        for item in forecast_rows
+        if isinstance(item.get("model_run_at"), datetime)
+    }
+    return [
+        {
+            **item,
+            "run_at": cycles.get(str(item.get("model")), item["run_at"]),
+        }
+        for item in hourly_rows
+    ]
+
+
 def _actual_source_quality(source: object) -> int:
     """Rank Actual provenance so a later low-quality write cannot win."""
     normalized = str(source or "").strip().casefold()
@@ -574,6 +599,7 @@ def _store_current_provider_forecasts(
     airport: dict,
     as_of: datetime,
     days: int = 3,
+    force_refresh: bool = False,
 ) -> dict[str, object]:
     """Fetch due providers concurrently and persist their rows serially.
 
@@ -594,7 +620,7 @@ def _store_current_provider_forecasts(
     forecast_rows: list[dict] = []
     hourly_rows: list[dict] = []
     tasks: dict[str, tuple[Callable, tuple, dict]] = {}
-    open_meteo_due = _source_refresh_due(
+    open_meteo_due = force_refresh or _source_refresh_due(
         session,
         airport_code=airport_code,
         source="open-meteo",
@@ -702,6 +728,8 @@ def _store_current_provider_forecasts(
         else:
             forecast_rows.extend(rows)
 
+    hourly_rows = _align_hourly_run_keys(hourly_rows, forecast_rows)
+
     counts["hourly_forecasts"] = _upsert_batch(
         session,
         HourlyForecast,
@@ -731,7 +759,7 @@ def _store_current_provider_forecasts(
         lambda item: {
             "airport": airport_code,
             "model": item["model"],
-            "run_at": item["run_at"],
+            "run_at": _forecast_storage_run_at(item),
             "target_date": item["target_date"],
         },
         lambda item: {
@@ -1842,11 +1870,15 @@ def _record_forecast_variants(
     target: date,
     captured_at: datetime,
     nowcast,
+    *,
+    timing_override: str | None = None,
 ) -> int:
     """Persist the champion and every active one-factor-disabled challenger."""
-    if nowcast is None or not nowcast.challenger_variants:
+    if nowcast is None:
         return 0
-    timing = _signal_timing(captured_at, target, airport["timezone"])
+    timing = timing_override or _signal_timing(
+        captured_at, target, airport["timezone"]
+    )
     rows = [
         {
             "airport": code,
@@ -1910,6 +1942,8 @@ def _record_regime_memory_snapshot(
     target: date,
     captured_at: datetime,
     nowcast,
+    *,
+    timing_override: str | None = None,
 ) -> int:
     """Persist the explainable early-warning state and its leakage-free analogs."""
     if nowcast is None or nowcast.regime_memory is None:
@@ -1919,7 +1953,8 @@ def _record_regime_memory_snapshot(
         "airport": code,
         "target_date": target,
         "captured_at": captured_at,
-        "timing": _signal_timing(captured_at, target, airport["timezone"]),
+        "timing": timing_override
+        or _signal_timing(captured_at, target, airport["timezone"]),
         "status": memory.status,
         "label": memory.label,
         "confidence": memory.confidence,
@@ -2932,6 +2967,7 @@ def collect_live_trading_refresh(
         if label.startswith("hourly/")
         for row in rows
     ]
+    hourly_rows = _align_hourly_run_keys(hourly_rows, forecast_rows)
     metar_rows = results.get("metar", [])
     taf_rows = results.get("taf", [])
     market_rows = results.get("polymarket", [])
@@ -2948,6 +2984,11 @@ def collect_live_trading_refresh(
         + int(bool(settings.meteoblue_api_key) and not meteoblue_due),
         "models_refreshed": 0,
         "meteoblue_status": meteoblue_policy,
+        "manual_live_snapshots": 0,
+        "manual_live_variants": 0,
+        "manual_live_regime_snapshots": 0,
+        "manual_live_signals": 0,
+        "manual_live_strategy_snapshots": 0,
         "errors": errors,
     }
     storage_started = time.perf_counter()
@@ -2959,7 +3000,7 @@ def collect_live_trading_refresh(
             lambda item: {
                 "airport": airport_code,
                 "model": item["model"],
-                "run_at": item["run_at"],
+                "run_at": _forecast_storage_run_at(item),
                 "target_date": item["target_date"],
             },
             lambda item: {
@@ -3060,6 +3101,108 @@ def collect_live_trading_refresh(
                     reason=meteoblue_error,
                 )
             )
+        # A dashboard refresh is a real causal OOS observation. Persist the exact
+        # Current Decision that the user sees, but keep it in its own timing cohort
+        # so repeated discretionary refreshes cannot inflate the four fixed
+        # checkpoint promotion sample.
+        session.flush()
+        decision_market_rows = list(market_rows)
+        if not decision_market_rows:
+            stored_markets = read_archive_live(
+                MarketSnapshot,
+                session.connection(),
+                filters={"airport": airport_code, "target_date": target},
+            )
+            if not stored_markets.empty:
+                stored_markets["captured_at"] = pd.to_datetime(
+                    stored_markets.captured_at, utc=True, errors="coerce"
+                )
+                decision_market_rows = (
+                    stored_markets.sort_values("captured_at")
+                    .drop_duplicates("market_id", keep="last")
+                    .where(stored_markets.notna(), None)
+                    .to_dict(orient="records")
+                )
+        manual_snapshot_at = datetime.now(timezone.utc)
+        market_snapshot_at = (
+            max(_as_utc(row["captured_at"]) for row in decision_market_rows)
+            if decision_market_rows
+            else None
+        )
+        try:
+            manual_nowcast = _build_nowcast_from_session(
+                session,
+                airport_code,
+                airport,
+                target,
+                manual_snapshot_at,
+                decision_market_rows,
+            )
+            manual_metadata = {
+                "checkpoint_label": "Manual Live",
+                "checkpoint_at": manual_snapshot_at,
+                "checkpoint_recorded_at": manual_snapshot_at,
+                "checkpoint_gap_minutes": 0.0,
+                "checkpoint_reconstructed": False,
+                "checkpoint_status": "manual-causal-oos",
+                "market_snapshot_status": (
+                    "stored-manual-live"
+                    if market_rows
+                    else "reused-latest-manual-live"
+                    if decision_market_rows
+                    else "missing-manual-live"
+                ),
+                "market_snapshot_at": market_snapshot_at,
+                "market_bucket_count": len(decision_market_rows),
+            }
+            counts["manual_live_snapshots"] = _record_forecast_snapshot(
+                session,
+                airport_code,
+                airport,
+                target,
+                manual_snapshot_at,
+                manual_nowcast,
+                checkpoint_metadata=manual_metadata,
+            )
+            counts["manual_live_variants"] = _record_forecast_variants(
+                session,
+                airport_code,
+                airport,
+                target,
+                manual_snapshot_at,
+                manual_nowcast,
+                timing_override="manual-live",
+            )
+            counts["manual_live_regime_snapshots"] = (
+                _record_regime_memory_snapshot(
+                    session,
+                    airport_code,
+                    airport,
+                    target,
+                    manual_snapshot_at,
+                    manual_nowcast,
+                    timing_override="manual-live",
+                )
+            )
+            if decision_market_rows:
+                counts["manual_live_signals"] = _record_signal_snapshots(
+                    session,
+                    airport_code,
+                    airport,
+                    decision_market_rows,
+                    nowcast=manual_nowcast,
+                )
+                counts["manual_live_strategy_snapshots"] = (
+                    _record_strategy_snapshots(
+                        session,
+                        airport_code,
+                        airport,
+                        decision_market_rows,
+                        manual_nowcast,
+                    )
+                )
+        except Exception as exc:
+            errors["manual-live"] = f"{type(exc).__name__}: {exc}"
         session.commit()
     storage_elapsed_seconds = time.perf_counter() - storage_started
     target_models = {
@@ -3122,15 +3265,30 @@ def _current_nowcast_from_session(
         target.year, target.month, target.day, tzinfo=target_zone
     ).astimezone(timezone.utc)
     target_end_utc = target_start_utc + timedelta(days=1)
+    history_start = target - timedelta(days=100)
+    captured_utc = _as_utc(captured_at)
     connection = session.connection()
     forecasts = read_archive_live(
         Forecast,
         connection,
         filters={"airport": code},
-        minimums={"target_date": target - timedelta(days=90)},
+        minimums={"target_date": history_start},
+        maximums={"target_date": target},
     )
-    actuals = read_archive_live(DailyActual, connection, filters={"airport": code})
-    observations = read_archive_live(Observation, connection, filters={"airport": code})
+    actuals = read_archive_live(
+        DailyActual,
+        connection,
+        filters={"airport": code},
+        minimums={"target_date": target - timedelta(days=120)},
+        maximums={"target_date": target - timedelta(days=1)},
+    )
+    observations = read_archive_live(
+        Observation,
+        connection,
+        filters={"airport": code},
+        minimums={"observed_at": target_start_utc - timedelta(days=7)},
+        maximums={"observed_at": captured_utc},
+    )
     hourly = read_archive_live(
         HourlyForecast,
         connection,
@@ -3138,12 +3296,26 @@ def _current_nowcast_from_session(
         minimums={"valid_at": target_start_utc},
         maximums={"valid_at": target_end_utc},
     )
-    tafs = read_archive_live(TafReport, connection, filters={"airport": code})
+    tafs = read_archive_live(
+        TafReport,
+        connection,
+        filters={"airport": code},
+        minimums={"issue_time": target_start_utc - timedelta(days=2)},
+        maximums={"issue_time": captured_utc},
+    )
     snapshots = read_archive_live(
-        ForecastSnapshot, connection, filters={"airport": code}
+        ForecastSnapshot,
+        connection,
+        filters={"airport": code},
+        minimums={"target_date": history_start},
+        maximums={"target_date": target},
     )
     variants = read_archive_live(
-        ForecastVariantSnapshot, connection, filters={"airport": code}
+        ForecastVariantSnapshot,
+        connection,
+        filters={"airport": code},
+        minimums={"target_date": history_start},
+        maximums={"target_date": target - timedelta(days=1)},
     )
     return build_current_live_nowcast(
         airport=airport,
@@ -3556,6 +3728,8 @@ def collect_live_decision_checkpoints(
     *,
     now: datetime | None = None,
     aviation_already_collected: bool = False,
+    force_forecast_refresh: bool = False,
+    record_live_snapshots: bool = True,
 ) -> dict[str, object]:
     """Persist live decisions and keep journaling every later METAR through evening."""
     init_db()
@@ -3577,7 +3751,11 @@ def collect_live_decision_checkpoints(
     forecast_due_codes = [
         code
         for code in requested
-        if code in catalog and in_forecast_refresh_window(catalog[code], captured_at)
+        if code in catalog
+        and (
+            force_forecast_refresh
+            or in_forecast_refresh_window(catalog[code], captured_at)
+        )
     ]
     counts = {
         "airports_due": len(due_codes),
@@ -3621,6 +3799,7 @@ def collect_live_decision_checkpoints(
                 airport_code=code,
                 airport=catalog[code],
                 as_of=captured_at,
+                force_refresh=force_forecast_refresh,
             )
             for key in (
                 "forecasts",
@@ -3729,7 +3908,7 @@ def collect_live_decision_checkpoints(
                     session.commit()
                     continue
             market_rows: list[dict] = []
-            if code in due_codes:
+            if code in due_codes and record_live_snapshots:
                 airport_tafs = [row for row in fetched_tafs if row["airport"] == code]
                 counts["taf_reports"] += _store_taf_rows(
                     session,
@@ -3795,6 +3974,9 @@ def collect_live_decision_checkpoints(
                         "reason": market_error,
                     }
                 )
+            if not record_live_snapshots:
+                session.commit()
+                continue
             token_ids = [
                 str(row["token_id"])
                 for row in market_rows
