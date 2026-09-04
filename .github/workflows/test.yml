@@ -23,3 +23,5 @@ jobs:
         run: ruff check app.py src tests scripts
       - name: Pytest
         run: pytest -q
+      - name: Cloudflare Worker tests
+        run: node --test cloudflare-scheduler/test/aemet.test.mjs

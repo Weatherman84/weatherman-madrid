@@ -44,7 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Collect final METAR, Actual and post-peak snapshot
-        run: python -m weatherman.cli run-collector --airports LEMD
+        run: python -m weatherman.cli run-collector --airports LEMD --mode closeout
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           METEOBLUE_API_KEY: ${{ secrets.METEOBLUE_API_KEY }}

@@ -33,6 +33,7 @@ jobs:
           --output _site/daily-analysis-latest.json
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AEMET_PUBLIC_BASE_URL: ${{ vars.AEMET_PUBLIC_BASE_URL }}
       - name: Fail closed if the export is unsafe or stale
         run: >-
           python scripts/validate_madrid_daily_analysis_export.py

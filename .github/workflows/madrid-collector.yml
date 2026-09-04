@@ -11,8 +11,18 @@ on:
         description: Dispatch source, for example cloudflare
         required: false
         type: string
+      collection_mode:
+        description: auto, aviation or fixed
+        required: false
+        default: auto
+        type: choice
+        options:
+          - auto
+          - aviation
+          - fixed
   schedule:
-    # GitHub is only the hourly safety net. Cloudflare supplies the 15-minute slots.
+    # GitHub is only the hourly safety net. Cloudflare supplies 30-minute aviation
+    # slots plus explicitly labelled fixed-checkpoint runs.
     - cron: "7 * * * *"
 
 permissions:
@@ -41,7 +51,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Collect and persist Madrid directly in Neon
-        run: python -m weatherman.cli run-collector --airports LEMD
+        run: python -m weatherman.cli run-collector --airports LEMD --mode "$WEATHERMAN_COLLECTION_MODE"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           METEOBLUE_API_KEY: ${{ secrets.METEOBLUE_API_KEY }}
@@ -49,3 +59,4 @@ jobs:
           LIVE_OPEN_METEO_REFRESH_MINUTES: "60"
           WEATHERMAN_EXPECTED_SLOT_AT: ${{ inputs.scheduled_slot }}
           WEATHERMAN_TRIGGER_SOURCE: ${{ inputs.source }}
+          WEATHERMAN_COLLECTION_MODE: ${{ inputs.collection_mode || 'auto' }}
