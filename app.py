@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.7")
+discard_stale_weatherman_modules("1.0.8")
 
 import pandas as pd
 import streamlit as st
@@ -20,34 +20,25 @@ import streamlit as st
 from weatherman.aemet_live import (
     archive_path as aemet_archive_path,
     curve_rows as aemet_curve_rows,
+    filter_metar_day,
+    observation_freshness,
     fetch_public_aemet_json,
     normalized_public_base_url,
 )
 from weatherman.aemet_metar_shadow import build_shadow_diagnostics
 from weatherman.analytics import (
     detect_market_model_conflict,
-    fixed_checkpoint_reliability,
 )
 from weatherman.catalog import trading_airports
-from weatherman.db import (
-    DailyActual,
-    Forecast,
-    ForecastSnapshot,
-    ForecastVariantSnapshot,
-    HourlyForecast,
-    MarketSnapshot,
-    Observation,
-    ProviderCall,
-    Session,
-    SignalSnapshot,
-    TafReport,
-    init_db,
+from weatherman.cockpit_data import (
+    checkpoint_reliability, combine_cockpit_data, invalidate_cockpit_cache,
+    load_cockpit_details, load_madrid_data, load_madrid_history, transfer_diagnostics,
 )
+from weatherman.db import init_db
 from weatherman.decision import (
     build_trade_decision,
     latest_prior_probabilities,
 )
-from weatherman.history import read_archive_live
 from weatherman.service import (
     build_current_live_nowcast,
     collect_live_trading_refresh,
@@ -62,6 +53,11 @@ st.set_page_config(
     page_icon="🌡️",
     layout="wide",
 )
+st.markdown("""<style>
+[data-testid="stMetricValue"] {white-space: normal; overflow-wrap: anywhere;}
+[data-testid="stMetricValue"] > div {white-space: normal; overflow: visible;
+text-overflow: clip; font-size: clamp(1.1rem, 2.1vw, 2rem);}
+</style>""", unsafe_allow_html=True)
 
 
 def local_time(value: object, zone: str, *, seconds: bool = False) -> str:
@@ -88,76 +84,6 @@ def latest_market_frame(markets: pd.DataFrame) -> pd.DataFrame:
     result = markets.copy()
     result["captured_at"] = pd.to_datetime(result.captured_at, utc=True, errors="coerce")
     return result.sort_values("captured_at").drop_duplicates("market_id", keep="last")
-
-
-def load_madrid_data(target, airport: str, zone: str) -> dict[str, pd.DataFrame]:
-    target_start = datetime(target.year, target.month, target.day, tzinfo=ZoneInfo(zone))
-    target_start_utc = target_start.astimezone(timezone.utc)
-    target_end_utc = target_start_utc + timedelta(days=1)
-    with Session() as session:
-        bind = session.connection()
-        return {
-            "forecasts": read_archive_live(
-                Forecast,
-                bind,
-                filters={"airport": airport},
-                minimums={"target_date": target - timedelta(days=90)},
-            ),
-            "actuals": read_archive_live(
-                DailyActual,
-                bind,
-                filters={"airport": airport},
-                minimums={"target_date": target - timedelta(days=400)},
-            ),
-            "observations": read_archive_live(
-                Observation,
-                bind,
-                filters={"airport": airport},
-                minimums={"observed_at": target_start_utc - timedelta(days=2)},
-                maximums={"observed_at": target_end_utc},
-            ),
-            "hourly": read_archive_live(
-                HourlyForecast,
-                bind,
-                filters={"airport": airport},
-                minimums={"valid_at": target_start_utc},
-                maximums={"valid_at": target_end_utc},
-            ),
-            "markets": read_archive_live(
-                MarketSnapshot,
-                bind,
-                filters={"airport": airport, "target_date": target},
-            ),
-            "signals": read_archive_live(
-                SignalSnapshot,
-                bind,
-                filters={"airport": airport, "target_date": target},
-            ),
-            "snapshots": read_archive_live(
-                ForecastSnapshot,
-                bind,
-                filters={"airport": airport},
-                minimums={"target_date": target - timedelta(days=120)},
-            ),
-            "variants": read_archive_live(
-                ForecastVariantSnapshot,
-                bind,
-                filters={"airport": airport},
-                minimums={"target_date": target - timedelta(days=90)},
-            ),
-            "tafs": read_archive_live(
-                TafReport,
-                bind,
-                filters={"airport": airport},
-                minimums={"issue_time": target_start_utc - timedelta(days=2)},
-            ),
-            "provider_calls": read_archive_live(
-                ProviderCall,
-                bind,
-                filters={"airport": airport},
-                minimums={"attempted_at": target_start_utc - timedelta(days=1)},
-            ),
-        }
 
 
 def checkpoint_rows(
@@ -240,7 +166,7 @@ def load_aemet_live(base_url: str) -> dict:
     return fetch_public_aemet_json(base_url, "aemet-live.json")
 
 
-@st.cache_data(max_entries=24, show_spinner=False)
+@st.cache_data(ttl=300, max_entries=24, show_spinner=False)
 def load_aemet_curve(base_url: str, path: str, version: str) -> dict:
     del version  # The observation timestamp is deliberately part of the cache key.
     return fetch_public_aemet_json(base_url, path)
@@ -252,6 +178,7 @@ def render_aemet_station_panel(
     metar_records: list[dict],
     timezone_name: str,
 ) -> None:
+    metar_records = filter_metar_day(metar_records, target_date, timezone_name)
     st.subheader("AEMET 3129 · Physical station observations")
     base_url = normalized_public_base_url(settings.aemet_public_base_url)
     if base_url is None:
@@ -267,8 +194,8 @@ def render_aemet_station_panel(
         if target_date == today_local:
             live = load_aemet_live(base_url)
             version = str(
-                (live.get("latest_observation") or {}).get("observed_at")
-                or live.get("last_successful_fetch_at")
+                live.get("last_successful_fetch_at")
+                or (live.get("latest_observation") or {}).get("observed_at")
                 or "initial"
             )
             day = load_aemet_curve(base_url, "aemet-today.json", version)
@@ -279,25 +206,49 @@ def render_aemet_station_panel(
         st.warning(f"AEMET data unavailable: {type(exc).__name__}: {exc}")
         return
 
-    latest = live.get("latest_observation") or day.get("latest_observation") or {}
-    physical_max = day.get("physical_tmax") or live.get("physical_tmax") or {}
+    if day.get("local_date") != target_date.isoformat():
+        st.warning("AEMET has no matching daily series yet. Waiting for this Madrid date.")
+        return
+    latest = day.get("latest_observation") or {}
+    physical_max = day.get("physical_tmax") or {}
     diagnostics = build_shadow_diagnostics(day, metar_records)
     ground_truth = diagnostics["ground_truth"]
     provider_status = str(live.get("provider_status") or "archived")
-    freshness = str(live.get("freshness_status") or "archived")
-    age = pd.to_numeric(live.get("data_age_minutes"), errors="coerce")
-    age_label = f"{float(age):.0f} min" if pd.notna(age) else "—"
+    freshness, age = observation_freshness(latest.get("observed_at"))
+    if target_date != today_local:
+        freshness, age = "archived", None
+    age_label = f"{age:.0f} min · {freshness}" if age is not None else "archived"
 
-    a1, a2, a3, a4, a5, a6 = st.columns(6)
-    a1.metric("AEMET now", temperature(latest.get("temperature_c")))
-    a2.metric("Physical Tmax", temperature(physical_max.get("value_c")))
-    a3.metric(
-        "Tmax time",
-        local_time(physical_max.get("observed_at"), timezone_name),
+    def compact_time(value):
+        parsed = pd.to_datetime(value, utc=True, errors="coerce")
+        return (pd.Timestamp(parsed).tz_convert(timezone_name).strftime("%d.%m. · %H:%M LT")
+                if pd.notna(parsed) else "—")
+
+    # fint is a report timestamp; its use as an exact maximum time is unverified.
+    peak_at = physical_max.get("peak_at") if physical_max.get("peak_time_verified") else None
+    max_time = peak_at or physical_max.get("report_at") or physical_max.get("observed_at")
+    max_time_label = "Tmax time" if peak_at else "Tmax report time"
+    a1, a2, a3 = st.columns(3)
+    a1.metric("AEMET now", temperature(latest.get("temperature_c")),
+              help="Decimal physical station observation; hourly public series.")
+    a2.metric("Physical Tmax", temperature(physical_max.get("value_c")),
+              help="Highest available tamax, falling back to ta; not a Market Actual.")
+    a3.metric(max_time_label, compact_time(max_time),
+              help="Full timestamp: " + local_time(max_time, timezone_name)
+              + ". A report time does not establish an exact physical peak time.")
+    a4, a5, a6 = st.columns(3)
+    a4.metric("Latest observation", compact_time(latest.get("observed_at")),
+              help=local_time(latest.get("observed_at"), timezone_name))
+    a5.metric("Observation age", age_label,
+              help="Current ≤75 min; delayed >75–120 min; stale >120 min. Independent of fetch status.")
+    a6.metric("Feed status", provider_status,
+              help="Result of the last Worker fetch, independent of observation age.")
+    st.caption(
+        f"{max_time_label}: {local_time(max_time, timezone_name)} · "
+        f"Latest observation: {local_time(latest.get('observed_at'), timezone_name)}. "
+        "Hourly public series. The exact tamax measurement interval and peak time "
+        "are not yet verified for this endpoint."
     )
-    a4.metric("Latest observation", local_time(latest.get("observed_at"), timezone_name))
-    a5.metric("Data age", age_label)
-    a6.metric("AEMET status", f"{freshness} · {provider_status}")
 
     metar_max = (ground_truth.get("stored_metar_max") or {}).get("value_c")
     daily_gap = ground_truth.get("daily_max_series_gap_c")
@@ -347,14 +298,25 @@ def render_aemet_station_panel(
                             item.get("aemet_observed_at"), timezone_name
                         ),
                         "AEMET °C": item.get("aemet_temperature_c"),
+                        "AEMET comparison bucket": item.get("aemet_comparison_bucket_c"),
+                        "METAR bucket": item.get("metar_temperature_bucket_c"),
+                        "Bucket match": item.get("bucket_match"),
                         "Time gap min": item.get("timestamp_gap_minutes"),
                         "AEMET − METAR K": item.get("aemet_minus_metar_c"),
                     }
                 )
-            st.dataframe(pd.DataFrame(comparison_rows), hide_index=True, width="stretch")
+            comparison_frame = pd.DataFrame(comparison_rows)
+            st.dataframe(
+                comparison_frame.style.map(
+                    lambda value: "background-color: #7f1d1d; color: #ffffff; font-weight: bold"
+                    if value == "DIFF" else "", subset=["Bucket match"],
+                ), hide_index=True, width="stretch",
+            )
             st.caption(
                 "These are nearby readings from distinct data series, not sensor "
-                "calibration pairs."
+                "calibration pairs. AEMET comparison rounding is nearest integer with "
+                "exact halves toward +∞ (e.g. 36.5 → 37); METAR buckets are reported "
+                "integer temperatures. These are not verified Polymarket buckets."
             )
     st.info(
         "Market bucket boundary unavailable: the Polymarket resolution source and "
@@ -366,6 +328,8 @@ def render_aemet_station_panel(
             "The latest AEMET fetch failed; the last successful physical observation "
             "remains visible. Other providers and the Champion are unaffected."
         )
+    if live.get("archive_status") == "partial_failure":
+        st.warning("AEMET observations fetched successfully, but some archive writes failed.")
     st.caption(
         "Last successful AEMET fetch: "
         f"{local_time(live.get('last_successful_fetch_at'), timezone_name)} · "
@@ -453,7 +417,7 @@ def render_aemet_station_panel(
                         "x": {"field": "timestamp", "type": "temporal"},
                         "y": {"field": "temperature_c", "type": "quantitative"},
                         "tooltip": [
-                            {"field": "timestamp", "type": "temporal", "title": "Tmax time"},
+                            {"field": "timestamp", "type": "temporal", "title": "Tmax report time"},
                             {
                                 "field": "temperature_c",
                                 "type": "quantitative",
@@ -486,8 +450,13 @@ if not settings.database_url.startswith(("postgres://", "postgresql://")):
     )
     st.stop()
 
-try:
+@st.cache_resource(show_spinner=False)
+def initialize_cockpit_database():
     init_db()
+
+
+try:
+    initialize_cockpit_database()
 except Exception as exc:
     st.error(
         "Database connection failed. Check DATABASE_URL in Streamlit Secrets. "
@@ -507,7 +476,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "One-airport production cockpit · Engine v10.7.11 with cadence-aware model "
+    "App v1.0.8 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -519,6 +488,7 @@ if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=T
     try:
         with st.spinner("Refreshing models, METAR, TAF and Polymarket…"):
             refresh_result = collect_live_trading_refresh(airport_code, target)
+            invalidate_cockpit_cache(target, airport_code, timezone_name)
             checkpoint_started = time.perf_counter()
             collect_research_checkpoints(
                 [airport_code],
@@ -530,6 +500,7 @@ if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=T
     except Exception as exc:
         st.sidebar.error(f"Refresh failed: {type(exc).__name__}: {exc}")
     else:
+        invalidate_cockpit_cache(target, airport_code, timezone_name)
         errors = dict(refresh_result.get("errors") or {})
         message = (
             f"Completed in {time.perf_counter() - manual_refresh_started:.1f}s · "
@@ -546,13 +517,13 @@ if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=T
         else:
             st.sidebar.success(message)
 
-data = load_madrid_data(target, airport_code, timezone_name)
-metar_curve_records = (
+current_data = load_madrid_data(target, airport_code, timezone_name)
+history_data = load_madrid_history(target, airport_code)
+data = combine_cockpit_data(current_data, history_data)
+metar_curve_records = filter_metar_day(
     data["observations"][["observed_at", "temp_c"]].to_dict("records")
-    if not data["observations"].empty
-    else []
+    if not data["observations"].empty else [], target, timezone_name,
 )
-render_aemet_station_panel(target, metar_curve_records, timezone_name)
 markets = latest_market_frame(data["markets"])
 now = datetime.now(timezone.utc)
 nowcast = build_current_live_nowcast(
@@ -589,6 +560,7 @@ if nowcast is None:
         hide_index=True,
         width="stretch",
     )
+    render_aemet_station_panel(target, metar_curve_records, timezone_name)
     st.stop()
 
 probabilities = dict(nowcast.probabilities)
@@ -672,7 +644,7 @@ with left:
     )
 with right:
     st.markdown("**Champion reliability by fixed checkpoint**")
-    reliability = fixed_checkpoint_reliability(data["snapshots"], data["actuals"])
+    reliability = checkpoint_reliability(data["snapshots"], data["actuals"])
     shown = reliability.copy()
     shown["Exact bucket"] = shown.exact_bucket.map(percentage)
     shown["±1 °C"] = shown.within_1c.map(percentage)
@@ -735,6 +707,8 @@ st.caption(
     "Buckets are always sorted by temperature, not probability."
 )
 
+render_aemet_station_panel(target, metar_curve_records, timezone_name)
+
 with st.expander("Trading context · research only", expanded=False):
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Status", trade_decision.status)
@@ -757,8 +731,9 @@ with st.expander("Model, TAF and Meteoblue diagnostics", expanded=False):
             if column in freshness
         ]
         st.dataframe(freshness[display_columns], hide_index=True, width="stretch")
-    if not data["provider_calls"].empty:
-        calls = data["provider_calls"].copy()
+    if st.checkbox("Load provider call details", value=False):
+        details = load_cockpit_details(target, airport_code, timezone_name, "providers")
+        calls = details["provider_calls"].copy()
         calls["Attempted"] = calls.attempted_at.map(
             lambda value: local_time(value, timezone_name)
         )
@@ -782,6 +757,17 @@ with st.expander("Model, TAF and Meteoblue diagnostics", expanded=False):
             f"Issued {local_time(latest_taf.issue_time, timezone_name)} · TAF remains a "
             "separate forecast stage."
         )
+
+with st.expander("Historical detail data and transfer diagnostics", expanded=False):
+    st.dataframe(transfer_diagnostics(current=current_data, history=history_data),
+                 hide_index=True, width="stretch")
+    st.caption("Five-minute read cache. Payload sizes are in-memory estimates, not Neon "
+               "network-transfer measurements. Opening this panel adds no database reads.")
+    if st.checkbox("Load full historical snapshots and variants", value=False):
+        history_details = load_cockpit_details(target, airport_code, timezone_name, "history")
+        for name, frame in history_details.items():
+            st.markdown(f"**{name}**")
+            st.dataframe(frame, hide_index=True, width="stretch")
 
 with st.expander("Terminology and evidence glossary", expanded=False):
     st.markdown(

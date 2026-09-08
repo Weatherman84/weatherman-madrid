@@ -2,7 +2,7 @@ const COLLECTOR_WORKFLOW = "madrid-collector.yml";
 const CLOSEOUT_WORKFLOW = "madrid-closeout.yml";
 const COLLECTOR_CRON = "7,37 5-20 * * *";
 const CLOSEOUT_CRON = "15 19,20 * * *";
-const AEMET_CRON = "*/10 * * * *";
+const AEMET_CRON = "50 * * * *";
 const AEMET_STATION_ID = "3129";
 const AEMET_STATION_NAME = "Madrid Aeropuerto";
 const AEMET_API_URL =
@@ -43,7 +43,7 @@ function safeError(error) {
     .slice(0, 500);
 }
 
-export function normalizeAemetObservation(row) {
+export function normalizeAemetObservation(row, firstSeenAt = null) {
   if (!row || String(row.idema || "") !== AEMET_STATION_ID || !row.fint) {
     return null;
   }
@@ -57,6 +57,20 @@ export function normalizeAemetObservation(row) {
     observed_at: observed.toISOString(),
     temperature_c: temperature,
     interval_max_c: intervalMaximum,
+    first_seen_at: row.first_seen_at || firstSeenAt,
+    first_seen_lag_minutes: (row.first_seen_at || firstSeenAt)
+      ? Math.round((new Date(row.first_seen_at || firstSeenAt) - observed) / 6000) / 10 : null,
+    // Preserve possible native maximum-time fields, without guessing date/zone semantics.
+    maximum_time_fields: row.maximum_time_fields || Object.fromEntries(
+      Object.entries(row).filter(([key, value]) =>
+        /^(horatamax|htamax|tmax_time|horamax)$/i.test(key) &&
+        ["string", "number"].includes(typeof value)),
+    ),
+    peak_at: null,
+    peak_time_verified: false,
+    interval_duration_minutes: null,
+    interval_semantics: "tamax_provider_interval_not_yet_verified",
+
   };
 }
 
@@ -69,8 +83,17 @@ function mergeObservations(...groups) {
         fint: row.observed_at || row.fint,
         ta: row.temperature_c ?? row.ta,
         tamax: row.interval_max_c ?? row.tamax,
+        first_seen_at: row.first_seen_at,
+        maximum_time_fields: row.maximum_time_fields,
       });
-      if (normalized) byTimestamp.set(normalized.observed_at, normalized);
+      if (normalized) {
+        const previous = byTimestamp.get(normalized.observed_at);
+        const seen = [previous?.first_seen_at, normalized.first_seen_at].filter(Boolean).sort();
+        normalized.first_seen_at = seen[0] || null;
+        normalized.first_seen_lag_minutes = seen.length
+          ? Math.round((new Date(seen[0]) - new Date(normalized.observed_at)) / 6000) / 10 : null;
+        byTimestamp.set(normalized.observed_at, normalized);
+      }
     }
   }
   return [...byTimestamp.values()].sort((left, right) =>
@@ -88,14 +111,20 @@ export function buildAemetDay(localDate, observations, generatedAt = new Date())
     if (value !== null && (maximum === null || value > maximum.value_c)) {
       maximum = {
         value_c: value,
-        observed_at: row.observed_at,
+        observed_at: row.observed_at, // Legacy compatibility: this is report time.
+        report_at: row.observed_at,
+        peak_at: null,
+        peak_time_verified: false,
+        maximum_time_fields: row.maximum_time_fields,
+        time_role: "report_time_not_exact_peak",
+        interval_duration_minutes: null,
         measurement: row.interval_max_c !== null ? "interval_max_c" : "temperature_c",
       };
     }
   }
   const latest = rows.at(-1) || null;
   return {
-    schema_version: "1.0",
+    schema_version: "1.1",
     classification: "AEMET PHYSICAL OBSERVATIONS — NOT MARKET RESOLUTION",
     station: {
       id: AEMET_STATION_ID,
@@ -106,6 +135,9 @@ export function buildAemetDay(localDate, observations, generatedAt = new Date())
     local_date: localDate,
     generated_at: generatedAt.toISOString(),
     observation_count: rows.length,
+    public_series_cadence_minutes: 60,
+    interval_semantics: "tamax_provider_interval_not_yet_verified",
+    first_seen_note: "First detected by this Worker; polling delay is included, not exact publication time.",
     latest_observation: latest,
     physical_tmax: maximum,
     observations: rows,
@@ -120,7 +152,7 @@ export function aemetFreshness(observedAt, now = new Date()) {
   if (Number.isNaN(observed.getTime())) return { status: "stale", age_minutes: null };
   const age = Math.max(0, (now.getTime() - observed.getTime()) / 60000);
   return {
-    status: age <= 20 ? "fresh" : age <= 45 ? "aging" : "stale",
+    status: age <= 75 ? "current" : age <= 120 ? "delayed" : "stale",
     age_minutes: Math.round(age * 10) / 10,
   };
 }
@@ -163,7 +195,7 @@ async function fetchAemetObservations(apiKey) {
   const endpoint = new URL(AEMET_API_URL);
   endpoint.searchParams.set("api_key", apiKey);
   const metadataResponse = await fetch(endpoint, {
-    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.7" },
+    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.8" },
   });
   if (!metadataResponse.ok) {
     throw new Error(`AEMET metadata request failed: HTTP ${metadataResponse.status}`);
@@ -180,14 +212,15 @@ async function fetchAemetObservations(apiKey) {
     throw new Error("AEMET returned an unexpected data host");
   }
   const dataResponse = await fetch(dataUrl, {
-    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.7" },
+    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.8" },
   });
   if (!dataResponse.ok) {
     throw new Error(`AEMET data request failed: HTTP ${dataResponse.status}`);
   }
   const payload = await dataResponse.json();
   if (!Array.isArray(payload)) throw new Error("AEMET data response is not a JSON array");
-  return payload.map(normalizeAemetObservation).filter(Boolean);
+  const firstSeenAt = new Date().toISOString();
+  return mergeObservations(payload.map((row) => normalizeAemetObservation(row, firstSeenAt)).filter(Boolean));
 }
 
 async function gzipJson(payload) {
@@ -209,51 +242,71 @@ async function archiveAemetDay(env, payload) {
   });
 }
 
-async function refreshAemet(env, scheduledTime) {
+function archiveKey(localDate) {
+  return `archive/aemet/${localDate.replaceAll("-", "/")}.json.gz`;
+}
+
+async function readArchive(env, localDate) {
+  const value = await env.AEMET_HOT.get(archiveKey(localDate), "arrayBuffer");
+  if (value === null) return null;
+  const stream = new Blob([value]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).json();
+}
+
+export async function refreshAemet(env, scheduledTime) {
   if (!env.AEMET_HOT) throw new Error("Missing AEMET_HOT KV binding");
-  const attemptedAt = new Date(scheduledTime || Date.now());
+  const attemptedAt = new Date();
   const localDate = madridDate(attemptedAt);
   const previousLive = await env.AEMET_HOT.get(AEMET_LIVE_KEY, "json");
   try {
     const fetched = await fetchAemetObservations(env.AEMET_API_KEY);
+    if (!fetched.length) throw new Error("AEMET returned no usable 3129 observations");
+    const completedAt = new Date();
     const previousToday = await env.AEMET_HOT.get(AEMET_TODAY_KEY, "json");
-    if (previousToday?.local_date && previousToday.local_date !== localDate) {
-      await archiveAemetDay(env, previousToday);
+    // Archive all earlier days present in the provider response. Merge late values
+    // with the existing gzip archive; never overwrite a full day with a partial tail.
+    const olderDays = new Set(fetched.map((row) => madridDate(new Date(row.observed_at)))
+      .filter((day) => day < localDate));
+    if (previousToday?.local_date < localDate) olderDays.add(previousToday.local_date);
+    const archiveErrors = [];
+    for (const day of olderDays) {
+      try {
+        const prior = await readArchive(env, day);
+        const retained = previousToday?.local_date === day ? previousToday.observations : [];
+        const incoming = fetched.filter((row) => madridDate(new Date(row.observed_at)) === day);
+        const archive = buildAemetDay(day, mergeObservations(prior?.observations, retained, incoming), completedAt);
+        if (JSON.stringify(prior?.observations || []) !== JSON.stringify(archive.observations)) {
+          await archiveAemetDay(env, archive);
+        }
+      } catch (error) {
+        archiveErrors.push({ local_date: day, error: safeError(error) });
+      }
     }
-    const currentRows = fetched.filter(
-      (row) => madridDate(new Date(row.observed_at)) === localDate,
-    );
-    const retainedRows =
-      previousToday?.local_date === localDate ? previousToday.observations : [];
-    const today = buildAemetDay(
-      localDate,
-      mergeObservations(retainedRows, currentRows),
-      attemptedAt,
-    );
-    if (!today.observations.length) {
-      throw new Error(`AEMET returned no ${AEMET_STATION_ID} observations for ${localDate}`);
-    }
-    const latest = today.latest_observation?.observed_at || null;
-    const observationsChanged =
-      JSON.stringify(previousToday?.observations || []) !==
-      JSON.stringify(today.observations);
-    if (observationsChanged || previousToday?.local_date !== localDate) {
+    const retained = previousToday?.local_date === localDate ? previousToday.observations : [];
+    const today = buildAemetDay(localDate, mergeObservations(retained, fetched), completedAt);
+    if (JSON.stringify(previousToday?.observations || []) !== JSON.stringify(today.observations)
+        || previousToday?.local_date !== localDate) {
       await env.AEMET_HOT.put(AEMET_TODAY_KEY, JSON.stringify(today));
     }
-    const freshness = aemetFreshness(latest, attemptedAt);
+    const latest = today.latest_observation || fetched.at(-1);
+    const freshness = aemetFreshness(latest?.observed_at, completedAt);
     const live = {
-      schema_version: "1.0",
+      schema_version: "1.1",
       classification: today.classification,
       station: today.station,
       local_date: localDate,
-      latest_observation: today.latest_observation,
+      latest_observation: latest,
       physical_tmax: today.physical_tmax,
       observation_count: today.observation_count,
+      public_series_cadence_minutes: 60,
       freshness_status: freshness.status,
       data_age_minutes: freshness.age_minutes,
       provider_status: "success",
+      archive_status: archiveErrors.length ? "partial_failure" : "success",
+      archive_errors: archiveErrors,
+      scheduled_slot: new Date(scheduledTime || attemptedAt).toISOString(),
       last_attempt_at: attemptedAt.toISOString(),
-      last_successful_fetch_at: attemptedAt.toISOString(),
+      last_successful_fetch_at: completedAt.toISOString(),
       last_error: null,
       market_resolution_actual: null,
       market_resolution_status: today.market_resolution_status,
@@ -261,23 +314,16 @@ async function refreshAemet(env, scheduledTime) {
     await env.AEMET_HOT.put(AEMET_LIVE_KEY, JSON.stringify(live));
     return live;
   } catch (error) {
-    const latestAt = previousLive?.latest_observation?.observed_at || null;
-    const freshness = aemetFreshness(latestAt, attemptedAt);
+    const freshness = aemetFreshness(previousLive?.latest_observation?.observed_at, new Date());
     const failed = {
       ...(previousLive || {
-        schema_version: "1.0",
+        schema_version: "1.1",
         classification: "AEMET PHYSICAL OBSERVATIONS — NOT MARKET RESOLUTION",
-        station: {
-          id: AEMET_STATION_ID,
-          name: AEMET_STATION_NAME,
-          airport: "LEMD",
-          timezone: "Europe/Madrid",
-        },
-        local_date: localDate,
-        latest_observation: null,
-        physical_tmax: null,
-        observation_count: 0,
-        market_resolution_actual: null,
+        station: { id: AEMET_STATION_ID, name: AEMET_STATION_NAME,
+          airport: "LEMD", timezone: "Europe/Madrid" },
+        local_date: localDate, latest_observation: null, physical_tmax: null,
+        observation_count: 0, market_resolution_actual: null,
+        last_successful_fetch_at: null,
         market_resolution_status: "unverified-source-and-rounding-rule",
       }),
       freshness_status: freshness.status,
@@ -358,6 +404,10 @@ export default {
       return;
     }
 
+    if (controller.cron !== COLLECTOR_CRON) {
+      console.warn(JSON.stringify({ status: "unknown-cron-skipped", cron: controller.cron }));
+      return;
+    }
     const fixedHours = new Set(["09", "12", "16", "20"]);
     const collectionMode =
       clock.minute === "07" && fixedHours.has(clock.hour) ? "fixed" : "aviation";
@@ -394,7 +444,7 @@ export default {
       if (value === null) return Response.json({ error: "not found" }, { status: 404 });
       return new Response(value, {
         headers: {
-          ...responseHeaders("public, max-age=31536000, immutable"),
+          ...responseHeaders("public, max-age=300"),
           "Content-Encoding": "gzip",
         },
       });

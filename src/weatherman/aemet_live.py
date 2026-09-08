@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -10,6 +10,26 @@ import pandas as pd
 
 AEMET_STATION_ID = "3129"
 AEMET_CLASSIFICATION = "AEMET PHYSICAL OBSERVATIONS — NOT MARKET RESOLUTION"
+
+
+def filter_metar_day(metars, target, timezone_name="Europe/Madrid"):
+    """One shared local-day filter for every AEMET comparison, including DST."""
+    day = pd.Timestamp(target).date()
+    result = []
+    for row in metars or []:
+        stamp = pd.to_datetime(row.get("observed_at"), utc=True, errors="coerce")
+        if pd.notna(stamp) and stamp.tz_convert(timezone_name).date() == day:
+            result.append(row)
+    return result
+
+
+def observation_freshness(observed_at, now=None):
+    stamp = pd.to_datetime(observed_at, utc=True, errors="coerce")
+    if pd.isna(stamp):
+        return "stale", None
+    clock = pd.Timestamp(now or datetime.now(timezone.utc))
+    age = max(0.0, (clock - stamp).total_seconds() / 60)
+    return ("current" if age <= 75 else "delayed" if age <= 120 else "stale"), age
 
 
 def normalized_public_base_url(value: str | None) -> str | None:
@@ -47,7 +67,7 @@ def fetch_public_aemet_json(
     with httpx.Client(
         timeout=max(1.0, float(timeout_seconds)),
         follow_redirects=True,
-        headers={"User-Agent": "Weatherman-Madrid/1.0.7 AEMET public reader"},
+        headers={"User-Agent": "Weatherman-Madrid/1.0.8 AEMET public reader"},
     ) as client:
         response = client.get(f"{base}/{safe_path}")
         response.raise_for_status()
@@ -77,6 +97,8 @@ def curve_rows(
         return pd.Timestamp(parsed).tz_convert(timezone_name).strftime("%Y-%m-%dT%H:%M:%S")
 
     rows: list[dict[str, Any]] = []
+    if payload.get("local_date"):
+        metars = filter_metar_day(metars, payload["local_date"], timezone_name)
     for item in payload.get("observations") or []:
         timestamp = local_timestamp(item.get("observed_at"))
         temperature = pd.to_numeric(item.get("temperature_c"), errors="coerce")
@@ -100,7 +122,11 @@ def curve_rows(
                 }
             )
     maximum = payload.get("physical_tmax") or {}
-    timestamp = local_timestamp(maximum.get("observed_at"))
+    maximum_at = (
+        maximum.get("peak_at") if maximum.get("peak_time_verified")
+        else maximum.get("report_at") or maximum.get("observed_at")
+    )
+    timestamp = local_timestamp(maximum_at)
     temperature = pd.to_numeric(maximum.get("value_c"), errors="coerce")
     if timestamp is not None and pd.notna(temperature):
         rows.append(

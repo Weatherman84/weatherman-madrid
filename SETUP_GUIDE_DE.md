@@ -1,3 +1,7 @@
+> Aktueller Paketstand: v1.0.8. Für dieses Update gilt zuerst
+> `START_HERE_V1.0.8_DE.md`; ältere Einrichtungsangaben unten sind historisch.
+> AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
+
 # Weatherman Madrid v1.0.7 – genaue Einrichtung
 
 Diese Anleitung setzt keine Erfahrung mit Neon voraus. Arbeite die Schritte genau in

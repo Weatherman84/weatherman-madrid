@@ -102,7 +102,7 @@ def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials
     assert "collection_mode: collectionMode" in worker
     assert '"fixed" : "aviation"' in worker
     assert '"15 19,20 * * *"' in config
-    assert '"*/10 * * * *"' in config
+    assert '"50 * * * *"' in config
     assert "AEMET_API_KEY" in worker
     assert "AEMET_HOT" in worker
     assert "aemet-live.json" in worker

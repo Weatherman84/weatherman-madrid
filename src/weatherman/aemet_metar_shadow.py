@@ -1,13 +1,31 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, ROUND_FLOOR
 from typing import Any
 
 import pandas as pd
 
+from .aemet_live import filter_metar_day
+
 
 SHADOW_CALIBRATION_STATUS = "insufficient_oos_data"
 SERIES_GAP_ROLE = "series_difference_not_sensor_bias"
+
+
+def comparison_bucket(value: float) -> int:
+    """Research convention: nearest integer, exact halves towards positive infinity.
+
+    This explicitly defines the comparison; it does not establish a market rule.
+    Decimal avoids both binary floating point ties and Python bankers rounding.
+    """
+    return int((Decimal(str(value)) + Decimal("0.5")).to_integral_value(rounding=ROUND_FLOOR))
+
+
+def _day_metars(payload, metars):
+    if payload.get("local_date"):
+        return filter_metar_day(metars, payload["local_date"])
+    return metars
 
 
 def _timestamp(value: Any) -> datetime | None:
@@ -52,7 +70,7 @@ def time_aligned_series_comparisons(
 
     aemet = _aemet_observations(payload)
     comparisons: list[dict[str, Any]] = []
-    for metar_at, metar_c in _metar_observations(metars):
+    for metar_at, metar_c in _metar_observations(_day_metars(payload, metars)):
         if not aemet:
             break
         aemet_at, aemet_c = min(
@@ -71,6 +89,12 @@ def time_aligned_series_comparisons(
                 "timestamp_gap_minutes": round(gap_minutes, 2),
                 "aemet_minus_metar_c": round(aemet_c - metar_c, 2),
                 "difference_role": SERIES_GAP_ROLE,
+                "aemet_comparison_bucket_c": comparison_bucket(aemet_c),
+                "metar_temperature_bucket_c": int(metar_c) if metar_c.is_integer() else None,
+                "bucket_match": (
+                    "MATCH" if comparison_bucket(aemet_c) == int(metar_c) else "DIFF"
+                ) if metar_c.is_integer() else "UNAVAILABLE",
+                "comparison_rounding": "nearest_integer_half_toward_positive_infinity",
             }
         )
     return comparisons
@@ -82,7 +106,7 @@ def ground_truth_comparison(
 ) -> dict[str, Any]:
     """Keep physical, reported and market-resolution targets strictly separate."""
 
-    metar_rows = _metar_observations(metars)
+    metar_rows = _metar_observations(_day_metars(payload, metars))
     metar_max_c = max((temperature for _, temperature in metar_rows), default=None)
     metar_max_times = [
         observed_at.isoformat()
@@ -105,6 +129,9 @@ def ground_truth_comparison(
         "aemet_physical_tmax": {
             "value_c": physical_max_c,
             "observed_at": physical.get("observed_at"),
+            "report_at": physical.get("report_at") or physical.get("observed_at"),
+            "peak_at": physical.get("peak_at"),
+            "peak_time_verified": bool(physical.get("peak_time_verified", False)),
             "role": "independent_physical_station_maximum",
         },
         "market_resolution_actual": None,
@@ -209,7 +236,7 @@ def metar_bucket_persistence_shadow(
 
     physical = physical_stall_shadow(payload)
     aemet = _aemet_observations(payload)
-    metar_rows = _metar_observations(metars)
+    metar_rows = _metar_observations(_day_metars(payload, metars))
     result: dict[str, Any] = {
         "name": "metar_bucket_persistence_shadow",
         "research_only": True,

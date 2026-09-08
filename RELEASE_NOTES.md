@@ -1,3 +1,27 @@
+# Release Notes – Madrid v1.0.8
+
+## Neu in v1.0.8
+
+- AEMET-Cron gemeinsam in Worker und Konfiguration auf `50 * * * *` geändert;
+  unbekannte Cron-Ausdrücke werden sicher ignoriert.
+- Stundenserie, getrennte Beobachtungs-Freshness und Providerstatus,
+  beständiges `first_seen_at` und dokumentierte Polling-Latenz.
+- Berichtszeit statt unbestätigter exakter Tmax-Zeit; mögliche native Zeitfelder
+  werden gespeichert. `tamax`-Intervallsemantik bleibt ausdrücklich unverifiziert.
+- AEMET direkt nach Relevant buckets, drei Metrikreihen, Hilfetexte und ganze Zeitangaben.
+- Einheitlicher lokaler Madrid-Tagesfilter für Maximum, Lücke, Vergleich, Shadow und Kurve.
+- Explizite Vergleichsrundung und hervorgehobenes MATCH/DIFF; keine Market-Resolution-Regel.
+- Archive mit späten Werten ergänzen; 404 als archive_missing ausweisen.
+- Fünfminütige Cockpit-Caches; historische Kalibrierungs-/OOS-Evidenz bleibt erhalten.
+  Unbenötigte Snapshot-JSONs entfallen in Standardabfragen; Details nur auf Anforderung.
+- 30 geschützte Dateien bytegleich zur v1.0.7-ZIP-Basis; keine Forecastformeländerung.
+- Engine v10.7.11; fachlich geschützte Baseline v10.7.10. Keine Collector-Reduktion.
+
+Installation: START_HERE_V1.0.8_DE.md. Produktionszugang und exakte AEMET-Peakfelder
+wurden nicht live verifiziert. Gemessene Neon-Einsparung erst nach Installation bewerten.
+
+## Frühere Releases (historische Angaben)
+
 # Release Notes – Madrid v1.0.7
 
 ## Neu in v1.0.7

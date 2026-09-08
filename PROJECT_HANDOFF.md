@@ -1,3 +1,7 @@
+> Aktueller Paketstand: v1.0.8. Für dieses Update gilt zuerst
+> `START_HERE_V1.0.8_DE.md`; ältere Einrichtungsangaben unten sind historisch.
+> AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
+
 # Project Handoff – Weatherman Madrid v1.0.7
 
 ## Basis

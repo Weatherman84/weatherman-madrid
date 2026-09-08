@@ -281,4 +281,5 @@ def test_overview_and_detail_use_the_same_canonical_nowcast_builder() -> None:
     source = (ROOT / "src" / "weatherman" / "service.py").read_text(encoding="utf-8")
     assert "nowcast = build_current_live_nowcast(" in app
     assert "return build_current_live_nowcast(" in source
-    assert 'filters={"airport": airport}' in app
+    queries = (ROOT / "src/weatherman/cockpit_data.py").read_text(encoding="utf-8")
+    assert "model.airport == airport" in queries

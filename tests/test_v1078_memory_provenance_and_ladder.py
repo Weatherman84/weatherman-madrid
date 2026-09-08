@@ -252,8 +252,8 @@ def test_v1078_schema_and_production_research_guard() -> None:
         "extra_models_json",
     } <= names
     root = Path(__file__).resolve().parents[1]
-    app_source = (root / "app.py").read_text(encoding="utf-8")
+    app_source = (root / "src/weatherman/cockpit_data.py").read_text(encoding="utf-8")
     config = (root / ".streamlit" / "config.toml").read_text(encoding="utf-8")
-    assert 'minimums={"valid_at": target_start_utc}' in app_source
+    assert "HourlyForecast.valid_at >= start" in app_source
     assert not (root / "pages" / "airport_research.py").exists()
     assert "showSidebarNavigation = false" in config

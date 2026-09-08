@@ -12,6 +12,7 @@ from typing import Any
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
+import httpx
 from sqlalchemy import select, text
 
 from . import __version__
@@ -21,6 +22,7 @@ from .aemet_live import (
     archive_path as aemet_archive_path,
     fetch_public_aemet_json,
     normalized_public_base_url,
+    observation_freshness,
 )
 from .aemet_metar_shadow import build_shadow_diagnostics
 from .db import (
@@ -185,6 +187,8 @@ def _aemet_physical_payload(
         "market_resolution_actual": None,
         "market_resolution_status": "unverified-source-and-rounding-rule",
         "metar_replacement": False,
+        "public_series_cadence_minutes": 60,
+        "maximum_time_note": "fint is report time, not a verified exact physical peak time",
         "days": [],
     }
     if base_url is None:
@@ -199,16 +203,33 @@ def _aemet_physical_payload(
             "archive_url_template": f"{base_url}/archive/aemet/YYYY/MM/DD.json.gz",
         }
     )
+    try:
+        live = fetch_public_aemet_json(base_url, "aemet-live.json")
+        freshness, age = observation_freshness((live.get("latest_observation") or {}).get("observed_at"))
+        result["feed_health"] = {
+            "last_successful_fetch_at": live.get("last_successful_fetch_at"),
+            "last_attempt_at": live.get("last_attempt_at"),
+            "provider_status": live.get("provider_status", "unknown"),
+            "observation_age_minutes": age,
+            "observation_freshness": freshness,
+            "archive_status": live.get("archive_status", "unknown"),
+        }
+    except Exception as exc:
+        result["feed_health"] = {"status": "unavailable", "reason": _safe_error_text(str(exc))}
     current = first_target
     while current <= local_today:
         path = "aemet-today.json" if current == local_today else aemet_archive_path(current)
         try:
             payload = fetch_public_aemet_json(base_url, path)
+            if payload.get("local_date") != current.isoformat():
+                raise ValueError("AEMET series does not match the requested Madrid calendar date")
         except Exception as exc:
+            missing = isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 404
             result["days"].append(
                 {
                     "local_date": current.isoformat(),
                     "status": "unavailable",
+                    "availability_reason": "archive_missing" if missing else "provider_error",
                     "reason": _safe_error_text(f"{type(exc).__name__}: {exc}"),
                 }
             )
@@ -841,7 +862,9 @@ def build_daily_analysis_export(
         "airport": AIRPORT,
         "airport_timezone": AIRPORT_TIMEZONE,
         "application_version": __version__,
-        "forecast_engine_baseline": ENGINE_BASELINE,
+        "forecast_engine_baseline": ENGINE_BASELINE,  # Legacy export field, retained for compatibility.
+        "export_engine_version": ENGINE_BASELINE,
+        "protected_forecast_baseline": "v10.7.10",
         "classification": "READ-ONLY DAILY ANALYSIS EXPORT",
         "research_only": True,
         "contains_credentials": False,
