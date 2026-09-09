@@ -1,9 +1,9 @@
-# Validation – Weatherman Madrid v1.0.8
+# Validation – Weatherman Madrid v1.0.9
 
 ## Ergebnis
 
 - Basistests des hochgeladenen v1.0.7: 230 Python-Tests bestanden.
-- Abschließende v1.0.8-Prüfung: **245 Python-Tests bestanden**.
+- Abschließende v1.0.9-Prüfung: **247 Python-Tests bestanden**.
 - **9 Cloudflare-Worker-Tests bestanden**.
 - Ruff 0.15.22: alle Prüfungen bestanden.
 - `python -m compileall -q app.py src scripts`: bestanden.
@@ -32,6 +32,18 @@
 - Entfernter/unerwarteter Cron löst keinen Collector aus. Stündlicher AEMET-Cron,
   Collector und Closeout werden korrekt getrennt geroutet.
 - Export kennzeichnet HTTP 404 als archive_missing und lehnt falsch datierte Serie ab.
+- GZIP-Archive ohne HTTP-Content-Encoding werden anhand ihrer Dateisignatur erkannt
+  und korrekt dekodiert; dies reproduziert den Fehler aus dem Export vom 8. September.
+- Der Export zerlegt Live-Attribution künftig in additiven Live-Mittelpunkt und den
+  anschließenden Effekt der Day-/Peak-Lock-Verteilungskonditionierung. Eine
+  TAF-Bucket-Abweichung wird getrennt vom bestehenden TAF-Konfliktflag ausgewiesen.
+- Modal-Bucket-Reliability verwendet die gespeicherte Champion-Verteilung. Ein
+  Regressionstest mit Center 27,77 °C, Center-Bucket 28 und Modal-Bucket 27 bestätigt
+  die getrennte Bewertung gegen Stored-METAR-Actual 27.
+- Checkpoint-Darstellung enthält Modal-Bucket, Top-1-Wahrscheinlichkeit, Runner-up,
+  Top-1-/Top-2-Abstand, Champion-Center und Center-Bucket.
+- Live- und TAF-Attribution lassen sich einschließlich Verteilungs- und Lock-
+  Konditionierung vollständig zum gespeicherten Champion-Center überleiten.
 
 ## Grenzen
 

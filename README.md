@@ -1,11 +1,11 @@
-> Aktueller Paketstand: v1.0.8. Für dieses Update gilt zuerst
-> `START_HERE_V1.0.8_DE.md`; ältere Einrichtungsangaben unten sind historisch.
+> Aktueller Paketstand: v1.0.9. Für dieses Update gilt zuerst
+> `START_HERE_V1.0.9_DE.md`; ältere Einrichtungsangaben unten sind historisch.
 > AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
 
 # Weatherman Madrid
 
 Eine eigenständige, ressourcenschonende Streamlit-App für **LEMD / Madrid-Barajas**.
-Die aktuelle Madrid-App-Version heißt **v1.0.7** und verwendet Engine **v10.7.11**.
+Die aktuelle Madrid-App-Version heißt **v1.0.9** und verwendet Engine **v10.7.11**.
 Forecastformeln, Gewichte, Biases, Regime und Locks bleiben auf dem Stand v10.7.10;
 v10.7.11 ersetzt ausschließlich die starre 90-Minuten-Modellzulassung durch eine
 modellabhängige Laufkadenz. Das Repository und die Neon-Datenbanken sind vollständig
@@ -18,7 +18,7 @@ vom bisherigen Sechs-Airport-System getrennt.
 - ein gemeinsamer Datenstand für Collector und Streamlit-Refresh;
 - vier eindeutig benannte lokale Entscheidungspunkte;
 - maximal ein Meteoblue-Versuch je Checkpoint, transparent protokolliert;
-- Reliability mit erklärtem `N`, Exact Bucket, ±1 °C, MAE und Datenstand;
+- Reliability mit Modal- und Center-Bucket-Treffern, ±1 K, MAE, Bias und Datenstand;
 - ein manueller, isolierter 30-Tage-Replay mit getrennten Evidenzklassen;
 - ein täglicher, bereinigter Read-only-Export für die Madrid-Research-Analyse;
 - pro Modell der neueste kausal verfügbare Lauf innerhalb seiner offiziellen Kadenz;

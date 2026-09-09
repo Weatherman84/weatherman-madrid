@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gzip
+import json
 from datetime import date, datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit
@@ -67,11 +69,17 @@ def fetch_public_aemet_json(
     with httpx.Client(
         timeout=max(1.0, float(timeout_seconds)),
         follow_redirects=True,
-        headers={"User-Agent": "Weatherman-Madrid/1.0.8 AEMET public reader"},
+        headers={"User-Agent": "Weatherman-Madrid/1.0.9 AEMET public reader"},
     ) as client:
         response = client.get(f"{base}/{safe_path}")
         response.raise_for_status()
-        payload = response.json()
+        body = response.content
+        # Older Worker archives can contain gzip bytes without declaring
+        # Content-Encoding. httpx handles correctly declared gzip responses;
+        # recognise the file signature as a compatibility fallback.
+        if body.startswith(b"\x1f\x8b"):
+            body = gzip.decompress(body)
+        payload = json.loads(body)
     if not isinstance(payload, dict):
         raise ValueError("AEMET public endpoint did not return a JSON object")
     station = payload.get("station") or {}

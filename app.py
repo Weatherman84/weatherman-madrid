@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.8")
+discard_stale_weatherman_modules("1.0.9")
 
 import pandas as pd
 import streamlit as st
@@ -31,7 +31,8 @@ from weatherman.analytics import (
 )
 from weatherman.catalog import trading_airports
 from weatherman.cockpit_data import (
-    checkpoint_reliability, combine_cockpit_data, invalidate_cockpit_cache,
+    champion_variant_lookup, checkpoint_reliability, combine_cockpit_data,
+    invalidate_cockpit_cache, temperature_bucket,
     load_cockpit_details, load_madrid_data, load_madrid_history, transfer_diagnostics,
 )
 from weatherman.db import init_db
@@ -88,6 +89,7 @@ def latest_market_frame(markets: pd.DataFrame) -> pd.DataFrame:
 
 def checkpoint_rows(
     snapshots: pd.DataFrame,
+    variants: pd.DataFrame,
     *,
     target,
     zone: str,
@@ -109,6 +111,7 @@ def checkpoint_rows(
     by_label = {
         str(row.checkpoint_label): row for row in selected.itertuples()
     } if not selected.empty else {}
+    distributions = champion_variant_lookup(variants)
     rows = []
     for label in labels:
         row = by_label.get(label)
@@ -128,11 +131,44 @@ def checkpoint_rows(
             and pd.notna(hours_to_peak)
             and float(hours_to_peak) < 0
         )
+        summary = (
+            distributions.get(
+                (
+                    str(getattr(row, "airport", "")),
+                    getattr(row, "target_date", None),
+                    pd.Timestamp(getattr(row, "captured_at")),
+                )
+            )
+            if row
+            else None
+        ) or {}
+        modal_bucket = summary.get("modal_bucket")
+        modal_probability = summary.get("modal_probability")
+        runner_up_bucket = summary.get("runner_up_bucket")
+        runner_up_probability = summary.get("runner_up_probability")
+        center = getattr(row, "final_forecast_c", None) if row else None
         rows.append(
             {
                 "Checkpoint": label,
-                "Champion": temperature(
-                    getattr(row, "final_forecast_c", None) if row else None
+                "Modal bucket": (
+                    f"{modal_bucket} °C" if modal_bucket is not None else "—"
+                ),
+                "Top-1 probability": percentage(modal_probability, digits=1),
+                "Runner-up": (
+                    f"{runner_up_bucket} °C · {percentage(runner_up_probability, digits=1)}"
+                    if runner_up_bucket is not None
+                    else "—"
+                ),
+                "Top-1 gap": (
+                    f"{float(summary['top_gap_pp']):.1f} PP"
+                    if summary.get("top_gap_pp") is not None
+                    else "—"
+                ),
+                "Champion center": temperature(center, digits=2),
+                "Center bucket": (
+                    f"{temperature_bucket(center)} °C"
+                    if temperature_bucket(center) is not None
+                    else "—"
                 ),
                 "Recorded": local_time(
                     recorded_at,
@@ -476,7 +512,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.8 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.9 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -545,6 +581,7 @@ checkpoint_labels = [
 ]
 fixed_checkpoint_table = checkpoint_rows(
     data["snapshots"],
+    data["variants"],
     target=target,
     zone=timezone_name,
     labels=checkpoint_labels,
@@ -613,7 +650,7 @@ first_live_row = fixed_checkpoint_table[
 ]
 m5.metric(
     "First Live @12:00",
-    str(first_live_row.iloc[0].Champion) if not first_live_row.empty else "—",
+    str(first_live_row.iloc[0]["Modal bucket"]) if not first_live_row.empty else "—",
 )
 m5.caption(
     str(first_live_row.iloc[0].Recorded) if not first_live_row.empty else "not stored yet"
@@ -644,18 +681,27 @@ with left:
     )
 with right:
     st.markdown("**Champion reliability by fixed checkpoint**")
-    reliability = checkpoint_reliability(data["snapshots"], data["actuals"])
+    reliability = checkpoint_reliability(
+        data["snapshots"], data["actuals"], data["variants"]
+    )
     shown = reliability.copy()
-    shown["Exact bucket"] = shown.exact_bucket.map(percentage)
-    shown["±1 °C"] = shown.within_1c.map(percentage)
+    shown["Modal-bucket hit"] = shown.modal_bucket_hit.map(percentage)
+    shown["Center-bucket hit"] = shown.center_bucket_hit.map(percentage)
+    shown["Within ±1 K"] = shown.within_1c.map(percentage)
     shown["MAE"] = shown.mae.map(
         lambda value: f"{float(value):.2f} K" if pd.notna(value) else "—"
+    )
+    shown["Bias"] = shown.bias.map(
+        lambda value: f"{float(value):+.2f} K" if pd.notna(value) else "—"
     )
     shown["Through"] = shown.data_through.map(
         lambda value: value.strftime("%d.%m.%Y") if value else "—"
     )
     st.dataframe(
-        shown[["checkpoint", "Exact bucket", "±1 °C", "MAE", "n", "Through"]].rename(
+        shown[[
+            "checkpoint", "Modal-bucket hit", "Center-bucket hit", "Within ±1 K",
+            "MAE", "Bias", "n", "Through",
+        ]].rename(
             columns={"checkpoint": "Checkpoint", "n": "N"}
         ),
         hide_index=True,
@@ -685,7 +731,9 @@ with right:
         st.caption(
             "N increases only for a final station Actual paired with a scheduled, "
             "pre-peak checkpoint. Reconstructed, late/post-peak, missing and provisional "
-            "days stay visible but are not counted."
+            "days stay visible but are not counted. Modal-bucket hit uses only the "
+            "Champion probabilities stored at that checkpoint; it is never reconstructed "
+            "from the numerical center."
         )
 
 st.subheader("2 · Fixed decision checkpoints")

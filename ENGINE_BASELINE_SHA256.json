@@ -1,7 +1,7 @@
 {
   "source_archive_commit": "fd8874d462c50c94cc76e328edd3886b03ed4a40",
   "source_app_version": "1.0.7",
-  "release_app_version": "1.0.8",
+  "release_app_version": "1.0.9",
   "protected_forecast_baseline": "v10.7.10",
   "export_engine_version": "v10.7.11",
   "sha256": {

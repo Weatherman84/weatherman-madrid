@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import hashlib
+import math
 import re
 import tempfile
 from collections import defaultdict
@@ -547,6 +548,43 @@ def _checkpoint_payload(
         "post_convective_spread_multiplier": row.post_convective_spread_multiplier,
         "model_ceiling_reached_early": row.model_ceiling_reached_early,
     }
+    additive_live_center = (
+        float(row.bias_corrected_c) + float(adjustments.get("live_total_c") or 0.0)
+        if row.bias_corrected_c is not None and row.metar_conditioned_c is not None
+        else None
+    )
+    day_status_conditioning = (
+        float(row.metar_conditioned_c) - additive_live_center
+        if additive_live_center is not None
+        else None
+    )
+    additive_taf_center = (
+        additive_live_center + float(row.taf_adjustment_c or 0.0)
+        if additive_live_center is not None
+        else None
+    )
+    taf_distribution_conditioning = (
+        float(row.final_forecast_c) - additive_taf_center
+        if additive_taf_center is not None and row.final_forecast_c is not None
+        else None
+    )
+    live_to_champion_residual = (
+        float(row.final_forecast_c)
+        - float(row.metar_conditioned_c)
+        - float(row.taf_adjustment_c or 0.0)
+        if row.final_forecast_c is not None and row.metar_conditioned_c is not None
+        else None
+    )
+    taf_comparison_bucket = (
+        math.floor(float(row.taf_max_temp_c) + 0.5)
+        if row.taf_max_temp_c is not None
+        else None
+    )
+    taf_vs_pre_taf_modal_disagreement = bool(
+        taf_comparison_bucket is not None
+        and row.pre_taf_modal_bucket_c is not None
+        and taf_comparison_bucket != row.pre_taf_modal_bucket_c
+    )
     return {
         "target_date": row.target_date.isoformat(),
         "checkpoint": row.checkpoint_label,
@@ -605,7 +643,14 @@ def _checkpoint_payload(
             "weighted_raw": row.weighted_raw_c,
             "bias_corrected_equal": row.bias_corrected_equal_c,
             "bias_corrected": row.bias_corrected_c,
+            "additive_live_center_before_day_conditioning": additive_live_center,
             "live_weather_adjusted": row.metar_conditioned_c,
+            "day_status_conditioning_effect": day_status_conditioning,
+            "additive_taf_center_before_final_conditioning": additive_taf_center,
+            "taf_distribution_and_final_conditioning_effect": (
+                taf_distribution_conditioning
+            ),
+            "live_to_champion_residual_after_taf_center": live_to_champion_residual,
             "champion": row.final_forecast_c,
         },
         "forecast_spreads_c": {
@@ -628,7 +673,12 @@ def _checkpoint_payload(
             "content_hash": row.taf_content_hash,
             "adjustment_c": row.taf_adjustment_c,
             "conflict": row.taf_conflict,
+            "conflict_definition": (
+                "TAF TX differs from the bias-corrected model mean by more than 1 C"
+            ),
+            "taf_comparison_bucket_c": taf_comparison_bucket,
             "pre_taf_modal_bucket_c": row.pre_taf_modal_bucket_c,
+            "taf_vs_pre_taf_modal_disagreement": taf_vs_pre_taf_modal_disagreement,
             "champion_modal_bucket_c": row.champion_modal_bucket_c,
             "modal_bucket_flip": row.taf_modal_bucket_flip,
         },

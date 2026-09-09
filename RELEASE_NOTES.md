@@ -1,3 +1,24 @@
+# Release Notes – Madrid v1.0.9
+
+## Neu in v1.0.9
+
+- Checkpoint-Tabelle mit Champion-Modal-Bucket, Top-1-Wahrscheinlichkeit, Runner-up,
+  Top-1-/Top-2-Abstand, Champion-Center und explizitem Center-Bucket.
+- Reliability bewertet den historischen Modal-Bucket ausschließlich aus der am
+  Checkpoint gespeicherten Champion-Verteilung. Center-Bucket-Treffer, ±1 K, MAE,
+  Bias und N bleiben parallel sichtbar.
+- Bias → Live → Champion wird im Export vollständig übergeleitet: additive Live-
+  und TAF-Mittelpunkte sowie Effekte der Verteilungs- und Day-/Peak-Lock-
+  Konditionierung werden getrennt ausgewiesen.
+- Bestehende AEMET-GZIP-Archive ohne korrekten Content-Encoding-Header werden anhand
+  ihrer Dateisignatur gelesen.
+- Keine Datenbankmigration. 30 geschützte Dateien bleiben bytegleich; Forecast-
+  Baseline v10.7.10 und Export-Engine v10.7.11 bleiben bestehen.
+
+Installation: `START_HERE_V1.0.9_DE.md`.
+
+## Frühere Releases (historische Angaben)
+
 # Release Notes – Madrid v1.0.8
 
 ## Neu in v1.0.8
@@ -11,7 +32,10 @@
 - AEMET direkt nach Relevant buckets, drei Metrikreihen, Hilfetexte und ganze Zeitangaben.
 - Einheitlicher lokaler Madrid-Tagesfilter für Maximum, Lücke, Vergleich, Shadow und Kurve.
 - Explizite Vergleichsrundung und hervorgehobenes MATCH/DIFF; keine Market-Resolution-Regel.
-- Archive mit späten Werten ergänzen; 404 als archive_missing ausweisen.
+- Archive mit späten Werten ergänzen; 404 als archive_missing ausweisen; ältere
+  GZIP-Antworten ohne Content-Encoding anhand ihrer Dateisignatur dekodieren.
+- Vollständige Live-Attribution mit separatem Effekt der Day-/Peak-Lock-
+  Verteilungskonditionierung; TAF-Bucket-Abweichung getrennt vom Konfliktflag.
 - Fünfminütige Cockpit-Caches; historische Kalibrierungs-/OOS-Evidenz bleibt erhalten.
   Unbenötigte Snapshot-JSONs entfallen in Standardabfragen; Details nur auf Anforderung.
 - 30 geschützte Dateien bytegleich zur v1.0.7-ZIP-Basis; keine Forecastformeländerung.

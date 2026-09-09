@@ -152,8 +152,42 @@ def test_projected_reads_preserve_forecast_and_oos_evidence(database):
                  'final_forecast_mean', 'final_forecast_spread', 'probabilities', 'day_status',
                  'taf_adjustment_c', 'challenger_variants', 'regime_memory']:
         assert getattr(result, name) == getattr(baseline, name), name
-    pd.testing.assert_frame_equal(cockpit.checkpoint_reliability(reduced['snapshots'], reduced['actuals']),
-                                  cockpit.checkpoint_reliability(full['snapshots'], full['actuals']))
+    pd.testing.assert_frame_equal(
+        cockpit.checkpoint_reliability(
+            reduced['snapshots'], reduced['actuals'], reduced['variants']
+        ),
+        cockpit.checkpoint_reliability(
+            full['snapshots'], full['actuals'], full['variants']
+        ),
+    )
+
+
+def test_modal_bucket_reliability_uses_stored_distribution_not_center_rounding():
+    target = date(2026, 9, 9)
+    captured = datetime(2026, 9, 9, 14, tzinfo=timezone.utc)
+    snapshots = pd.DataFrame([{
+        'airport': 'LEMD', 'target_date': target, 'captured_at': captured,
+        'checkpoint_label': 'Late Live @16:00', 'checkpoint_status': 'scheduled-causal',
+        'checkpoint_reconstructed': False, 'hours_to_peak': 1.0,
+        'final_forecast_c': 27.77,
+    }])
+    actuals = pd.DataFrame([{
+        'airport': 'LEMD', 'target_date': target, 'max_temp_c': 27.0,
+        'source': 'stored-metar-station',
+    }])
+    variants = pd.DataFrame([{
+        'airport': 'LEMD', 'target_date': target, 'captured_at': captured,
+        'variant': 'Champion', 'probabilities_json': '{"27":0.428,"28":0.400,"29":0.172}',
+    }])
+    result = cockpit.checkpoint_reliability(snapshots, actuals, variants)
+    late = result[result.checkpoint.eq('Late Live @16:00')].iloc[0]
+    assert late.modal_bucket_hit == 1.0
+    assert late.center_bucket_hit == 0.0
+    assert late.modal_bucket_n == 1
+    assert cockpit.champion_bucket_summary(variants.iloc[0].probabilities_json) == {
+        'modal_bucket': 27, 'modal_probability': 0.428,
+        'runner_up_bucket': 28, 'runner_up_probability': 0.4, 'top_gap_pp': 2.8,
+    }
 
 
 def test_cache_reuses_reads_and_refresh_invalidates_only_target(database):
