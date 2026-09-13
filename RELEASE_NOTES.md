@@ -1,3 +1,31 @@
+# Release Notes – Madrid v1.0.10
+
+## Neu in v1.0.10
+
+- Neuer kompakter `market-replay-export.json` für Replay v2 mit genau vier
+  Madrid-Fix-Checkpoints pro finalem Tag.
+- Je Checkpoint wird ausschließlich der letzte gespeicherte Market-Snapshot mit
+  `captured_at <= checkpoint_at` verwendet. Zukunftsdaten sind ausgeschlossen;
+  fehlende kausale Snapshots werden explizit als `unavailable` exportiert.
+- Exportiert werden nur Bucketpreise, Top-of-book-Felder, Spread, Volumen,
+  Liquidität, Resolution-Metadaten und Provenienz – keine Orderbook-Tiefe und
+  keine großen JSON-Blobs.
+- Workflow `7 - Export Madrid market replay` läuft ausschließlich manuell,
+  verwendet Neon Production mit einer expliziten read-only Transaktion und lädt
+  das Ergebnis als kurzlebiges GitHub-Artefakt hoch.
+- Der leere/stale App-Startzustand erklärt nun ausdrücklich, warum AEMET unabhängig
+  sichtbar bleibt und Current Forecast/Trading Desk erst nach erfolgreichem Refresh
+  zurückkehren. Es werden keine automatischen Provideraufrufe beim Seitenstart ergänzt.
+- Research-Watchlist bis einschließlich 13. September aktualisiert. Keine daraus
+  abgeleitete Engineänderung.
+- Keine Datenbankmigration und keine Cloudflare-Änderung. Forecast-Baseline
+  v10.7.10 und Export-Engine v10.7.11 bleiben bestehen.
+
+Installation und Export: `START_HERE_V1.0.10_DE.md` und
+`MARKET_REPLAY_EXPORT_V2_DE.md`.
+
+## Frühere Releases (historische Angaben)
+
 # Release Notes – Madrid v1.0.9
 
 ## Neu in v1.0.9

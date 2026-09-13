@@ -1,9 +1,9 @@
-# Validation – Weatherman Madrid v1.0.9
+# Validation – Weatherman Madrid v1.0.10
 
 ## Ergebnis
 
 - Basistests des hochgeladenen v1.0.7: 230 Python-Tests bestanden.
-- Abschließende v1.0.9-Prüfung: **247 Python-Tests bestanden**.
+- Abschließende v1.0.10-Prüfung: **249 Python-Tests bestanden**.
 - **9 Cloudflare-Worker-Tests bestanden**.
 - Ruff 0.15.22: alle Prüfungen bestanden.
 - `python -m compileall -q app.py src scripts`: bestanden.
@@ -44,12 +44,20 @@
   Top-1-/Top-2-Abstand, Champion-Center und Center-Bucket.
 - Live- und TAF-Attribution lassen sich einschließlich Verteilungs- und Lock-
   Konditionierung vollständig zum gespeicherten Champion-Center überleiten.
+- Market-Replay-Export verwendet je Checkpoint ausschließlich den letzten gespeicherten
+  Snapshot mit `captured_at <= checkpoint_at`. Ein synthetischer, nur eine Minute nach
+  dem Checkpoint liegender Snapshot wird vom Regressionstest sicher ausgeschlossen.
+- Exact- und nearest-before-Provenienz, Snapshot-Alter, explizite Unavailable-Zeilen,
+  vier Madrid-Fix-Checkpoints und die reduzierten Bucketfelder sind geprüft.
+- Der manuelle Workflow nutzt nur `DATABASE_URL`, `contents: read`, ein kurzlebiges
+  Download-Artefakt und die explizite read-only Transaktion mit Rollback.
 
 ## Grenzen
 
-Quellstand: GitHub-ZIP-Kommentar `fd8874d462c50c94cc76e328edd3886b03ed4a40`.
-Der aktuelle Remote-HEAD und das laufende Streamlit-/Cloudflare-Deployment wurden
-nicht live verifiziert. Es gab keinen Zugriff auf Neon oder echte Provider-Secrets.
+Geprüfter Repository-Ausgangsstand: Remote-HEAD
+`3e27fbd0f1279175d37f4bfbe901c57f58f57723`, Paketversion v1.0.9.
+Das laufende Streamlit-/Cloudflare-Deployment wurde nicht live verifiziert. Es gab
+keinen Zugriff auf Neon oder echte Provider-Secrets.
 Es wurde nichts produktiv deployt. Die Anleitung enthält diese Prüfungen vor/nach Installation.
 
 AEMET-Rohantwort und genaue tamax-Intervall-/Peakzeitsemantik bleiben unverifiziert.
@@ -60,3 +68,8 @@ Publikationslatenz. Tatsächliche Neon-Einsparung erst im Betrieb messen.
 
 Die drei älteren Quelltexttests wurden an den verschobenen Abfragelader und den
 beschlossenen Stunden-Cron angepasst. Funktionale Regressionen ergänzen diese Checks.
+
+Der tatsächliche Inhalt und die Coverage des Market-Exports können erst nach dem
+manuellen GitHub-Workflow gegen Production beurteilt werden. Insbesondere bleiben
+historische Trade-Price-Samples nicht-ausführbare Preisbeobachtungen ohne rekonstruierte
+Bid-/Ask-Historie; diese Einschränkung wird im Export ausdrücklich mitgeführt.

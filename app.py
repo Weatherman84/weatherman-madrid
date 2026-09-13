@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.9")
+discard_stale_weatherman_modules("1.0.10")
 
 import pandas as pd
 import streamlit as st
@@ -512,7 +512,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.9 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.10 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -590,7 +590,10 @@ fixed_checkpoint_table = checkpoint_rows(
 if nowcast is None:
     st.warning(
         "No Champion can be built: fewer than two fresh model sources are available. "
-        "Stale sources are excluded rather than silently reused."
+        "Stale sources are excluded rather than silently reused. The independent AEMET "
+        "panel and stored checkpoint evidence remain visible; current Forecast and Trading "
+        "Desk sections return after a successful 'Refresh Madrid now'. No automatic provider "
+        "refresh is triggered on page open."
     )
     st.dataframe(
         fixed_checkpoint_table,
