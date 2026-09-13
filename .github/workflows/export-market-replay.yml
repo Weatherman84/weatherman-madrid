@@ -1,0 +1,47 @@
+name: 7 - Export Madrid market replay
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Number of final Madrid days (maximum 90)"
+        required: true
+        default: "30"
+      end_date:
+        description: "Optional final date (YYYY-MM-DD)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Export causal checkpoint market snapshots
+        shell: bash
+        run: |
+          args=(--days "$EXPORT_DAYS" --output market-replay-export.json)
+          if [[ -n "$EXPORT_END_DATE" ]]; then
+            args+=(--end-date "$EXPORT_END_DATE")
+          fi
+          python scripts/export_market_replay.py "${args[@]}"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EXPORT_DAYS: ${{ inputs.days }}
+          EXPORT_END_DATE: ${{ inputs.end_date }}
+      - name: Upload compact Replay v2 market export
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-replay-export
+          path: market-replay-export.json
+          if-no-files-found: error
+          retention-days: 14
