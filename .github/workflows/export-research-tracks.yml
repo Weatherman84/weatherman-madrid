@@ -1,10 +1,10 @@
-name: 8 - Export Madrid market replay
+name: 9 - Export Madrid research tracks
 
 on:
   workflow_dispatch:
     inputs:
       days:
-        description: "Number of final Madrid days (maximum 90)"
+        description: "Final Madrid days (1-90; default 30)"
         required: true
         default: "30"
       end_date:
@@ -31,27 +31,27 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -e .
-      - name: Export causal checkpoint market snapshots
+      - name: Export compact checkpoint research evidence
         shell: bash
         run: |
-          args=(--days "$EXPORT_DAYS" --output market-replay-export.json)
-          if [[ "$EXPORT_DRY_RUN" = "true" ]]; then
-            args+=(--dry-run)
-          fi
+          args=(--days "$EXPORT_DAYS" --output regime-replay-export.json)
           if [[ -n "$EXPORT_END_DATE" ]]; then
             args+=(--end-date "$EXPORT_END_DATE")
           fi
-          python scripts/export_market_replay.py "${args[@]}"
+          if [[ "$EXPORT_DRY_RUN" = "true" ]]; then
+            args+=(--dry-run)
+          fi
+          python scripts/export_research_tracks.py "${args[@]}"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           EXPORT_DAYS: ${{ inputs.days }}
           EXPORT_END_DATE: ${{ inputs.end_date }}
           EXPORT_DRY_RUN: ${{ inputs.dry_run }}
-      - name: Upload compact Replay v2 market export
+      - name: Upload compact research export
         if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@v4
         with:
-          name: market-replay-export
-          path: market-replay-export.json
+          name: madrid-research-tracks-v0.1
+          path: regime-replay-export.json
           if-no-files-found: error
           retention-days: 14

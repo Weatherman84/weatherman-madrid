@@ -1,0 +1,31 @@
+name: 10 - Capture Madrid trading shadow
+
+on:
+  workflow_dispatch:
+  schedule:
+    # One run covers CEST, the second CET. Unique keys make the other run a no-op.
+    - cron: "20 14,15 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: madrid-trading-shadow-v0.1
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Capture immutable shadow decisions and settle bounded outcomes
+        run: python scripts/capture_trading_shadow.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REPLAY_DATABASE_URL: ${{ secrets.REPLAY_DATABASE_URL }}
