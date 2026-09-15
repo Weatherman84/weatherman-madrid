@@ -69,7 +69,7 @@ def fetch_public_aemet_json(
     with httpx.Client(
         timeout=max(1.0, float(timeout_seconds)),
         follow_redirects=True,
-        headers={"User-Agent": "Weatherman-Madrid/1.0.10 AEMET public reader"},
+        headers={"User-Agent": "Weatherman-Madrid/1.0.11 AEMET public reader"},
     ) as client:
         response = client.get(f"{base}/{safe_path}")
         response.raise_for_status()

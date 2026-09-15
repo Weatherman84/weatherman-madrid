@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.10")
+discard_stale_weatherman_modules("1.0.11")
 
 import pandas as pd
 import streamlit as st
@@ -46,6 +46,7 @@ from weatherman.service import (
     collect_research_checkpoints,
 )
 from weatherman.settings import settings
+from weatherman.research_ui import render_research_tracks
 from weatherman.terminology import EVIDENCE_GLOSSARY, FRESHNESS_GLOSSARY
 
 
@@ -512,7 +513,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.10 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.11 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -576,6 +577,19 @@ nowcast = build_current_live_nowcast(
     variants=data["variants"],
 )
 
+# A transient provider/cache race must not collapse the whole cockpit to the
+# independent AEMET fragment. Keep the last successful in-session rendering for
+# the same target, visibly marked as retained; this never writes or recalculates
+# the forecast and disappears when the browser session ends.
+retained_nowcast = False
+if nowcast is not None:
+    st.session_state["last_successful_madrid_nowcast"] = (target, nowcast)
+else:
+    previous = st.session_state.get("last_successful_madrid_nowcast")
+    if previous and previous[0] == target:
+        nowcast = previous[1]
+        retained_nowcast = True
+
 checkpoint_labels = [
     str(item["label"]) for item in airport.get("decision_checkpoints_local") or []
 ]
@@ -602,6 +616,12 @@ if nowcast is None:
     )
     render_aemet_station_panel(target, metar_curve_records, timezone_name)
     st.stop()
+
+if retained_nowcast:
+    st.warning(
+        "Current rebuild was temporarily unavailable. The cockpit retains the last "
+        "successful in-session Madrid forecast; use Refresh Madrid now before acting."
+    )
 
 probabilities = dict(nowcast.probabilities)
 prior_probabilities = latest_prior_probabilities(data["signals"], target)
@@ -772,6 +792,17 @@ with st.expander("Trading context · research only", expanded=False):
         "Forecast confidence describes the weather forecast information set, not the "
         "certainty of one specific bet. Edge and wagering remain RESEARCH ONLY."
     )
+
+render_research_tracks(
+    nowcast=nowcast,
+    snapshots=data["snapshots"],
+    variants=data["variants"],
+    actuals=data["actuals"],
+    markets=markets,
+    target=target,
+    now=now,
+    zone=timezone_name,
+)
 
 with st.expander("Model, TAF and Meteoblue diagnostics", expanded=False):
     if not nowcast.model_freshness.empty:

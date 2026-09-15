@@ -1,8 +1,22 @@
-> Aktueller Paketstand: v1.0.10. Für dieses Update gilt zuerst
-> `START_HERE_V1.0.10_DE.md`; ältere Einrichtungsangaben unten sind historisch.
+> Aktueller Paketstand: v1.0.11. Für dieses Update gilt zuerst
+> `START_HERE_V1.0.11_DE.md`; ältere Einrichtungsangaben unten sind historisch.
 > AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
 
 # Project Handoff – Weatherman Madrid v1.0.7
+
+## Additive Research-Architektur v1.0.11
+
+- `Forecast Engine → Uncertainty Research → Market Layer → Edge Research → Trading Shadow`
+  ist als strikte Schichtentrennung vorbereitet.
+- `trading_challenger_v0.1` schreibt unveränderliche Entscheidungen ausschließlich in
+  das getrennte Replay-Projekt; Outcomes liegen in einer separaten Tabelle.
+- `regime_research_matrix_v0.1` arbeitet aus gespeicherten Fix-Checkpoints und kompakten
+  Exporten. Die Streamlit-Ansicht nutzt nur bereits geladene Cockpit-Frames.
+- Production-Neon wird durch Research nur read-only, zeitlich begrenzt und mit festen
+  Zeilenobergrenzen gelesen. Keine App-Öffnung startet einen Backfill.
+- Historischer Replay, reconstructed Research, sequenzielles OOS und Live Shadow sind
+  getrennte Evidenzklassen.
+- Alle neuen Komponenten sind `RESEARCH ONLY`; automatische Promotion ist deaktiviert.
 
 ## Basis
 

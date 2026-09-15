@@ -28,6 +28,10 @@ CHECKPOINT_LABELS = (
 EXPORT_ENGINE_VERSION = "v10.7.11"
 PROTECTED_FORECAST_BASELINE = "v10.7.10"
 SCHEMA_VERSION = "1.0"
+MAX_EXPORT_DAYS = 90
+MAX_EXPORT_ROWS = 5_000
+ESTIMATED_BYTES_PER_MARKET_ROW = 420
+ESTIMATED_BUCKETS_PER_CHECKPOINT = 12
 
 MARKET_COLUMNS = (
     "bucket_label",
@@ -110,7 +114,12 @@ def _final_madrid_dates(connection, requested_days: int, end_date: date | None) 
     ).where(DailyActual.airport == AIRPORT)
     if end_date is not None:
         statement = statement.where(DailyActual.target_date <= end_date)
-    actuals = pd.read_sql(statement.order_by(DailyActual.target_date), connection)
+    # The limit is deliberately applied in SQL.  Research export must never scan
+    # the complete Actual table merely to find the newest final dates.
+    actuals = pd.read_sql(
+        statement.order_by(DailyActual.target_date.desc()).limit(requested_days * 4),
+        connection,
+    )
     final = settlement_grade_actuals(actuals)
     if final.empty:
         return []
@@ -169,7 +178,9 @@ def build_market_replay_export(
     generated_at: datetime | None = None,
 ) -> dict[str, object]:
     """Return a compact export using only snapshots available by each checkpoint."""
-    requested_days = max(1, min(90, int(days)))
+    requested_days = int(days)
+    if not 1 <= requested_days <= MAX_EXPORT_DAYS:
+        raise ValueError(f"days must be between 1 and {MAX_EXPORT_DAYS}")
     generated = generated_at or datetime.now(timezone.utc)
     final_dates = _final_madrid_dates(connection, requested_days, end_date)
     schedules = [
@@ -178,6 +189,10 @@ def build_market_replay_export(
         for label, checkpoint_at in checkpoint_schedule(target)
     ]
     rows = _market_rows(connection, schedules)
+    if len(rows) > MAX_EXPORT_ROWS:
+        raise RuntimeError(
+            f"Safety stop: {len(rows)} market rows exceed MAX_EXPORT_ROWS={MAX_EXPORT_ROWS}."
+        )
     if not rows.empty:
         rows["export_target_date"] = pd.to_datetime(
             rows.export_target_date, errors="coerce"
@@ -269,6 +284,8 @@ def build_market_replay_export(
         "exported_final_days": len(final_dates),
         "checkpoint_count": len(checkpoints),
         "available_checkpoint_count": available_count,
+        "exported_market_rows": int(len(rows)),
+        "maximum_export_rows": MAX_EXPORT_ROWS,
         "research_only": True,
         "automatic_promotion": False,
         "causality_policy": (

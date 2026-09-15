@@ -1,3 +1,31 @@
+# Release Notes – Madrid v1.0.11
+
+## Neu in v1.0.11
+
+- Separater `trading_challenger_v0.1`: First Live verteilt Top-1/Top-2 und nimmt
+  bei einem außerhalb liegenden TAF-Bucket einen versionierten 30-%-Research-Hedge;
+  Late Live verwendet ausschließlich Top-1/Top-2. D−1 und D0 bleiben Observe-only.
+- Unveränderliche tägliche Shadow-Entscheidungen und getrennte Outcomes werden nur
+  im isolierten Replay-Neon-Projekt gespeichert. Production wird ausschließlich
+  in expliziten Read-only-Transaktionen gelesen.
+- `regime_research_matrix_v0.1` liefert globale und checkpointbezogene N,
+  Modal-Accuracy, Top-2/Top-3-Coverage, Center-MAE/Bias, Richtung, TAF-Vergleich,
+  Probability Gap und Model Spread. Kombinationen bleiben bis N≥10 aus.
+- Eigene App-Sektion `Research · Shadow Mode`; sie verwendet nur die bereits
+  gecachten Cockpit-Frames und verursacht beim Rendern keine zusätzliche Neon-Abfrage.
+- Bounded Exports mit maximal 90 Tagen, 360 Checkpoint-Zeilen beziehungsweise
+  5.000 Market-Bucket-Zeilen, Dry-Run ohne DB-Zugriff, Größenabschätzung und Logging.
+- Der transiente Nur-AEMET-Zustand wird abgefangen: für denselben Browser- und Zieltag
+  bleibt der letzte erfolgreiche Cockpit-Stand sichtbar und wird klar als retained markiert.
+- Workflow-Nummern sind jetzt eindeutig: Market Replay 8, Research Export 9,
+  täglicher Trading Shadow 10.
+- Keine Änderung an Forecastformel, Champion, Biases, produktiven Regimes, Locks oder
+  OOS-/Promotion-Logik. Engine v10.7.11; geschützte Baseline v10.7.10.
+
+Installation: `START_HERE_V1.0.11_DE.md`.
+
+## Frühere Releases (historische Angaben)
+
 # Release Notes – Madrid v1.0.10
 
 ## Neu in v1.0.10

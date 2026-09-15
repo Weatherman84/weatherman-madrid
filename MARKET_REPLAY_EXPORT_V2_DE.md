@@ -19,9 +19,10 @@ Trading-Challenger im Replay-Chat bereit. Der Export ist ausschließlich
 
 1. Repository `weatherman84/weatherman-madrid` öffnen.
 2. **Actions** wählen.
-3. Workflow **7 - Export Madrid market replay** öffnen.
+3. Workflow **8 - Export Madrid market replay** öffnen.
 4. **Run workflow** anklicken.
-5. `days` auf `30` lassen. `end_date` bleibt normalerweise leer.
+5. Zuerst `dry_run=true` lassen. Danach erneut starten, `dry_run=false` setzen,
+   `days=30` lassen und `end_date` normalerweise leer lassen.
 6. Nach erfolgreichem Lauf unten unter **Artifacts**
    `market-replay-export` herunterladen.
 7. ZIP entpacken und `market-replay-export.json` in den Replay-Chat hochladen.
@@ -55,7 +56,7 @@ Samples leer und `price_kind` ausdrücklich sichtbar.
 ```json
 {
   "schema_version": "1.0",
-  "application_version": "1.0.10",
+  "application_version": "1.0.11",
   "export_engine_version": "v10.7.11",
   "protected_forecast_baseline": "v10.7.10",
   "airport": "LEMD",
@@ -97,6 +98,12 @@ Samples leer und `price_kind` ausdrücklich sichtbar.
 
 ```bash
 python scripts/export_market_replay.py --days 30 --output market-replay-export.json
+```
+
+Ohne Neon-Abfrage lassen sich Grenzen und Größe vorher schätzen:
+
+```bash
+python scripts/export_market_replay.py --days 30 --dry-run
 ```
 
 Optional kann der Zeitraum reproduzierbar begrenzt werden:

@@ -1,0 +1,45 @@
+Weatherman Madrid v1.0.11
+Source repository HEAD checked before changes:
+f9035b98e4e41ee8491f484513cf96ed2d868f40 (v1.0.10)
+
+New files:
+.github/workflows/capture-trading-shadow.yml
+.github/workflows/export-research-tracks.yml
+RESEARCH_WATCHLIST_V1.0.11.md
+START_HERE_V1.0.11_DE.md
+scripts/capture_trading_shadow.py
+scripts/export_research_tracks.py
+src/weatherman/research_replay_export.py
+src/weatherman/research_tracks.py
+src/weatherman/research_ui.py
+tests/test_research_tracks_v011.py
+
+Modified files:
+.github/workflows/export-market-replay.yml
+ENGINE_BASELINE_SHA256.json
+MARKET_REPLAY_EXPORT_V2_DE.md
+PROJECT_HANDOFF.md
+README.md
+RELEASE_NOTES.md
+SETUP_GUIDE_DE.md
+VALIDATION_REPORT.md
+app.py
+pyproject.toml
+scripts/export_market_replay.py
+scripts/prepare_replay_lab.py
+src/weatherman/__init__.py
+src/weatherman/aemet_live.py
+src/weatherman/cockpit_data.py
+src/weatherman/market_replay_export.py
+uv.lock
+
+Unchanged protected Forecast Engine:
+30 protected files match ENGINE_BASELINE_SHA256.json.
+Export engine v10.7.11; protected forecast baseline v10.7.10.
+
+Validation:
+254 Python tests passed
+Ruff 0.15.22 passed
+Python compileall passed
+9 Cloudflare Worker tests passed
+Workflow YAML parsing passed

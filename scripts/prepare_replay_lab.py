@@ -34,6 +34,36 @@ def ensure_replay_schema(connection) -> None:
     )
     connection.execute(
         text(
+            "CREATE TABLE IF NOT EXISTS replay_lab.trading_shadow_decisions ("
+            "id BIGSERIAL PRIMARY KEY, "
+            "target_date DATE NOT NULL, checkpoint TEXT NOT NULL, "
+            "checkpoint_at TIMESTAMPTZ NOT NULL, generated_at TIMESTAMPTZ NOT NULL, "
+            "challenger_version TEXT NOT NULL, evidence_class TEXT NOT NULL, "
+            "top1_bucket INTEGER, top1_probability DOUBLE PRECISION, "
+            "top2_bucket INTEGER, top2_probability DOUBLE PRECISION, "
+            "taf_bucket INTEGER, taf_outside_top2 BOOLEAN NOT NULL DEFAULT FALSE, "
+            "forecast_confidence DOUBLE PRECISION, regimes_json JSONB NOT NULL DEFAULT '[]'::jsonb, "
+            "selected_buckets_json JSONB NOT NULL DEFAULT '[]'::jsonb, "
+            "market_snapshot_at TIMESTAMPTZ, market_snapshot_status TEXT NOT NULL, "
+            "market_snapshot_age_minutes DOUBLE PRECISION, market_freshness_band TEXT, "
+            "strategy_code TEXT NOT NULL, research_only BOOLEAN NOT NULL DEFAULT TRUE, "
+            "automatic_promotion BOOLEAN NOT NULL DEFAULT FALSE, "
+            "UNIQUE(target_date, checkpoint, challenger_version))"
+        )
+    )
+    connection.execute(
+        text(
+            "CREATE TABLE IF NOT EXISTS replay_lab.trading_shadow_outcomes ("
+            "id BIGSERIAL PRIMARY KEY, decision_id BIGINT NOT NULL UNIQUE REFERENCES "
+            "replay_lab.trading_shadow_decisions(id), evaluated_at TIMESTAMPTZ NOT NULL, "
+            "resolved_market_bucket INTEGER, resolution_source TEXT, "
+            "stored_metar_actual_c DOUBLE PRECISION, aemet_physical_tmax_c DOUBLE PRECISION, "
+            "hypothetical_pnl_units DOUBLE PRECISION, "
+            "research_only BOOLEAN NOT NULL DEFAULT TRUE)"
+        )
+    )
+    connection.execute(
+        text(
             "CREATE TABLE IF NOT EXISTS replay_lab.results ("
             "id BIGSERIAL PRIMARY KEY, "
             "run_id BIGINT NOT NULL REFERENCES replay_lab.runs(id), "
@@ -63,20 +93,20 @@ def main() -> None:
     replay = create_engine(replay_url, pool_pre_ping=True)
     with production.connect() as connection:
         connection.execute(text("SET TRANSACTION READ ONLY"))
-        madrid_rows = int(
-            connection.scalar(
-                text("SELECT COUNT(*) FROM forecasts WHERE airport = 'LEMD'")
-            )
-            or 0
-        )
+        madrid_available = bool(connection.scalar(text(
+            "SELECT EXISTS(SELECT 1 FROM forecasts WHERE airport = 'LEMD' LIMIT 1)"
+        )))
     with replay.begin() as connection:
         ensure_replay_schema(connection)
     print(
         {
             "status": "ready",
             "production_access": "read-only verification",
-            "production_madrid_forecasts": madrid_rows,
+            "production_madrid_data_available": madrid_available,
             "replay_schema": "replay_lab",
+            "research_tables": [
+                "trading_shadow_decisions", "trading_shadow_outcomes"
+            ],
             "automatic_promotion": False,
         }
     )

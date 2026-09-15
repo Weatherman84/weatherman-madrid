@@ -1,9 +1,9 @@
-# Validation – Weatherman Madrid v1.0.10
+# Validation – Weatherman Madrid v1.0.11
 
 ## Ergebnis
 
 - Basistests des hochgeladenen v1.0.7: 230 Python-Tests bestanden.
-- Abschließende v1.0.10-Prüfung: **249 Python-Tests bestanden**.
+- Abschließende v1.0.11-Prüfung: **254 Python-Tests bestanden**.
 - **9 Cloudflare-Worker-Tests bestanden**.
 - Ruff 0.15.22: alle Prüfungen bestanden.
 - `python -m compileall -q app.py src scripts`: bestanden.
@@ -51,11 +51,17 @@
   vier Madrid-Fix-Checkpoints und die reduzierten Bucketfelder sind geprüft.
 - Der manuelle Workflow nutzt nur `DATABASE_URL`, `contents: read`, ein kurzlebiges
   Download-Artefakt und die explizite read-only Transaktion mit Rollback.
+- Trading-Challenger-Allokationen, externer 30-%-TAF-Hedge, Late-Live-Regel,
+  Observe-only-Checkpoints und alle vier Market-Freshness-Bänder sind geprüft.
+- Regime-Matrix erzeugt getrennte globale/Checkpoint-Kohorten, kennzeichnet kleines N
+  und berechnet Modal-/Top-2-/Top-3- sowie Center- und TAF-Metriken parallel.
+- Dry-Runs führen null Production-Abfragen aus; feste Tages-/Row-Limits und das
+  getrennte Replay-Schema sind per Regressionstest abgesichert.
 
 ## Grenzen
 
 Geprüfter Repository-Ausgangsstand: Remote-HEAD
-`3e27fbd0f1279175d37f4bfbe901c57f58f57723`, Paketversion v1.0.9.
+`f9035b98e4e41ee8491f484513cf96ed2d868f40`, Paketversion v1.0.10.
 Das laufende Streamlit-/Cloudflare-Deployment wurde nicht live verifiziert. Es gab
 keinen Zugriff auf Neon oder echte Provider-Secrets.
 Es wurde nichts produktiv deployt. Die Anleitung enthält diese Prüfungen vor/nach Installation.
