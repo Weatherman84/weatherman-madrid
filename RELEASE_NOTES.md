@@ -1,3 +1,65 @@
+# Release Notes – Madrid v1.0.13
+
+## Neu in v1.0.13
+
+- Enthält kumulativ sämtliche Evidenztrennungs-Fixes aus der noch nicht installierten
+  v1.0.12.
+- Workflow 6 veröffentlicht dieselben validierten Exportbytes weiterhin über GitHub
+  Pages und zusätzlich über den vorhandenen Cloudflare-Worker/KV. Es gibt keine zweite
+  Exportberechnung und keine zusätzliche Neon-Abfrage.
+- Beide Wege erhalten einen `latest`-Alias und eine datierte Datei. Der KV hält datierte
+  Dateien höchstens 90 Tage; es entsteht kein unbegrenztes Archiv.
+- Dateigröße, SHA-256, `generated_at`, letzter finaler Actual-Tag und Status beider
+  Endpunkte werden in einem kurzlebigen Workflow-Artefakt protokolliert.
+- Der Worker prüft vor Speicherung Airport, Exportklassifikation und sämtliche
+  Safety-Flags. Veröffentlichung ist nur mit einem separaten Secret möglich.
+- Neuer `late_live_overlap_guard_candidate_v0.1` erkennt ausschließlich den
+  Research-Fall aus MODEL PEAK PASSED, geringem verbleibenden Modellanstieg,
+  Clear-Sky/Cloud/Radiation-Overlap und TAF unter Pre-TAF-Modal. Er berechnet weder
+  Cap noch Tail-Dämpfung und hat garantiert `champion_impact_c=0.0`.
+- Research-Watchlist um die echten `scheduled-causal`-OOS-Tage 16. bis
+  25. September ergänzt. Der Vergleich schützt vor pauschalem Late-Live-Cap,
+  frühem Peak-Lock und pauschaler TAF-Verstärkung. TAF-Aufwärtsrevision plus plausible
+  Restheizung sowie ein spätes Plateau trotz modelliertem Restanstieg 0 K werden als
+  Research-Kandidaten geführt. Knappe Top-1/Top-2-Treffer werden als High Uncertainty
+  klassifiziert. Der 24. September ergänzt einen korrekten Upper-Bucket-Einzeltouch
+  innerhalb eines niedrigeren Plateaus und warnt davor, geringen modellierten
+  Restanstieg ohne Clear-Sky-/Regimekontext als Cap zu verwenden. Der 25. September
+  liefert dazu die Kontrollgruppe mit bestätigtem 35er-Plateau, kontrollierter
+  Live-Stufe und Clear-Sky-Override 0,0 K. Regime Memory 25/30, weiterhin
+  WATCH/SHADOW.
+- Keine Änderung an Forecastformel, Champion, Biases, Clear-Sky Override, TAF-Stufe,
+  produktiven Regimes, Locks oder OOS-/Promotion-Logik. Engine v10.7.11;
+  geschützte Baseline v10.7.10.
+
+Installation: `START_HERE_V1.0.13_DE.md`.
+
+## Frühere Releases (historische Angaben)
+
+# Release Notes – Madrid v1.0.12
+
+## Neu in v1.0.12
+
+- Trading-Decisions speichern nun zusätzlich den ursprünglichen `checkpoint_status`
+  und `checkpoint_reconstructed` neben der normalisierten Evidenzklasse.
+- `reconstructed-causal` wird zwingend als `reconstructed_research` klassifiziert.
+  Auch ein aufrufender Prozess kann diese Schutzregel nicht als Live-/OOS-Evidenz
+  überschreiben.
+- Die Regime-Matrix exportiert drei getrennte Sichten: `scheduled_causal_only`
+  (Standard), `reconstructed_research` und optional `all_research_evidence`.
+- Die Research-UI startet mit **Scheduled-causal only** und erlaubt den bewussten
+  Wechsel zu den beiden anderen Sichten. Es entstehen dadurch keine zusätzlichen
+  Neon-Abfragen.
+- Die bestehende Replay-Tabelle wird durch erneutes Ausführen von Workflow 4
+  nicht-destruktiv um zwei Provenienzspalten ergänzt. Alte Zeilen bleiben unverändert.
+- Research-Watchlist um die Erkenntnisse vom 14. und 15. September ergänzt.
+- Keine Änderung an Forecastformel, Champion, Biases, produktiven Regimes, Locks oder
+  OOS-/Promotion-Logik. Engine v10.7.11; geschützte Baseline v10.7.10.
+
+Installation: `START_HERE_V1.0.12_DE.md`.
+
+## Frühere Releases (historische Angaben)
+
 # Release Notes – Madrid v1.0.11
 
 ## Neu in v1.0.11

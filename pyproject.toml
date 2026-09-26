@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "weatherman-madrid"
-version = "1.0.11"
+version = "1.0.13"
 description = "Madrid maximum-temperature trading desk with Neon persistence"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,7 +33,7 @@ where = ["src"]
 weatherman = ["data/*.json"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.ruff]

@@ -57,13 +57,24 @@ import { readFile } from "node:fs/promises";
 
 class KV {
   values = new Map();
+  metadata = new Map();
   writes = [];
   async get(key, type) {
     const value = this.values.get(key);
     if (value === undefined) return null;
     return type === "json" ? JSON.parse(value) : value;
   }
-  async put(key, value) { this.values.set(key, value); this.writes.push(key); }
+  async getWithMetadata(key) {
+    return {
+      value: this.values.get(key) ?? null,
+      metadata: this.metadata.get(key) ?? null,
+    };
+  }
+  async put(key, value, options = {}) {
+    this.values.set(key, value);
+    this.metadata.set(key, options.metadata || null);
+    this.writes.push({ key, options });
+  }
 }
 
 async function decode(value) {
@@ -101,7 +112,10 @@ test("first_seen survives duplicate fetch and native peak field is preserved wit
   assert.equal(live.last_successful_fetch_at, "2026-09-06T19:50:00.000Z");
   assert.equal(live.provider_status, "success");
   assert.equal(live.freshness_status, "delayed");
-  assert.equal(env.AEMET_HOT.writes.filter((key) => key === "aemet-today.json").length, 1);
+  assert.equal(
+    env.AEMET_HOT.writes.filter((write) => write.key === "aemet-today.json").length,
+    1,
+  );
 });
 
 test("midnight accepts previous-day latest observation and repairs archive from late arrivals", async (t) => {
@@ -188,12 +202,80 @@ test("archive write failure does not hide a successful provider fetch", async (t
   provider(t, () => [row("2026-09-06T20:00:00Z"), row("2026-09-07T12:00:00Z")]);
   const kv = new KV();
   const originalPut = kv.put.bind(kv);
-  kv.put = async (key, value) => {
+  kv.put = async (key, value, options) => {
     if (key.startsWith("archive/")) throw new Error("KV archive failure");
-    await originalPut(key, value);
+    await originalPut(key, value, options);
   };
   const result = await refreshAemet({ AEMET_HOT: kv, AEMET_API_KEY: "test" }, Date.now());
   assert.equal(result.provider_status, "success");
   assert.equal(result.archive_status, "partial_failure");
   assert.equal(result.archive_errors[0].local_date, "2026-09-06");
+});
+
+test("daily analysis mirror stores identical latest and bounded dated bytes", async () => {
+  const source = JSON.stringify({
+    airport: "LEMD",
+    classification: "READ-ONLY DAILY ANALYSIS EXPORT",
+    contains_credentials: false,
+    writes_production_database: false,
+    research_only: true,
+    generated_at: "2026-09-16T19:30:00+00:00",
+    actuals: [
+      { target_date: "2026-09-16", is_final_station_actual: true, stored_metar_max_c: 28 },
+    ],
+  }) + "\n";
+  const kv = new KV();
+  const env = {
+    AEMET_HOT: kv,
+    DAILY_ANALYSIS_PUBLISH_TOKEN: "publish-test-token",
+  };
+  const publish = await worker.fetch(new Request(
+    "https://worker.test/internal/publish-daily-analysis",
+    {
+      method: "POST",
+      headers: { Authorization: "Bearer publish-test-token" },
+      body: source,
+    },
+  ), env);
+  assert.equal(publish.status, 200);
+  const metadata = await publish.json();
+  assert.equal(metadata.target_date, "2026-09-16");
+  assert.equal(metadata.size_bytes, new TextEncoder().encode(source).byteLength);
+  assert.equal(metadata.sha256.length, 64);
+
+  const latest = await worker.fetch(
+    new Request("https://worker.test/daily-analysis-latest.json"), env
+  );
+  assert.equal(await latest.text(), source);
+  assert.equal(latest.headers.get("etag"), `"${metadata.sha256}"`);
+  const dated = await worker.fetch(
+    new Request("https://worker.test/daily-analysis/2026-09-16.json", { method: "HEAD" }),
+    env,
+  );
+  assert.equal(dated.status, 200);
+  assert.equal(dated.headers.get("x-export-target-date"), "2026-09-16");
+  const datedWrite = kv.writes.find(
+    (write) => write.key === "daily-analysis/2026-09-16.json"
+  );
+  assert.equal(datedWrite.options.expirationTtl, 90 * 24 * 60 * 60);
+});
+
+test("daily analysis mirror rejects unauthenticated or unsafe payloads", async () => {
+  const kv = new KV();
+  const env = { AEMET_HOT: kv, DAILY_ANALYSIS_PUBLISH_TOKEN: "secret" };
+  const unauthorized = await worker.fetch(new Request(
+    "https://worker.test/internal/publish-daily-analysis",
+    { method: "POST", body: "{}" },
+  ), env);
+  assert.equal(unauthorized.status, 401);
+  const unsafe = await worker.fetch(new Request(
+    "https://worker.test/internal/publish-daily-analysis",
+    {
+      method: "POST",
+      headers: { Authorization: "Bearer secret" },
+      body: JSON.stringify({ airport: "LEMD", contains_credentials: true }),
+    },
+  ), env);
+  assert.equal(unsafe.status, 400);
+  assert.equal(kv.writes.length, 0);
 });

@@ -13,9 +13,10 @@ from .research_tracks import (
     TRADING_CHALLENGER_VERSION,
     active_regimes,
     build_trading_shadow_decision,
+    checkpoint_evidence_class,
     positive_temperature_bucket,
     probability_ranking,
-    score_regime_matrix,
+    regime_matrix_views,
 )
 
 
@@ -75,8 +76,14 @@ def _matrix_records(snapshots, variants, actuals) -> list[dict]:
     records = []
     for row in merged.to_dict("records"):
         ranked = probability_ranking(row.get("probabilities_json")) + [(None, None)] * 3
+        evidence_class = checkpoint_evidence_class(
+            row.get("checkpoint_status"), row.get("checkpoint_reconstructed", False)
+        )
         record = {
             "checkpoint": row.get("checkpoint_label"),
+            "checkpoint_status": row.get("checkpoint_status"),
+            "checkpoint_reconstructed": evidence_class == "reconstructed_research",
+            "evidence_class": evidence_class,
             "champion_center_c": row.get("forecast_c"),
             "modal_bucket": ranked[0][0], "top2_bucket": ranked[1][0],
             "top3_bucket": ranked[2][0],
@@ -149,7 +156,23 @@ def render_research_tracks(*, nowcast, snapshots, variants, actuals, markets, ta
     with right:
         st.subheader("Regime Research")
         records = _matrix_records(snapshots, variants, actuals)
-        matrix = pd.DataFrame(score_regime_matrix(records))
+        matrix_views = regime_matrix_views(records)
+        view_labels = {
+            "scheduled_causal_only": "Scheduled-causal only",
+            "reconstructed_research": "Reconstructed research",
+            "all_research_evidence": "All research evidence",
+        }
+        selected_view = st.selectbox(
+            "Evidence view",
+            list(view_labels),
+            format_func=view_labels.get,
+            index=0,
+            help=(
+                "Scheduled-causal is the default. Reconstructed checkpoints remain a "
+                "separate research class and are never presented as sequential OOS."
+            ),
+        )
+        matrix = pd.DataFrame(matrix_views[selected_view]["matrix"])
         current_record = {
             "champion_center_c": nowcast.final_forecast_mean,
             "raw_spread_c": nowcast.raw_model_spread,
@@ -193,5 +216,6 @@ def render_research_tracks(*, nowcast, snapshots, variants, actuals, markets, ta
             st.info("Historical matrix needs final checkpoint/Actual pairs.")
         st.caption(
             f"{REGIME_MATRIX_VERSION}. Small samples remain labelled and no multi-regime "
-            "combination is emitted below N=10. Historical replay is not sequential OOS."
+            "combination is emitted below N=10. Reconstructed research and scheduled-causal "
+            "evidence are separated; neither is labelled sequential OOS by this view."
         )

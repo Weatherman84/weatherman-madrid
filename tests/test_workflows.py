@@ -76,6 +76,25 @@ def test_daily_analysis_export_is_read_only_and_published_without_database_files
     assert "git push" not in source
 
 
+def test_daily_analysis_mirror_reuses_the_single_export_without_extra_neon_reads() -> None:
+    source = workflow("publish-daily-analysis-export.yml")
+    prepare = (ROOT / "scripts" / "prepare_daily_analysis_publication.py").read_text(
+        encoding="utf-8"
+    )
+    verify = (ROOT / "scripts" / "verify_daily_analysis_publication.py").read_text(
+        encoding="utf-8"
+    )
+    assert source.count("export_madrid_daily_analysis.py") == 1
+    assert "prepare_daily_analysis_publication.py" in source
+    assert "DAILY_ANALYSIS_PUBLISH_TOKEN" in source
+    assert "--data-binary @_site/daily-analysis-latest.json" in source
+    assert "verify_daily_analysis_publication.py" in source
+    assert "daily-analysis-publication-report.json" in source
+    assert "DATABASE_URL" not in prepare
+    assert "DATABASE_URL" not in verify
+    assert '"production_database_queries": 0' in verify
+
+
 def test_closeout_always_collects_then_calls_export() -> None:
     source = workflow("madrid-closeout.yml")
     assert "workflow_dispatch" in source

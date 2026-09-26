@@ -9,6 +9,10 @@ const AEMET_API_URL =
   `https://opendata.aemet.es/opendata/api/observacion/convencional/datos/estacion/${AEMET_STATION_ID}`;
 const AEMET_LIVE_KEY = "aemet-live.json";
 const AEMET_TODAY_KEY = "aemet-today.json";
+const DAILY_ANALYSIS_LATEST_KEY = "daily-analysis-latest.json";
+const DAILY_ANALYSIS_META_KEY = "daily-analysis-publication.json";
+const DAILY_ANALYSIS_MAX_BYTES = 5 * 1024 * 1024;
+const DAILY_ANALYSIS_ARCHIVE_TTL_SECONDS = 90 * 24 * 60 * 60;
 
 function madridParts(date) {
   return Object.fromEntries(
@@ -41,6 +45,98 @@ function safeError(error) {
   return String(error?.message || error || "unknown error")
     .replace(/([?&](?:api_?key|token|secret)=)[^&\s]+/gi, "$1REDACTED")
     .slice(0, 500);
+}
+
+function timingSafeEqual(left, right) {
+  const first = String(left || "");
+  const second = String(right || "");
+  if (!first.length || first.length !== second.length) return false;
+  let difference = 0;
+  for (let index = 0; index < first.length; index += 1) {
+    difference |= first.charCodeAt(index) ^ second.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
+function lastFinalActualDate(payload) {
+  const dates = (Array.isArray(payload?.actuals) ? payload.actuals : [])
+    .filter((row) => row?.is_final_station_actual === true)
+    .map((row) => String(row?.target_date || ""))
+    .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))
+    .sort();
+  return dates.at(-1) || null;
+}
+
+async function sha256Hex(bytes) {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function publishDailyAnalysis(request, env) {
+  if (!env.AEMET_HOT) {
+    return Response.json({ error: "AEMET_HOT KV binding is not configured" }, { status: 503 });
+  }
+  const authorization = request.headers.get("Authorization") || "";
+  const suppliedToken = authorization.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length) : "";
+  if (!timingSafeEqual(suppliedToken, env.DAILY_ANALYSIS_PUBLISH_TOKEN)) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const bytes = await request.arrayBuffer();
+  if (!bytes.byteLength || bytes.byteLength > DAILY_ANALYSIS_MAX_BYTES) {
+    return Response.json({ error: "invalid export size" }, { status: 413 });
+  }
+  let payload;
+  try {
+    payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    return Response.json({ error: "invalid JSON" }, { status: 400 });
+  }
+  const targetDate = lastFinalActualDate(payload);
+  const valid = payload?.airport === "LEMD"
+    && payload?.classification === "READ-ONLY DAILY ANALYSIS EXPORT"
+    && payload?.contains_credentials === false
+    && payload?.writes_production_database === false
+    && payload?.research_only === true
+    && typeof payload?.generated_at === "string"
+    && targetDate !== null;
+  if (!valid) {
+    return Response.json({ error: "export safety validation failed" }, { status: 400 });
+  }
+  const sha256 = await sha256Hex(bytes);
+  const publishedAt = new Date().toISOString();
+  const metadata = {
+    schema_version: "1.0",
+    status: "published",
+    target_date: targetDate,
+    generated_at: payload.generated_at,
+    published_at: publishedAt,
+    size_bytes: bytes.byteLength,
+    sha256,
+    latest_key: DAILY_ANALYSIS_LATEST_KEY,
+    dated_key: `daily-analysis/${targetDate}.json`,
+    research_only: true,
+    writes_production_database: false,
+  };
+  const kvMetadata = {
+    content_type: "application/json",
+    target_date: targetDate,
+    generated_at: payload.generated_at,
+    size_bytes: bytes.byteLength,
+    sha256,
+  };
+  await Promise.all([
+    env.AEMET_HOT.put(DAILY_ANALYSIS_LATEST_KEY, bytes, { metadata: kvMetadata }),
+    env.AEMET_HOT.put(`daily-analysis/${targetDate}.json`, bytes, {
+      metadata: kvMetadata,
+      expirationTtl: DAILY_ANALYSIS_ARCHIVE_TTL_SECONDS,
+    }),
+    env.AEMET_HOT.put(DAILY_ANALYSIS_META_KEY, JSON.stringify(metadata)),
+  ]);
+  console.log(JSON.stringify({ ...metadata, status: "daily-analysis-published" }));
+  return Response.json(metadata, { headers: responseHeaders("no-store") });
 }
 
 export function normalizeAemetObservation(row, firstSeenAt = null) {
@@ -195,7 +291,7 @@ async function fetchAemetObservations(apiKey) {
   const endpoint = new URL(AEMET_API_URL);
   endpoint.searchParams.set("api_key", apiKey);
   const metadataResponse = await fetch(endpoint, {
-    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.8" },
+    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.13" },
   });
   if (!metadataResponse.ok) {
     throw new Error(`AEMET metadata request failed: HTTP ${metadataResponse.status}`);
@@ -212,7 +308,7 @@ async function fetchAemetObservations(apiKey) {
     throw new Error("AEMET returned an unexpected data host");
   }
   const dataResponse = await fetch(dataUrl, {
-    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.8" },
+    headers: { Accept: "application/json", "User-Agent": "Weatherman-Madrid/1.0.13" },
   });
   if (!dataResponse.ok) {
     throw new Error(`AEMET data request failed: HTTP ${dataResponse.status}`);
@@ -355,6 +451,24 @@ async function kvJsonResponse(env, key, cacheControl) {
   return new Response(value, { headers: responseHeaders(cacheControl) });
 }
 
+async function dailyAnalysisResponse(request, env, key, cacheControl) {
+  if (!env.AEMET_HOT) {
+    return Response.json({ error: "AEMET_HOT KV binding is not configured" }, { status: 503 });
+  }
+  const result = await env.AEMET_HOT.getWithMetadata(key, "arrayBuffer");
+  if (result.value === null) return Response.json({ error: "not found" }, { status: 404 });
+  const metadata = result.metadata || {};
+  const headers = {
+    ...responseHeaders(cacheControl),
+    ...(metadata.sha256 ? { ETag: `"${metadata.sha256}"` } : {}),
+    ...(metadata.target_date ? { "X-Export-Target-Date": metadata.target_date } : {}),
+    ...(metadata.generated_at ? { "X-Export-Generated-At": metadata.generated_at } : {}),
+    ...(metadata.size_bytes ? { "X-Export-Size": String(metadata.size_bytes) } : {}),
+  };
+  if (request.method === "HEAD") return new Response(null, { headers });
+  return new Response(result.value, { headers });
+}
+
 export default {
   async scheduled(controller, env, ctx) {
     const scheduled = new Date(controller.scheduledTime);
@@ -427,8 +541,24 @@ export default {
 
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method !== "GET") {
+    if (request.method === "POST" && url.pathname === "/internal/publish-daily-analysis") {
+      return publishDailyAnalysis(request, env);
+    }
+    if (!["GET", "HEAD"].includes(request.method)) {
       return Response.json({ error: "method not allowed" }, { status: 405 });
+    }
+    if (url.pathname === "/daily-analysis-latest.json") {
+      return dailyAnalysisResponse(
+        request, env, DAILY_ANALYSIS_LATEST_KEY, "public, max-age=60"
+      );
+    }
+    if (/^\/daily-analysis\/\d{4}-\d{2}-\d{2}\.json$/.test(url.pathname)) {
+      return dailyAnalysisResponse(
+        request, env, url.pathname.slice(1), "public, max-age=300"
+      );
+    }
+    if (url.pathname === `/${DAILY_ANALYSIS_META_KEY}`) {
+      return kvJsonResponse(env, DAILY_ANALYSIS_META_KEY, "public, max-age=60");
     }
     if (url.pathname === "/aemet-live.json") {
       return kvJsonResponse(env, AEMET_LIVE_KEY, "public, max-age=60");
@@ -460,6 +590,9 @@ export default {
         aemet_station: AEMET_STATION_ID,
         aemet_hot_store_configured: Boolean(env.AEMET_HOT),
         aemet_key_configured: Boolean(env.AEMET_API_KEY),
+        daily_analysis_mirror_configured: Boolean(
+          env.AEMET_HOT && env.DAILY_ANALYSIS_PUBLISH_TOKEN
+        ),
       },
       { headers: responseHeaders("public, max-age=60") },
     );

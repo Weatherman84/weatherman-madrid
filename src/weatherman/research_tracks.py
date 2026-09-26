@@ -1,4 +1,4 @@
-"""Versioned, additive research logic for v1.0.11.
+"""Versioned, additive research logic for v1.0.13.
 
 Nothing in this module is imported by the forecast engine or collector.  It
 operates on already persisted checkpoint evidence and never promotes itself.
@@ -21,6 +21,30 @@ TAF_HEDGE_WEIGHT = 0.30
 MIN_COMBINATION_SAMPLE = 10
 
 ACTIONABLE_CHECKPOINTS = {"First Live @12:00", "Late Live @16:00"}
+
+SCHEDULED_CAUSAL_EVIDENCE = "scheduled_causal"
+RECONSTRUCTED_RESEARCH_EVIDENCE = "reconstructed_research"
+OTHER_RESEARCH_EVIDENCE = "other_research"
+
+
+def checkpoint_evidence_class(
+    checkpoint_status: object,
+    checkpoint_reconstructed: object = False,
+) -> str:
+    """Map persisted checkpoint provenance to non-overlapping research classes."""
+    status = str(checkpoint_status or "").strip().casefold()
+    try:
+        reconstructed = False if bool(pd.isna(checkpoint_reconstructed)) else bool(
+            checkpoint_reconstructed
+        )
+    except (TypeError, ValueError):
+        reconstructed = False
+    reconstructed = reconstructed or "reconstructed" in status
+    if reconstructed:
+        return RECONSTRUCTED_RESEARCH_EVIDENCE
+    if status == "scheduled-causal":
+        return SCHEDULED_CAUSAL_EVIDENCE
+    return OTHER_RESEARCH_EVIDENCE
 
 
 def positive_temperature_bucket(value: object) -> int | None:
@@ -70,6 +94,9 @@ def build_trading_shadow_decision(
     market_checkpoint: Mapping[str, Any] | None,
     forecast_confidence: object = None,
     regimes: Sequence[str] | None = None,
+    checkpoint_status: object = None,
+    checkpoint_reconstructed: object = False,
+    evidence_class: str | None = None,
 ) -> dict[str, Any]:
     """Build the immutable v0.1 hypothetical decision from checkpoint inputs."""
     ranked = probability_ranking(probabilities)
@@ -128,12 +155,24 @@ def build_trading_shadow_decision(
         )
 
     age = market_checkpoint.get("market_snapshot_age_minutes")
+    checkpoint_evidence = checkpoint_evidence_class(
+        checkpoint_status,
+        checkpoint_reconstructed,
+    )
+    normalized_evidence = (
+        RECONSTRUCTED_RESEARCH_EVIDENCE
+        if checkpoint_evidence == RECONSTRUCTED_RESEARCH_EVIDENCE
+        else evidence_class or checkpoint_evidence
+    )
+    normalized_reconstructed = checkpoint_evidence == RECONSTRUCTED_RESEARCH_EVIDENCE
     return {
         "target_date": target_date,
         "checkpoint": checkpoint,
         "generated_at": generated_at,
         "challenger_version": TRADING_CHALLENGER_VERSION,
-        "evidence_class": "historical_replay",
+        "checkpoint_status": checkpoint_status,
+        "checkpoint_reconstructed": normalized_reconstructed,
+        "evidence_class": normalized_evidence,
         "champion_top1_bucket": top1[0],
         "champion_top1_probability": top1[1],
         "champion_top2_bucket": top2[0],
@@ -225,6 +264,64 @@ def active_regimes(record: Mapping[str, Any]) -> list[str]:
     return list(dict.fromkeys(regimes))
 
 
+def late_live_overlap_guard_shadow(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Detect the Sep-16 research pattern without changing forecast probabilities."""
+    checkpoint = str(record.get("checkpoint") or "")
+    outlook = str(record.get("future_outlook_status") or "")
+    remaining = _number(record.get("remaining_model_rise_c"))
+    observed_bucket = positive_temperature_bucket(record.get("observed_max_c"))
+    taf_bucket = record.get("taf_bucket")
+    pre_taf_modal = record.get("pre_taf_modal_bucket_c")
+    clear_sky = max(0.0, _number(record.get("clear_sky_override_adjustment_c")) or 0.0)
+    cloud = max(0.0, _number(record.get("cloud_adjustment_c")) or 0.0)
+    radiation = max(0.0, _number(record.get("radiation_adjustment_c")) or 0.0)
+    overlap_uplift = clear_sky + cloud + radiation
+    model_peak_passed = "MODEL PEAK PASSED" in outlook.upper()
+    low_remaining_rise = remaining is not None and remaining <= 0.2
+    taf_below_pre_taf_modal = (
+        taf_bucket is not None
+        and pre_taf_modal is not None
+        and int(taf_bucket) < int(pre_taf_modal)
+    )
+    observed_max_equals_taf = (
+        observed_bucket is not None
+        and taf_bucket is not None
+        and int(observed_bucket) == int(taf_bucket)
+    )
+    candidate = all((
+        checkpoint == "Late Live @16:00",
+        model_peak_passed,
+        low_remaining_rise,
+        taf_below_pre_taf_modal,
+        observed_max_equals_taf,
+        overlap_uplift > 0,
+    ))
+    return {
+        "version": "late_live_overlap_guard_candidate_v0.1",
+        "status": "candidate_detected" if candidate else "not_detected",
+        "model_peak_passed": model_peak_passed,
+        "remaining_model_rise_c": remaining,
+        "observed_max_bucket_c": observed_bucket,
+        "taf_bucket_c": taf_bucket,
+        "pre_taf_modal_bucket_c": pre_taf_modal,
+        "taf_below_pre_taf_modal": taf_below_pre_taf_modal,
+        "observed_max_equals_taf": observed_max_equals_taf,
+        "overlap_components_c": {
+            "clear_sky_override": clear_sky,
+            "cloud": cloud,
+            "radiation": radiation,
+        },
+        "overlap_uplift_sum_c": round(overlap_uplift, 8),
+        "counterfactual_cap_c": None,
+        "upper_tail_damping": None,
+        "probability": None,
+        "champion_impact_c": 0.0,
+        "research_only": True,
+        "automatic_promotion": False,
+        "evidence_status": "insufficient_oos_data",
+    }
+
+
 def score_regime_matrix(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Summarise global and checkpoint metrics; no small-N combinations are emitted."""
     expanded: list[dict[str, Any]] = []
@@ -302,3 +399,31 @@ def score_regime_matrix(records: Sequence[Mapping[str, Any]]) -> list[dict[str, 
             }
         )
     return sorted(result, key=lambda row: (row["regime"], row["checkpoint"] != "ALL", row["checkpoint"]))
+
+
+def regime_matrix_views(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Return explicitly separated evidence views with scheduled-causal as default."""
+    scheduled = [
+        row for row in records
+        if row.get("evidence_class") == SCHEDULED_CAUSAL_EVIDENCE
+    ]
+    reconstructed = [
+        row for row in records
+        if row.get("evidence_class") == RECONSTRUCTED_RESEARCH_EVIDENCE
+    ]
+    all_research = list(records)
+    return {
+        "default_view": "scheduled_causal_only",
+        "scheduled_causal_only": {
+            "checkpoint_records": len(scheduled),
+            "matrix": score_regime_matrix(scheduled),
+        },
+        "reconstructed_research": {
+            "checkpoint_records": len(reconstructed),
+            "matrix": score_regime_matrix(reconstructed),
+        },
+        "all_research_evidence": {
+            "checkpoint_records": len(all_research),
+            "matrix": score_regime_matrix(all_research),
+        },
+    }
