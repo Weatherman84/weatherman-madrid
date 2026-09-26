@@ -122,6 +122,8 @@ def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials
     assert '"fixed" : "aviation"' in worker
     assert '"15 19,20 * * *"' in config
     assert '"50 * * * *"' in config
+    assert '"binding": "AEMET_HOT"' in config
+    assert '"id": "a6d21e1736244b4d8dffa296f6664aff"' in config
     assert "AEMET_API_KEY" in worker
     assert "AEMET_HOT" in worker
     assert "aemet-live.json" in worker

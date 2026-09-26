@@ -6,6 +6,12 @@
   "observability": {
     "enabled": true
   },
+  "kv_namespaces": [
+    {
+      "binding": "AEMET_HOT",
+      "id": "a6d21e1736244b4d8dffa296f6664aff"
+    }
+  ],
   "vars": {
     "GITHUB_OWNER": "weatherman84",
     "GITHUB_REPO": "weatherman-madrid",

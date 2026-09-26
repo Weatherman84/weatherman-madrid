@@ -1,4 +1,4 @@
-# Validation – Weatherman Madrid v1.0.13
+# Validation – Weatherman Madrid v1.0.14
 
 ## Ergebnis
 
@@ -36,6 +36,13 @@ TAF-Stufe, Day-/Peak-Lock und produktive Regimegewichte.
 - `late_live_overlap_guard_candidate_v0.1` erkennt nur den Research-Fall aus
   Clear-Sky/Cloud/Radiation, passiertem Modellpeak und TAF-Disagreement. Er berechnet
   keinen Cap, keine neue Wahrscheinlichkeit und hat `champion_impact_c=0.0`.
+
+## v1.0.14
+
+- Das produktive KV-Binding `AEMET_HOT` ist samt Namespace-ID in der Wrangler-
+  Konfiguration versioniert.
+- Der Workflow-/Konfigurationstest schützt Binding und Namespace-ID vor Regressionen.
+- Der Fix führt keine Neon-Abfrage aus und ändert keine Forecastkomponente.
 
 ## Noch extern zu bestätigen
 
