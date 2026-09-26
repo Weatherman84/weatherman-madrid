@@ -25,8 +25,10 @@ from weatherman.research_replay_export import (
     _resolution_map,
 )
 from weatherman.research_tracks import (
+    SCHEDULED_CAUSAL_EVIDENCE,
     TRADING_CHALLENGER_VERSION,
     build_trading_shadow_decision,
+    checkpoint_evidence_class,
     positive_temperature_bucket,
 )
 
@@ -86,6 +88,14 @@ def _capture_payloads(connection, target, generated: datetime) -> list[dict]:
         label = str(row["checkpoint_label"])
         if schedule[label] > generated:
             continue
+        checkpoint_evidence = checkpoint_evidence_class(
+            row.get("checkpoint_status"), row.get("checkpoint_reconstructed", False)
+        )
+        decision_evidence = (
+            "sequential_live_shadow"
+            if checkpoint_evidence == SCHEDULED_CAUSAL_EVIDENCE
+            else checkpoint_evidence
+        )
         decision = build_trading_shadow_decision(
             target_date=target.isoformat(),
             checkpoint=label,
@@ -95,9 +105,11 @@ def _capture_payloads(connection, target, generated: datetime) -> list[dict]:
             market_checkpoint=markets.get(label),
             forecast_confidence=row.get("forecast_confidence"),
             regimes=[],
+            checkpoint_status=row.get("checkpoint_status"),
+            checkpoint_reconstructed=row.get("checkpoint_reconstructed", False),
+            evidence_class=decision_evidence,
         )
         decision["checkpoint_at"] = schedule[label].isoformat()
-        decision["evidence_class"] = "sequential_live_shadow"
         decisions.append(decision)
     return decisions
 
@@ -107,12 +119,14 @@ def _insert_decisions(connection, decisions: list[dict]) -> int:
     statement = text(
         "INSERT INTO replay_lab.trading_shadow_decisions ("
         "target_date, checkpoint, checkpoint_at, generated_at, challenger_version, "
-        "evidence_class, top1_bucket, top1_probability, top2_bucket, top2_probability, "
+        "evidence_class, checkpoint_status, checkpoint_reconstructed, "
+        "top1_bucket, top1_probability, top2_bucket, top2_probability, "
         "taf_bucket, taf_outside_top2, selected_buckets_json, market_snapshot_at, "
         "forecast_confidence, regimes_json, "
         "market_snapshot_status, market_snapshot_age_minutes, market_freshness_band, "
         "strategy_code, research_only, automatic_promotion) VALUES ("
         ":target_date, :checkpoint, :checkpoint_at, :generated_at, :version, :evidence, "
+        ":checkpoint_status, :checkpoint_reconstructed, "
         ":top1, :top1p, :top2, :top2p, :taf, :taf_outside, CAST(:selected AS JSONB), "
         ":market_at, :confidence, CAST(:regimes AS JSONB), "
         ":market_status, :market_age, :freshness, :strategy, TRUE, FALSE) "
@@ -123,6 +137,8 @@ def _insert_decisions(connection, decisions: list[dict]) -> int:
             "target_date": item["target_date"], "checkpoint": item["checkpoint"],
             "checkpoint_at": item["checkpoint_at"], "generated_at": item["generated_at"],
             "version": item["challenger_version"], "evidence": item["evidence_class"],
+            "checkpoint_status": item["checkpoint_status"],
+            "checkpoint_reconstructed": item["checkpoint_reconstructed"],
             "top1": item["champion_top1_bucket"], "top1p": item["champion_top1_probability"],
             "top2": item["champion_top2_bucket"], "top2p": item["champion_top2_probability"],
             "taf": item["taf_bucket"], "taf_outside": item["taf_outside_top2"],

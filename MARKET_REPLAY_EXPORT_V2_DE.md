@@ -56,7 +56,7 @@ Samples leer und `price_kind` ausdrücklich sichtbar.
 ```json
 {
   "schema_version": "1.0",
-  "application_version": "1.0.11",
+  "application_version": "1.0.13",
   "export_engine_version": "v10.7.11",
   "protected_forecast_baseline": "v10.7.10",
   "airport": "LEMD",

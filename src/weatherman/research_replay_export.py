@@ -1,6 +1,7 @@
 """Bounded read-only exports for the v0.1 Madrid research tracks."""
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timezone
 from numbers import Number
 from typing import Any
@@ -25,14 +26,16 @@ from .research_tracks import (
     TRADING_CHALLENGER_VERSION,
     active_regimes,
     build_trading_shadow_decision,
+    checkpoint_evidence_class,
+    late_live_overlap_guard_shadow,
     positive_temperature_bucket,
     probability_ranking,
-    score_regime_matrix,
+    regime_matrix_views,
 )
 
 
 MAX_CHECKPOINT_ROWS = MAX_EXPORT_DAYS * len(CHECKPOINT_LABELS)
-ESTIMATED_BYTES_PER_CHECKPOINT = 1_400
+ESTIMATED_BYTES_PER_CHECKPOINT = 2_200
 EXPORT_ENGINE_VERSION = "v10.7.11"
 PROTECTED_FORECAST_BASELINE = "v10.7.10"
 
@@ -41,12 +44,22 @@ SNAPSHOT_FIELDS = (
     "checkpoint_status", "checkpoint_reconstructed", "freshness_status", "evidence_class",
     "raw_model_mean_c", "bias_corrected_c", "metar_conditioned_c", "final_forecast_c",
     "raw_spread_c", "final_spread_c", "taf_max_temp_c", "taf_conflict",
+    "taf_adjustment_c", "pre_taf_modal_bucket_c", "observed_max_c", "peak_lock_json",
     "temp_anchor_adjustment_c", "cloud_adjustment_c", "radiation_adjustment_c",
-    "wind_adjustment_c", "late_dry_mixing_adjustment_c",
+    "wind_adjustment_c", "heating_rate_adjustment_c", "recent_error_adjustment_c",
+    "late_dry_mixing_adjustment_c",
     "failed_convection_adjustment_c", "clear_sky_override_adjustment_c",
     "rapid_heat_ramp_active", "regional_cluster_active", "persistent_hot_active",
     "phase_vs_amplitude_active", "maritime_advection_active", "features_json",
 )
+
+
+def _json_mapping(value: object) -> dict[str, Any]:
+    try:
+        parsed = json.loads(value) if isinstance(value, str) else value
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return dict(parsed) if isinstance(parsed, dict) else {}
 
 
 def _json_safe(value: Any) -> Any:
@@ -210,17 +223,22 @@ def build_research_replay_export(
         checkpoint_at = pd.to_datetime(row.get("checkpoint_at"), utc=True, errors="coerce")
         if pd.isna(checkpoint_at):
             checkpoint_at = dict(checkpoint_schedule(target))[row["checkpoint_label"]]
+        checkpoint_status = row.get("checkpoint_status")
+        checkpoint_reconstructed = (
+            bool(row.get("checkpoint_reconstructed"))
+            if pd.notna(row.get("checkpoint_reconstructed")) else False
+        )
         record: dict[str, Any] = {
             "target_date": target.isoformat(),
             "checkpoint": row.get("checkpoint_label"),
             "checkpoint_at": pd.Timestamp(checkpoint_at).isoformat(),
             "captured_at": pd.Timestamp(row.get("captured_at")).isoformat(),
-            "evidence_class": row.get("evidence_class"),
-            "checkpoint_status": row.get("checkpoint_status"),
-            "checkpoint_reconstructed": (
-                bool(row.get("checkpoint_reconstructed"))
-                if pd.notna(row.get("checkpoint_reconstructed")) else False
+            "evidence_class": checkpoint_evidence_class(
+                checkpoint_status, checkpoint_reconstructed
             ),
+            "source_evidence_class": row.get("evidence_class"),
+            "checkpoint_status": checkpoint_status,
+            "checkpoint_reconstructed": checkpoint_reconstructed,
             "freshness_status": row.get("freshness_status"),
             "raw_c": row.get("raw_model_mean_c"),
             "bias_c": row.get("bias_corrected_c"),
@@ -240,19 +258,37 @@ def build_research_replay_export(
             "final_spread_c": row.get("spread_c", row.get("final_spread_c")),
             "forecast_confidence": row.get("forecast_confidence"),
             "taf_bucket": positive_temperature_bucket(row.get("taf_max_temp_c")),
+            "taf_adjustment_c": row.get("taf_adjustment_c"),
             "taf_conflict": bool(row.get("taf_conflict")),
+            "pre_taf_modal_bucket_c": row.get("pre_taf_modal_bucket_c"),
+            "taf_vs_pre_taf_modal_disagreement": bool(
+                positive_temperature_bucket(row.get("taf_max_temp_c")) is not None
+                and row.get("pre_taf_modal_bucket_c") is not None
+                and positive_temperature_bucket(row.get("taf_max_temp_c"))
+                != row.get("pre_taf_modal_bucket_c")
+            ),
+            "observed_max_c": row.get("observed_max_c"),
             "stored_metar_actual_c": actuals.get(target),
             "aemet_physical_tmax_c": None,
             "aemet_provenance": "not_read_from_production_neon",
         }
         for field in (
             "temp_anchor_adjustment_c", "cloud_adjustment_c", "radiation_adjustment_c",
-            "wind_adjustment_c", "late_dry_mixing_adjustment_c",
+            "wind_adjustment_c", "heating_rate_adjustment_c",
+            "recent_error_adjustment_c", "late_dry_mixing_adjustment_c",
             "failed_convection_adjustment_c", "clear_sky_override_adjustment_c",
             "rapid_heat_ramp_active", "regional_cluster_active", "persistent_hot_active",
             "phase_vs_amplitude_active", "maritime_advection_active", "features_json",
         ):
             record[field] = row.get(field)
+        features = _json_mapping(row.get("features_json"))
+        peak_lock = _json_mapping(row.get("peak_lock_json"))
+        record["future_outlook_status"] = features.get("future_outlook_status")
+        record["remaining_model_rise_c"] = features.get(
+            "remaining_model_rise_c", peak_lock.get("remaining_model_rise_c")
+        )
+        record["peak_lock_label"] = peak_lock.get("label")
+        record["late_live_overlap_guard_shadow"] = late_live_overlap_guard_shadow(record)
         record["active_regimes"] = active_regimes(record)
         checkpoint_records.append(record)
 
@@ -266,6 +302,8 @@ def build_research_replay_export(
             market_checkpoint=market_checkpoint,
             forecast_confidence=record["forecast_confidence"],
             regimes=record["active_regimes"],
+            checkpoint_status=checkpoint_status,
+            checkpoint_reconstructed=checkpoint_reconstructed,
         )
         resolution = resolutions.get(target, {})
         decision.update(
@@ -315,8 +353,9 @@ def build_research_replay_export(
         {key: value for key, value in record.items() if key != "features_json"}
         for record in checkpoint_records
     ]
+    matrix_views = regime_matrix_views(checkpoint_records)
     return _json_safe({
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "application_version": __version__,
         "export_engine_version": EXPORT_ENGINE_VERSION,
         "protected_forecast_baseline": PROTECTED_FORECAST_BASELINE,
@@ -329,8 +368,9 @@ def build_research_replay_export(
         "research_only": RESEARCH_ONLY,
         "automatic_promotion": AUTOMATIC_PROMOTION,
         "evidence_policy": {
-            "historical_export": "historical_replay",
+            "scheduled_causal": "scheduled_causal",
             "reconstructed": "reconstructed_research",
+            "other_checkpoint_evidence": "other_research",
             "sequential_oos": "not_claimed_by_this_export",
             "live_shadow": "only records captured after challenger deployment qualify",
         },
@@ -344,7 +384,9 @@ def build_research_replay_export(
             "version": REGIME_MATRIX_VERSION,
             "definitions": "explicit versioned v0.1 rules in research_tracks.py",
             "checkpoint_records": public_records,
-            "matrix": score_regime_matrix(checkpoint_records),
+            "matrix_default_view": "scheduled_causal_only",
+            "matrix": matrix_views["scheduled_causal_only"]["matrix"],
+            "matrix_views": matrix_views,
             "combinations": [],
             "combination_policy": "not emitted until each combination has N >= 10",
         },

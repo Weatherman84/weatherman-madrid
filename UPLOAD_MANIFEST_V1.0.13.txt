@@ -1,0 +1,40 @@
+Weatherman Madrid v1.0.13
+
+Kumulatives Update von installierter v1.0.11:
+CHAT_AUTOMATION_FALLBACK_V1.0.13.md
+CLOUDFLARE_SETUP_DE.md
+ENGINE_BASELINE_SHA256.json
+MARKET_REPLAY_EXPORT_V2_DE.md
+PROJECT_HANDOFF.md
+README.md
+RELEASE_NOTES.md
+RESEARCH_WATCHLIST_V1.0.12.md
+RESEARCH_WATCHLIST_V1.0.13.md
+SETUP_GUIDE_DE.md
+START_HERE_V1.0.12_DE.md
+START_HERE_V1.0.13_DE.md
+UPLOAD_MANIFEST_V1.0.12.txt
+UPLOAD_MANIFEST_V1.0.13.txt
+VALIDATION_REPORT.md
+app.py
+cloudflare-scheduler/package.json
+cloudflare-scheduler/src/index.js
+cloudflare-scheduler/test/aemet.test.mjs
+pyproject.toml
+scripts/capture_trading_shadow.py
+scripts/__init__.py
+scripts/prepare_daily_analysis_publication.py
+scripts/prepare_replay_lab.py
+scripts/verify_daily_analysis_publication.py
+src/weatherman/__init__.py
+src/weatherman/aemet_live.py
+src/weatherman/research_replay_export.py
+src/weatherman/research_tracks.py
+src/weatherman/research_ui.py
+tests/test_daily_analysis_publication.py
+tests/test_research_tracks_v011.py
+tests/test_workflows.py
+uv.lock
+
+Separat hochzuladen:
+.github/workflows/publish-daily-analysis-export.yml

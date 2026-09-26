@@ -1,4 +1,9 @@
-# Cloudflare Scheduler und AEMET-Livecache – Madrid v1.0.8
+# Cloudflare Scheduler, AEMET-Livecache und Export-Mirror – Madrid v1.0.13
+
+> Für v1.0.13 zuerst `START_HERE_V1.0.13_DE.md` verwenden. Der neue
+> Daily-Analysis-Mirror verwendet das bestehende Binding `AEMET_HOT`; kein neues
+> KV-Binding anlegen. Neu ist ausschließlich das Secret
+> `DAILY_ANALYSIS_PUBLISH_TOKEN` in Cloudflare und GitHub.
 
 Für das Update von v1.0.7 zuerst `START_HERE_V1.0.8_DE.md` verwenden. Bestehende
 Secrets und KV-Bindings beibehalten. Worker-Code zuerst deployen, danach den alten

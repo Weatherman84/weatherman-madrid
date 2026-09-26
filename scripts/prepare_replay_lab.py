@@ -39,6 +39,7 @@ def ensure_replay_schema(connection) -> None:
             "target_date DATE NOT NULL, checkpoint TEXT NOT NULL, "
             "checkpoint_at TIMESTAMPTZ NOT NULL, generated_at TIMESTAMPTZ NOT NULL, "
             "challenger_version TEXT NOT NULL, evidence_class TEXT NOT NULL, "
+            "checkpoint_status TEXT, checkpoint_reconstructed BOOLEAN, "
             "top1_bucket INTEGER, top1_probability DOUBLE PRECISION, "
             "top2_bucket INTEGER, top2_probability DOUBLE PRECISION, "
             "taf_bucket INTEGER, taf_outside_top2 BOOLEAN NOT NULL DEFAULT FALSE, "
@@ -51,6 +52,14 @@ def ensure_replay_schema(connection) -> None:
             "UNIQUE(target_date, checkpoint, challenger_version))"
         )
     )
+    connection.execute(text(
+        "ALTER TABLE replay_lab.trading_shadow_decisions "
+        "ADD COLUMN IF NOT EXISTS checkpoint_status TEXT"
+    ))
+    connection.execute(text(
+        "ALTER TABLE replay_lab.trading_shadow_decisions "
+        "ADD COLUMN IF NOT EXISTS checkpoint_reconstructed BOOLEAN"
+    ))
     connection.execute(
         text(
             "CREATE TABLE IF NOT EXISTS replay_lab.trading_shadow_outcomes ("
