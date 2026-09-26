@@ -1,3 +1,21 @@
+# Release Notes – Madrid v1.0.14
+
+## Neu in v1.0.14
+
+- Dauerhafter AEMET-KV-Binding-Fix: `AEMET_HOT` und die vorhandene Namespace-ID
+  stehen jetzt in `cloudflare-scheduler/wrangler.jsonc`.
+- Ein Regressionstest verhindert, dass Binding oder Namespace-ID bei einem späteren
+  Worker-Update unbemerkt wieder aus der Deployment-Konfiguration verschwinden.
+- Der Namespace-Identifier ist kein Secret. `AEMET_API_KEY`, `GITHUB_TOKEN` und
+  `DAILY_ANALYSIS_PUBLISH_TOKEN` bleiben ausschließlich geschützte Worker-Secrets.
+- Keine Änderung an Forecastformel, Champion, Biases, Clear-Sky Override, TAF-Stufe,
+  produktiven Regimes, Locks oder OOS-/Promotion-Logik. Engine v10.7.11;
+  geschützte Baseline v10.7.10. Keine Neon-Abfrage durch diesen Hotfix.
+
+Installation: `START_HERE_V1.0.14_DE.md`.
+
+## Früheres Release
+
 # Release Notes – Madrid v1.0.13
 
 ## Neu in v1.0.13
