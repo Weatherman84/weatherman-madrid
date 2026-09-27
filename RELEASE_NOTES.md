@@ -1,3 +1,31 @@
+# Release Notes – Madrid v1.0.17
+
+## Neu in v1.0.17
+
+- `d1_evening_challenger_v0.2` ergänzt v0.1 additiv. v0.1 bleibt unverändert
+  reproduzierbar. v0.2 begrenzt den checkpoint-spezifischen expanding Bias auf
+  ±0,35 K und verhindert mit einem TAF Directional Guard eine Korrektur gegen ein
+  gerichtetes TAF-Signal. Eine Shrink-Variante wird nur diagnostisch ausgewiesen,
+  nachdem sie auf den 26 Fällen die v0.1-Leistung verschlechterte.
+- Die Interaktion Bucket Boundary × TAF darf erst ab zehn früheren vergleichbaren
+  Fällen höchstens zehn Prozentpunkte Wahrscheinlichkeitsmasse zwischen benachbarten
+  Buckets verschieben. Modell-Run-Trends bleiben reine Reason Codes.
+- Neuer kompakter `checkpoint-research-export.json` für alle vier Fix-Checkpoints mit
+  Forecaststufen, kausalen Modellläufen, TAF-Revisionen, Regimes, gespeicherten
+  Korrekturbeiträgen und einem kleinen lokalen Probability-Fenster.
+- Neuer manueller Workflow `12 - Export Madrid checkpoint research`, standardmäßig
+  Dry Run. Für 30 Tage gelten maximal 120 Checkpoints, 2.880 Modelllaufzeilen und
+  240 TAF-Zeilen; der Dry Run führt keine Production-Abfrage aus.
+- Nicht persistierte Trigger-Schwellen und Regime-Zwischenstände werden ausdrücklich
+  als nicht rekonstruierbar markiert. AEMET und Market Resolution bleiben getrennt.
+
+Forecast Engine v10.7.11, geschützte Baseline v10.7.10, Champion, Biases,
+TAF-Stufe, Trading Shadow, Live Correction und Locks bleiben unverändert.
+
+Installation: `START_HERE_V1.0.17_DE.md`.
+
+---
+
 # Release Notes – Madrid v1.0.16
 
 ## Neu in v1.0.16

@@ -25,8 +25,12 @@ from .research_tracks import (
 
 D1_CHECKPOINT = "D-1 Evening @20:00"
 D1_CHALLENGER_VERSION = "d1_evening_challenger_v0.1"
+D1_CHALLENGER_V2_VERSION = "d1_evening_challenger_v0.2"
 D1_MIN_PRIOR_CASES = 10
 D1_MAX_ADJUSTMENT_C = 0.5
+D1_V2_MAX_ADJUSTMENT_C = 0.35
+D1_V2_BIAS_SHRINKAGE_CASES = 10
+D1_V2_MAX_BOUNDARY_MASS_SHIFT = 0.10
 D1_TREND_THRESHOLD_C = 0.2
 D1_SPLIT_THRESHOLD_C = 2.0
 
@@ -208,6 +212,184 @@ def build_d1_walk_forward_challenger(
     return result
 
 
+def _v2_calibration_adjustment(
+    prior: Sequence[Mapping[str, Any]], reason_codes: Sequence[str]
+) -> tuple[float, dict[str, Any]]:
+    """Return a shrunk, capped expanding bias with a directional TAF guard."""
+    eligible = [
+        item
+        for item in prior
+        if item.get("evidence_class") == SCHEDULED_CAUSAL_EVIDENCE
+        and _number(item.get("signed_error_c")) is not None
+    ]
+    if len(eligible) < D1_MIN_PRIOR_CASES:
+        return 0.0, {
+            "status": "warmup_insufficient_prior_cases",
+            "prior_n": len(eligible),
+            "signal_n": 0,
+            "directional_guard": "not_needed",
+        }
+    residuals = [float(item["signed_error_c"]) for item in eligible]
+    global_bias = sum(residuals) / len(residuals)
+    shrinkage = len(eligible) / (len(eligible) + D1_V2_BIAS_SHRINKAGE_CASES)
+    shrunk_candidate = global_bias * shrinkage
+    estimate = global_bias
+    signal_rows = [
+        item
+        for item in eligible
+        if set(reason_codes).intersection(item.get("reason_codes", []))
+    ]
+    signal_bias = None
+    if reason_codes and len(signal_rows) >= D1_MIN_PRIOR_CASES:
+        signal_bias = sum(float(item["signed_error_c"]) for item in signal_rows) / len(
+            signal_rows
+        )
+        estimate = 0.5 * global_bias + 0.5 * signal_bias
+        shrunk_candidate = 0.75 * shrunk_candidate + 0.25 * signal_bias
+        status = "capped_checkpoint_expanding_global_and_signal_bias"
+    else:
+        status = "capped_checkpoint_expanding_global_bias"
+    uncapped = estimate
+    estimate = max(-D1_V2_MAX_ADJUSTMENT_C, min(D1_V2_MAX_ADJUSTMENT_C, estimate))
+    directional_guard = "not_needed"
+    if "taf_upside_signal" in reason_codes and estimate < 0:
+        estimate = 0.0
+        directional_guard = "blocked_downward_bias_against_taf_upside"
+    elif "taf_downside_signal" in reason_codes and estimate > 0:
+        estimate = 0.0
+        directional_guard = "blocked_upward_bias_against_taf_downside"
+    return estimate, {
+        "status": status,
+        "prior_n": len(eligible),
+        "signal_n": len(signal_rows),
+        "global_actual_minus_champion_c": global_bias,
+        "shrinkage_factor": shrinkage,
+        "candidate_shrunk_adjustment_c": shrunk_candidate,
+        "selected_bias_policy": "capped_checkpoint_expanding_bias",
+        "signal_actual_minus_champion_c": signal_bias,
+        "uncapped_adjustment_c": uncapped,
+        "cap_c": D1_V2_MAX_ADJUSTMENT_C,
+        "directional_guard": directional_guard,
+    }
+
+
+def _boundary_taf_recalibration(
+    probabilities: Mapping[int, float],
+    record: Mapping[str, Any],
+    prior: Sequence[Mapping[str, Any]],
+) -> tuple[dict[int, float], dict[str, Any]]:
+    """Reallocate limited modal mass to an adjacent TAF bucket after enough prior cases."""
+    source = {int(bucket): float(value) for bucket, value in probabilities.items()}
+    modal = positive_temperature_bucket(record.get("modal_bucket"))
+    taf = positive_temperature_bucket(record.get("taf_bucket"))
+    reasons = set(d1_reason_codes(record))
+    direction = None if modal is None or taf is None else int(math.copysign(1, taf - modal)) if taf != modal else 0
+    candidate = (
+        "bucket_boundary_risk" in reasons
+        and direction in {-1, 1}
+        and abs(int(taf) - int(modal)) == 1
+    )
+    comparable: list[Mapping[str, Any]] = []
+    if candidate:
+        for item in prior:
+            item_modal = positive_temperature_bucket(item.get("modal_bucket"))
+            item_taf = positive_temperature_bucket(item.get("taf_bucket"))
+            if (
+                item.get("evidence_class") == SCHEDULED_CAUSAL_EVIDENCE
+                and item.get("actual_bucket") is not None
+                and "bucket_boundary_risk" in set(item.get("reason_codes", []))
+                and item_modal is not None
+                and item_taf is not None
+                and item_taf - item_modal == direction
+            ):
+                comparable.append(item)
+    metadata = {
+        "status": "not_applicable" if not candidate else "insufficient_sample",
+        "sample_n": len(comparable),
+        "minimum_n": D1_MIN_PRIOR_CASES,
+        "modal_bucket": modal,
+        "taf_bucket": taf,
+        "probability_mass_shift": 0.0,
+    }
+    if not candidate or len(comparable) < D1_MIN_PRIOR_CASES or modal not in source:
+        return source, metadata
+    taf_outcomes = sum(int(int(item["actual_bucket"]) == item_taf) for item in comparable)
+    empirical_taf_rate = taf_outcomes / len(comparable)
+    current_taf_probability = source.get(taf, 0.0)
+    mass_shift = max(
+        -D1_V2_MAX_BOUNDARY_MASS_SHIFT,
+        min(D1_V2_MAX_BOUNDARY_MASS_SHIFT, 0.5 * (empirical_taf_rate - current_taf_probability)),
+    )
+    mass_shift = max(-source.get(taf, 0.0), min(source.get(modal, 0.0), mass_shift))
+    source[modal] = source.get(modal, 0.0) - mass_shift
+    source[taf] = source.get(taf, 0.0) + mass_shift
+    total = sum(source.values())
+    recalibrated = {bucket: value / total for bucket, value in sorted(source.items())}
+    metadata.update({
+        "status": "applied",
+        "empirical_taf_bucket_rate": empirical_taf_rate,
+        "pre_adjustment_taf_probability": current_taf_probability,
+        "probability_mass_shift": mass_shift,
+    })
+    return recalibrated, metadata
+
+
+def build_d1_walk_forward_challenger_v2(
+    records: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Score v0.2 causally while retaining every v0.1 result unchanged."""
+    v1_rows = build_d1_walk_forward_challenger(records)
+    prior: list[dict[str, Any]] = []
+    result: list[dict[str, Any]] = []
+    for source in v1_rows:
+        record = dict(source)
+        reasons = list(record.get("reason_codes") or d1_reason_codes(record))
+        adjustment, calibration = _v2_calibration_adjustment(prior, reasons)
+        champion_center = _number(record.get("champion_center_c"))
+        shifted = shift_bucket_distribution(record.get("champion_probabilities"), adjustment)
+        recalibrated, interaction = _boundary_taf_recalibration(shifted, record, prior)
+        ranked = probability_ranking(recalibrated)
+        challenger_center = champion_center + adjustment if champion_center is not None else None
+        actual = _number(record.get("stored_metar_actual_c"))
+        actual_bucket = positive_temperature_bucket(actual)
+        challenger_modal = ranked[0][0] if ranked else positive_temperature_bucket(
+            record.get("modal_bucket")
+        )
+        center_error = (
+            challenger_center - actual
+            if challenger_center is not None and actual is not None else None
+        )
+        challenger = {
+            "version": D1_CHALLENGER_V2_VERSION,
+            "status": calibration["status"],
+            "center_c": challenger_center,
+            "center_adjustment_c": adjustment,
+            "modal_bucket": challenger_modal,
+            "probabilities": recalibrated,
+            "top1_probability": ranked[0][1] if ranked else None,
+            "top2_bucket": ranked[1][0] if len(ranked) > 1 else None,
+            "top2_probability": ranked[1][1] if len(ranked) > 1 else None,
+            "top3_bucket": ranked[2][0] if len(ranked) > 2 else None,
+            "top3_probability": ranked[2][1] if len(ranked) > 2 else None,
+            "confidence": _challenger_confidence(record, calibration),
+            "reason_codes": reasons or ["no_candidate_signal"],
+            "model_trend_policy": "logged_only_no_center_adjustment",
+            "calibration": calibration,
+            "bucket_boundary_taf_interaction": interaction,
+            "research_only": RESEARCH_ONLY,
+            "automatic_promotion": AUTOMATIC_PROMOTION,
+        }
+        record["challenger_v0_2"] = challenger
+        record["challenger_v0_2_center_error_c"] = center_error
+        record["challenger_v0_2_bucket_error"] = (
+            challenger_modal - actual_bucket
+            if challenger_modal is not None and actual_bucket is not None else None
+        )
+        result.append(record)
+        prior.append(record)
+    return result
+
+
 def _challenger_confidence(record: Mapping[str, Any], calibration: Mapping[str, Any]) -> str:
     if int(calibration.get("prior_n") or 0) < D1_MIN_PRIOR_CASES:
         return "warmup"
@@ -304,6 +486,75 @@ def compare_d1_challenger(records: Sequence[Mapping[str, Any]]) -> dict[str, Any
         "cases_improved": improved,
         "cases_worsened": worsened,
         "cases_unchanged": unchanged,
+        "method": "expanding_window_prior_scheduled_causal_cases_only",
+        "historical_replay_not_oos": True,
+    }
+
+
+def _v2_metrics(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    translated: list[dict[str, Any]] = []
+    for source in records:
+        row = dict(source)
+        challenger = row.get("challenger_v0_2", {})
+        row["challenger"] = challenger
+        row["challenger_center_error_c"] = row.get("challenger_v0_2_center_error_c")
+        translated.append(row)
+    return _metrics(translated, challenger=True)
+
+
+def compare_d1_challenger_versions(
+    records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Compare Champion, immutable v0.1, and v0.2 on the same causal sample."""
+    scored = [row for row in records if row.get("actual_bucket") is not None]
+    changed: list[dict[str, Any]] = []
+    improved = worsened = unchanged = 0
+    for row in scored:
+        v1 = row.get("challenger", {})
+        v2 = row.get("challenger_v0_2", {})
+        v1_error = abs(_number(row.get("challenger_center_error_c")) or 0.0)
+        v2_error = abs(_number(row.get("challenger_v0_2_center_error_c")) or 0.0)
+        if v2_error < v1_error - 1e-12:
+            improved += 1
+        elif v2_error > v1_error + 1e-12:
+            worsened += 1
+        else:
+            unchanged += 1
+        center_changed = abs((_number(v1.get("center_c")) or 0) - (_number(v2.get("center_c")) or 0)) > 1e-12
+        modal_changed = v1.get("modal_bucket") != v2.get("modal_bucket")
+        probabilities_changed = v1.get("probabilities") != v2.get("probabilities")
+        if center_changed or modal_changed or probabilities_changed:
+            changed.append({
+                "target_date": row.get("target_date"),
+                "champion_center_c": row.get("champion_center_c"),
+                "champion_modal_bucket": row.get("modal_bucket"),
+                "v0_1_center_c": v1.get("center_c"),
+                "v0_1_modal_bucket": v1.get("modal_bucket"),
+                "v0_2_center_c": v2.get("center_c"),
+                "v0_2_modal_bucket": v2.get("modal_bucket"),
+                "actual_c": row.get("stored_metar_actual_c"),
+                "actual_bucket": row.get("actual_bucket"),
+                "taf_bucket": row.get("taf_bucket"),
+                "active_regimes": row.get("active_regimes", []),
+                "reason_codes": v2.get("reason_codes", []),
+                "directional_guard": v2.get("calibration", {}).get("directional_guard"),
+                "boundary_taf_interaction": v2.get("bucket_boundary_taf_interaction"),
+                "why_v0_2_differs": [
+                    reason for reason, enabled in (
+                        ("capped_checkpoint_expanding_bias", center_changed),
+                        ("directional_taf_guard", v2.get("calibration", {}).get("directional_guard") != "not_needed"),
+                        ("bucket_boundary_taf_recalibration", v2.get("bucket_boundary_taf_interaction", {}).get("status") == "applied"),
+                    ) if enabled
+                ],
+            })
+    return {
+        "champion": _metrics(scored, challenger=False),
+        "d1_evening_challenger_v0_1": _metrics(scored, challenger=True),
+        "d1_evening_challenger_v0_2": _v2_metrics(scored),
+        "v0_2_vs_v0_1_cases_improved": improved,
+        "v0_2_vs_v0_1_cases_worsened": worsened,
+        "v0_2_vs_v0_1_cases_unchanged": unchanged,
+        "changed_cases": changed,
         "method": "expanding_window_prior_scheduled_causal_cases_only",
         "historical_replay_not_oos": True,
     }
