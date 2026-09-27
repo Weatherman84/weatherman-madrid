@@ -1,8 +1,8 @@
-# Validation – Weatherman Madrid v1.0.14
+# Validation – Weatherman Madrid v1.0.15
 
 ## Ergebnis
 
-- `pytest -q`: **263 passed**, drei bestehende NumPy-Deprecation-Warnungen.
+- `pytest -q`: **270 passed**, drei bestehende NumPy-Deprecation-Warnungen.
 - `ruff check app.py src tests scripts`: **passed**.
 - `python -m compileall -q app.py src scripts tests`: **passed**.
 - Cloudflare Worker: **11/11 tests passed**.
@@ -44,9 +44,29 @@ TAF-Stufe, Day-/Peak-Lock und produktive Regimegewichte.
 - Der Workflow-/Konfigurationstest schützt Binding und Namespace-ID vor Regressionen.
 - Der Fix führt keine Neon-Abfrage aus und ändert keine Forecastkomponente.
 
+## v1.0.15
+
+- Track C exportiert ausschließlich `D-1 Evening @20:00` als kompakten,
+  kausalen Research-Datensatz.
+- Der historische Challenger verwendet einen expandierenden Walk-forward-Pool
+  mit mindestens zehn früheren `scheduled-causal` Fällen und maximal ±0,5 K
+  Research-Anpassung.
+- D−1-Regime-Matrix und Fehlfallanalyse trennen `scheduled_causal`,
+  `reconstructed_research`, späteres `sequential_oos` und `live_shadow`.
+- Dry-run für 30 Tage: **0 Production-Abfragen**, maximal 30 Checkpointzeilen,
+  1.440 kompakte Modellzeilen und 240 TAF-Metadatenzeilen; geschätzter Export
+  etwa 240.000 Bytes.
+- Der reale Export läuft nur manuell über Workflow 11 und wird nie beim Öffnen
+  der App oder als automatischer Backfill gestartet.
+
 ## Noch extern zu bestätigen
 
 Nach Installation muss Workflow 6 beide Endpunkte als `verified` melden. Danach muss
 der Worker-Endpunkt einmal tatsächlich aus der ChatGPT-Automationsumgebung gelesen
 werden. Vor diesem externen Test gilt der zweite Abrufweg als implementiert, aber noch
 nicht als automationstauglich freigegeben.
+
+Die tatsächliche Zahl verfügbarer D−1-Fälle, die Modellabdeckung und der erste reale
+Champion-Challenger-Vergleich können erst nach dem einmaligen, expliziten
+`dry_run=false` von Workflow 11 berichtet werden; während der Codevalidierung wurde
+Production Neon bewusst nicht geöffnet.

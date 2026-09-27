@@ -8,6 +8,13 @@ import pandas as pd
 import streamlit as st
 
 from .actual_quality import settlement_grade_actuals
+from .d1_evening_export import model_history_features
+from .d1_evening_research import (
+    D1_CHECKPOINT,
+    D1_CHALLENGER_VERSION,
+    build_d1_walk_forward_challenger,
+    compare_d1_challenger,
+)
 from .research_tracks import (
     REGIME_MATRIX_VERSION,
     TRADING_CHALLENGER_VERSION,
@@ -80,13 +87,19 @@ def _matrix_records(snapshots, variants, actuals) -> list[dict]:
             row.get("checkpoint_status"), row.get("checkpoint_reconstructed", False)
         )
         record = {
+            "target_date": row.get("target_date").isoformat(),
             "checkpoint": row.get("checkpoint_label"),
+            "checkpoint_at": row.get("checkpoint_at"),
             "checkpoint_status": row.get("checkpoint_status"),
             "checkpoint_reconstructed": evidence_class == "reconstructed_research",
             "evidence_class": evidence_class,
             "champion_center_c": row.get("forecast_c"),
+            "champion_probabilities": row.get("probabilities_json"),
             "modal_bucket": ranked[0][0], "top2_bucket": ranked[1][0],
             "top3_bucket": ranked[2][0],
+            "top1_probability": ranked[0][1],
+            "top2_probability": ranked[1][1],
+            "top3_probability": ranked[2][1],
             "top1_top2_gap_pp": (
                 (ranked[0][1] - ranked[1][1]) * 100
                 if ranked[0][1] is not None and ranked[1][1] is not None else None
@@ -108,7 +121,87 @@ def _matrix_records(snapshots, variants, actuals) -> list[dict]:
     return records
 
 
-def render_research_tracks(*, nowcast, snapshots, variants, actuals, markets, target, now, zone):
+def _render_d1_research(records: list[dict], forecasts: pd.DataFrame) -> None:
+    st.subheader("D−1 Evening Research")
+    d1_records = [row for row in records if row.get("checkpoint") == D1_CHECKPOINT]
+    if not d1_records:
+        st.info("No stored D−1 Evening checkpoint/Actual pairs are available yet.")
+        return
+    challenged = build_d1_walk_forward_challenger(d1_records)
+    scheduled = [
+        row for row in challenged if row.get("evidence_class") == "scheduled_causal"
+    ]
+    comparison = compare_d1_challenger(scheduled)
+    latest = challenged[-1]
+    checkpoint_at = pd.to_datetime(latest.get("checkpoint_at"), utc=True, errors="coerce")
+    target_date = pd.to_datetime(latest.get("target_date"), errors="coerce")
+    model_signal = "unavailable"
+    if pd.notna(checkpoint_at) and pd.notna(target_date) and not forecasts.empty:
+        history = model_history_features(
+            forecasts,
+            target_date.date(),
+            pd.Timestamp(checkpoint_at).to_pydatetime(),
+        )
+        latest["consensus_run_trend_c"] = history["consensus_run_trend_c"]
+        model_signal = history["consensus_movement"]
+    challenger = latest["challenger"]
+    champion_center = pd.to_numeric(latest.get("champion_center_c"), errors="coerce")
+    challenger_center = pd.to_numeric(challenger.get("center_c"), errors="coerce")
+    champion_label = (
+        f"{float(champion_center):.2f} °C · {latest.get('modal_bucket')} °C"
+        if pd.notna(champion_center) else "—"
+    )
+    challenger_label = (
+        f"{float(challenger_center):.2f} °C · {challenger.get('modal_bucket')} °C"
+        if pd.notna(challenger_center) else "—"
+    )
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Champion center / modal", champion_label)
+    c2.metric("Challenger center / modal", challenger_label)
+    c3.metric("TAF signal", ", ".join(code for code in challenger["reason_codes"] if code.startswith("taf_")) or "neutral")
+    c4.metric("Model trend", model_signal)
+    champion_rank = probability_ranking(latest.get("champion_probabilities"))[:3]
+    challenger_rank = probability_ranking(challenger.get("probabilities"))[:3]
+    rows = []
+    for rank in range(3):
+        champion_item = champion_rank[rank] if rank < len(champion_rank) else (None, None)
+        challenger_item = challenger_rank[rank] if rank < len(challenger_rank) else (None, None)
+        rows.append({
+            "Rank": rank + 1,
+            "Champion": (
+                f"{champion_item[0]} °C · {champion_item[1]:.1%}"
+                if champion_item[0] is not None else "—"
+            ),
+            "Challenger": (
+                f"{challenger_item[0]} °C · {challenger_item[1]:.1%}"
+                if challenger_item[0] is not None else "—"
+            ),
+        })
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    champion_metrics = comparison.get("champion", {})
+    challenger_metrics = comparison.get("challenger", {})
+    st.caption(
+        f"{D1_CHALLENGER_VERSION} · scheduled-causal N={champion_metrics.get('n', 0)} · "
+        f"modal accuracy Champion {champion_metrics.get('modal_accuracy', 0):.0%} vs "
+        f"Challenger {challenger_metrics.get('modal_accuracy', 0):.0%} · "
+        f"reason codes: {', '.join(challenger['reason_codes'])}."
+    )
+    st.caption(
+        "Active regimes: "
+        f"{', '.join(latest.get('active_regimes') or []) or 'none'} · "
+        f"center MAE Champion {champion_metrics.get('center_mae_c') or 0:.2f} K vs "
+        f"Challenger {challenger_metrics.get('center_mae_c') or 0:.2f} K."
+    )
+    st.caption(
+        "RESEARCH ONLY · historical expanding-window replay, not sequential OOS. "
+        "Reconstructed cases remain excluded from the default comparison; automatic "
+        "promotion is disabled."
+    )
+
+
+def render_research_tracks(
+    *, nowcast, snapshots, variants, actuals, markets, forecasts, target, now, zone
+):
     """Render from cached cockpit frames only; never opens a Neon connection."""
     st.header("Research · Shadow Mode")
     st.caption(
@@ -219,3 +312,4 @@ def render_research_tracks(*, nowcast, snapshots, variants, actuals, markets, ta
             "combination is emitted below N=10. Reconstructed research and scheduled-causal "
             "evidence are separated; neither is labelled sequential OOS by this view."
         )
+    _render_d1_research(records, forecasts)

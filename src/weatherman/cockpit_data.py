@@ -23,7 +23,7 @@ SNAPSHOT_COLUMNS = (
     "airport", "target_date", "captured_at", "final_forecast_c", "features_json",
     "day_phase", "hours_to_peak", "taf_adjustment_c", "taf_max_temp_c", "taf_conflict",
     "raw_spread_c", "final_spread_c",
-    "temp_anchor_adjustment_c", "checkpoint_label", "checkpoint_recorded_at",
+    "temp_anchor_adjustment_c", "checkpoint_label", "checkpoint_at", "checkpoint_recorded_at",
     "checkpoint_reconstructed", "checkpoint_status", "latest_metar_at", "freshness_status",
     "cloud_adjustment_c", "radiation_adjustment_c", "wind_adjustment_c",
     "late_dry_mixing_adjustment_c", "failed_convection_adjustment_c",

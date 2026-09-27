@@ -1,3 +1,23 @@
+# Release Notes – Madrid v1.0.15
+
+## Neu in v1.0.15
+
+- dritter Research-Track `D−1 Evening Forecast Improvement`;
+- kompakter, begrenzter Export `d1-evening-replay-export.json`;
+- Modell-Run-Trends und TAF-Revisionen ausschließlich kausal zum D−1-Checkpoint;
+- Walk-forward-Challenger `d1_evening_challenger_v0.1` mit zehn Fällen Warm-up,
+  maximal ±0,5 K und ohne automatische Promotion;
+- getrennte Evidenzklassen und Standardauswertung nur für `scheduled-causal`;
+- neuer Research-UI-Bereich ohne zusätzliche Cockpit-Datenbankabfrage;
+- neuer Workflow `11 - Export Madrid D-1 evening research`, standardmäßig Dry Run.
+
+Forecast Engine v10.7.11, geschützte Baseline v10.7.10, Champion, Biases,
+TAF-Stufe, Live Correction und Locks bleiben unverändert.
+
+Installation: `START_HERE_V1.0.15_DE.md`.
+
+---
+
 # Release Notes – Madrid v1.0.14
 
 ## Neu in v1.0.14
