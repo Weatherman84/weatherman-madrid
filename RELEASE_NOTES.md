@@ -1,3 +1,23 @@
+# Release Notes – Madrid v1.0.16
+
+## Neu in v1.0.16
+
+- Hotfix für den einmaligen Track-C-Export: Modellzeilen werden nun je Zieldatum
+  auf das kausale 48-Stunden-Fenster vor `D−1 Evening @20:00` begrenzt.
+- Wiederholte Collector-Kopien desselben Modelllaufs werden bereits in SQL entfernt;
+  je Modell werden höchstens die zwei jüngsten unterschiedlichen Läufe übertragen.
+- Für 30 Tage sinkt das harte Modellzeilenmaximum von 1.440 auf 720. Dry Run,
+  Read-only-Transaktion, Rollback und automatische Backfill-Sperre bleiben bestehen.
+- Der erste reale v1.0.15-Lauf wurde durch die alte Zeilengrenze sicher gestoppt;
+  es entstand weder ein Exportartefakt noch ein Production-Write.
+
+Forecast Engine v10.7.11, geschützte Baseline v10.7.10, Champion, Biases,
+TAF-Stufe, Live Correction und Locks bleiben unverändert.
+
+Installation: `START_HERE_V1.0.16_DE.md`.
+
+---
+
 # Release Notes – Madrid v1.0.15
 
 ## Neu in v1.0.15

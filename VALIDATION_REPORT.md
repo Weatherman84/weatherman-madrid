@@ -1,8 +1,8 @@
-# Validation – Weatherman Madrid v1.0.15
+# Validation – Weatherman Madrid v1.0.16
 
 ## Ergebnis
 
-- `pytest -q`: **270 passed**, drei bestehende NumPy-Deprecation-Warnungen.
+- `pytest -q`: **271 passed**, drei bestehende NumPy-Deprecation-Warnungen.
 - `ruff check app.py src tests scripts`: **passed**.
 - `python -m compileall -q app.py src scripts tests`: **passed**.
 - Cloudflare Worker: **11/11 tests passed**.
@@ -58,6 +58,16 @@ TAF-Stufe, Day-/Peak-Lock und produktive Regimegewichte.
   etwa 240.000 Bytes.
 - Der reale Export läuft nur manuell über Workflow 11 und wird nie beim Öffnen
   der App oder als automatischer Backfill gestartet.
+
+## v1.0.16
+
+- Die Modellabfrage nutzt für jedes Zieldatum ein eigenes kausales 48-Stunden-
+  Fenster vor dem gespeicherten D−1-Checkpoint.
+- SQL-Window-Funktionen deduplizieren wiederholte Collector-Kopien eines Modelllaufs
+  und begrenzen jedes Modell auf zwei unterschiedliche Läufe.
+- Bei 30 Tagen beträgt das harte Maximum nun 720 kompakte Modellzeilen statt 1.440.
+- Der Regressionstest kompiliert die Abfrage mit PostgreSQL-Dialekt und prüft die
+  datumsbezogenen Kausalitätsfenster, Deduplizierung und Zeilengrenze.
 
 ## Noch extern zu bestätigen
 

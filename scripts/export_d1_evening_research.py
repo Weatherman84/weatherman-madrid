@@ -13,6 +13,7 @@ from prepare_replay_lab import normalized_url
 from weatherman.d1_evening_export import (
     ESTIMATED_BYTES_PER_D1_DAY,
     MAX_D1_CHECKPOINT_ROWS,
+    MAX_MODEL_RUNS_PER_MODEL,
     MAX_MODELS_PER_CHECKPOINT,
     MAX_MODEL_SOURCE_ROWS,
     MAX_TAF_SOURCE_ROWS,
@@ -32,7 +33,8 @@ def main() -> None:
     if args.dry_run:
         checkpoint_cap = min(MAX_D1_CHECKPOINT_ROWS, args.days)
         model_cap = min(
-            MAX_MODEL_SOURCE_ROWS, args.days * MAX_MODELS_PER_CHECKPOINT * 4
+            MAX_MODEL_SOURCE_ROWS,
+            args.days * MAX_MODELS_PER_CHECKPOINT * MAX_MODEL_RUNS_PER_MODEL,
         )
         taf_cap = min(MAX_TAF_SOURCE_ROWS, args.days * 8)
         print({

@@ -9,7 +9,7 @@ from numbers import Number
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import select, tuple_
+from sqlalchemy import and_, func, or_, select, tuple_
 
 from . import __version__
 from .db import DailyActual, Forecast, ForecastSnapshot, ForecastVariantSnapshot, TafReport
@@ -35,7 +35,10 @@ EXPORT_ENGINE_VERSION = "v10.7.11"
 PROTECTED_FORECAST_BASELINE = "v10.7.10"
 MAX_D1_CHECKPOINT_ROWS = MAX_EXPORT_DAYS
 MAX_MODELS_PER_CHECKPOINT = 12
-MAX_MODEL_SOURCE_ROWS = MAX_EXPORT_DAYS * MAX_MODELS_PER_CHECKPOINT * 4
+MAX_MODEL_RUNS_PER_MODEL = 2
+MAX_MODEL_SOURCE_ROWS = (
+    MAX_EXPORT_DAYS * MAX_MODELS_PER_CHECKPOINT * MAX_MODEL_RUNS_PER_MODEL
+)
 MAX_TAF_SOURCE_ROWS = MAX_EXPORT_DAYS * 8
 ESTIMATED_BYTES_PER_D1_DAY = 8_000
 
@@ -166,31 +169,62 @@ def _actuals(connection, target_dates: list[date]) -> dict[date, float]:
 def _model_rows(connection, target_dates: list[date], checkpoints: pd.DataFrame) -> pd.DataFrame:
     if not target_dates or checkpoints.empty:
         return pd.DataFrame()
-    checkpoint_times = pd.to_datetime(checkpoints.checkpoint_at, utc=True, errors="coerce")
-    fallback_times = [dict(checkpoint_schedule(target))[D1_CHECKPOINT] for target in target_dates]
-    earliest = min(
-        [stamp.to_pydatetime() for stamp in checkpoint_times.dropna()] + fallback_times
-    ) - timedelta(hours=48)
-    latest = max(
-        [stamp.to_pydatetime() for stamp in checkpoint_times.dropna()] + fallback_times
+    checkpoint_cutoffs: dict[date, datetime] = {}
+    for row in checkpoints.itertuples():
+        target = pd.Timestamp(row.target_date).date()
+        parsed = pd.to_datetime(row.checkpoint_at, utc=True, errors="coerce")
+        if pd.notna(parsed):
+            checkpoint_cutoffs[target] = pd.Timestamp(parsed).to_pydatetime()
+    effective_available_at = func.coalesce(
+        Forecast.available_at, Forecast.fetched_at, Forecast.run_at
     )
+    causal_windows = []
+    for target in target_dates:
+        cutoff = checkpoint_cutoffs.get(
+            target, dict(checkpoint_schedule(target))[D1_CHECKPOINT]
+        )
+        causal_windows.append(and_(
+            Forecast.target_date == target,
+            Forecast.run_at >= cutoff - timedelta(hours=48),
+            Forecast.run_at <= cutoff,
+            effective_available_at <= cutoff,
+        ))
     row_cap = min(
         MAX_MODEL_SOURCE_ROWS,
-        len(target_dates) * MAX_MODELS_PER_CHECKPOINT * 4,
+        len(target_dates) * MAX_MODELS_PER_CHECKPOINT * MAX_MODEL_RUNS_PER_MODEL,
     )
+    fields = (
+        "target_date", "model", "max_temp_c", "run_at", "model_run_at",
+        "available_at", "fetched_at", "source", "horizon", "provenance_status",
+    )
+    captured = select(
+        *(getattr(Forecast, field) for field in fields),
+        func.row_number().over(
+            partition_by=(
+                Forecast.target_date, Forecast.model, Forecast.model_run_at
+            ),
+            order_by=(effective_available_at.desc(), Forecast.run_at.desc()),
+        ).label("capture_rank"),
+    ).where(
+        Forecast.airport == AIRPORT,
+        or_(*causal_windows),
+    ).subquery("causal_model_captures")
+    ranked = select(
+        *(captured.c[field] for field in fields),
+        func.row_number().over(
+            partition_by=(captured.c.target_date, captured.c.model),
+            order_by=(
+                captured.c.model_run_at.desc().nullslast(),
+                captured.c.run_at.desc(),
+            ),
+        ).label("model_run_rank"),
+    ).where(captured.c.capture_rank == 1).subquery("distinct_model_runs")
     frame = pd.read_sql(
-        select(
-            Forecast.target_date, Forecast.model, Forecast.max_temp_c, Forecast.run_at,
-            Forecast.model_run_at, Forecast.available_at, Forecast.fetched_at,
-            Forecast.source, Forecast.horizon, Forecast.provenance_status,
-        ).where(
-            Forecast.airport == AIRPORT,
-            Forecast.target_date.in_(target_dates),
-            Forecast.run_at >= earliest,
-            Forecast.run_at <= latest,
-        ).order_by(Forecast.target_date, Forecast.model, Forecast.run_at.desc()).limit(
-            row_cap + 1
-        ),
+        select(*(ranked.c[field] for field in fields)).where(
+            ranked.c.model_run_rank <= MAX_MODEL_RUNS_PER_MODEL
+        ).order_by(
+            ranked.c.target_date, ranked.c.model, ranked.c.model_run_at.desc()
+        ).limit(row_cap + 1),
         connection,
     )
     if len(frame) > row_cap:
