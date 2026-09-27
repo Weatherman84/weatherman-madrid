@@ -16,8 +16,10 @@ from .db import DailyActual, Forecast, ForecastSnapshot, ForecastVariantSnapshot
 from .d1_evening_research import (
     D1_CHECKPOINT,
     D1_CHALLENGER_VERSION,
-    build_d1_walk_forward_challenger,
+    D1_CHALLENGER_V2_VERSION,
+    build_d1_walk_forward_challenger_v2,
     compare_d1_challenger,
+    compare_d1_challenger_versions,
 )
 from .market_replay_export import AIRPORT, MAX_EXPORT_DAYS, _final_madrid_dates, checkpoint_schedule
 from .research_tracks import (
@@ -350,6 +352,9 @@ def model_history_features(
         consensus - prior_consensus
         if consensus is not None and prior_consensus is not None else None
     )
+    warming_models = [item["model"] for item in models if item["run_trend"] == "warming"]
+    cooling_models = [item["model"] for item in models if item["run_trend"] == "cooling"]
+    stable_models = [item["model"] for item in models if item["run_trend"] == "stable"]
     return {
         "models": models,
         "model_count": len(models),
@@ -375,6 +380,12 @@ def model_history_features(
         ),
         "hot_model_outliers": [item["model"] for item in models if item["outlier"] == "hot"],
         "cold_model_outliers": [item["model"] for item in models if item["outlier"] == "cold"],
+        "warming_models": warming_models,
+        "cooling_models": cooling_models,
+        "stable_models": stable_models,
+        "warming_model_count": len(warming_models),
+        "cooling_model_count": len(cooling_models),
+        "trend_agreement_count": max(len(warming_models), len(cooling_models)),
     }
 
 
@@ -386,6 +397,9 @@ def _empty_model_features() -> dict[str, Any]:
         "current_spread_c": None, "previous_spread_c": None,
         "spread_change_c": None, "cluster_shift": "unavailable",
         "hot_model_outliers": [], "cold_model_outliers": [],
+        "warming_models": [], "cooling_models": [], "stable_models": [],
+        "warming_model_count": 0, "cooling_model_count": 0,
+        "trend_agreement_count": 0,
     }
 
 
@@ -617,7 +631,7 @@ def build_d1_evening_export(
         }
         record["active_regimes"] = active_regimes(record)
         records.append(record)
-    challenged = build_d1_walk_forward_challenger(records)
+    challenged = build_d1_walk_forward_challenger_v2(records)
     scheduled = [
         record for record in challenged if record.get("evidence_class") == "scheduled_causal"
     ]
@@ -630,14 +644,15 @@ def build_d1_evening_export(
         for record in challenged
     ]
     return _safe({
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "application_version": __version__,
         "export_engine_version": EXPORT_ENGINE_VERSION,
         "protected_forecast_baseline": PROTECTED_FORECAST_BASELINE,
         "generated_at": generated.isoformat(),
         "airport": AIRPORT,
         "track": "Track C - D-1 Evening Forecast Improvement",
-        "challenger_version": D1_CHALLENGER_VERSION,
+        "challenger_version": D1_CHALLENGER_V2_VERSION,
+        "preserved_challenger_version": D1_CHALLENGER_VERSION,
         "research_only": RESEARCH_ONLY,
         "automatic_promotion": AUTOMATIC_PROMOTION,
         "requested_final_days": int(days),
@@ -653,6 +668,7 @@ def build_d1_evening_export(
         "default_analysis_view": "scheduled_causal_only",
         "records": public_records,
         "comparison": compare_d1_challenger(scheduled),
+        "version_comparison": compare_d1_challenger_versions(scheduled),
         "sensitivity_comparison_reconstructed": compare_d1_challenger(reconstructed),
         "regime_research": regime_matrix_views(challenged),
         "error_avoidance_analysis": _error_avoidance_analysis(scheduled),

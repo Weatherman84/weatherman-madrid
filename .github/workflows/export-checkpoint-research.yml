@@ -1,4 +1,4 @@
-name: 11 - Export Madrid D-1 evening research
+name: 12 - Export Madrid checkpoint research
 
 on:
   workflow_dispatch:
@@ -31,27 +31,27 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -e .
-      - name: Export compact D-1 evening evidence
+      - name: Export compact checkpoint evidence
         shell: bash
         run: |
-          args=(--days "$EXPORT_DAYS" --output d1-evening-replay-export.json)
+          args=(--days "$EXPORT_DAYS" --output checkpoint-research-export.json)
           if [[ -n "$EXPORT_END_DATE" ]]; then
             args+=(--end-date "$EXPORT_END_DATE")
           fi
           if [[ "$EXPORT_DRY_RUN" = "true" ]]; then
             args+=(--dry-run)
           fi
-          python scripts/export_d1_evening_research.py "${args[@]}"
+          python scripts/export_checkpoint_research.py "${args[@]}"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           EXPORT_DAYS: ${{ inputs.days }}
           EXPORT_END_DATE: ${{ inputs.end_date }}
           EXPORT_DRY_RUN: ${{ inputs.dry_run }}
-      - name: Upload compact D-1 research export
+      - name: Upload compact checkpoint research export
         if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@v4
         with:
-          name: madrid-d1-evening-research-v0.2
-          path: d1-evening-replay-export.json
+          name: madrid-checkpoint-research-v0.1
+          path: checkpoint-research-export.json
           if-no-files-found: error
           retention-days: 14
