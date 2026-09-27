@@ -1,3 +1,38 @@
+# Release Notes – Madrid v1.0.18
+
+## Neu in v1.0.18
+
+- Drei strikt checkpoint-spezifische Forecast-Research-Pfade ersetzen die verworfene
+  Idee eines globalen Super-Challengers: D−1 v0.2 bleibt unverändert reproduzierbar,
+  D0 erhält `d0_morning_challenger_v0.1`, Late Live erhält
+  `late_live_ablation_challenger_v0.1`.
+- D0 testet den Temperature Anchor kausal mit 0/25/50/75/100 Prozent sowie einem
+  ±0,10-K-Cap. Clear Sky und TAF-Center bleiben getrennte Sensitivitäten. Eine aktive
+  Auswahl erfolgt erst nach zehn früheren `scheduled_causal`-Fällen.
+- Late Live testet Clear Sky, TAF-Center und Late Dry Mixing. Der aktive Walk-forward-
+  Pfad darf ausschließlich den unveränderten Champion oder eine einzelne Ablation
+  wählen; die vollständige 5×3×3-Matrix bleibt reine Offline-Sensitivität.
+- First Live erhält bewusst keinen aktiven Forecast-Challenger. Champion,
+  Uncertainty Calibration und Trading Shadow bleiben getrennt.
+- Die bestehende Research-Sektion zeigt eine kompakte Vorschau aller vier Pfade aus
+  bereits gecachten Cockpit-Frames. Sie öffnet keine zusätzliche Neon-Verbindung;
+  Workflow 12 bleibt die kanonische Auswertung mit Modell-Run-Historie.
+- `checkpoint-research-export.json` v0.2 enthält vollständige gespeicherte Champion-
+  Wahrscheinlichkeiten, versionierte Shadow-Outputs, Vergleichsmetriken, erste/zweite
+  Zeithälfte, Regel-Sample-Sizes und Kontextmatrizen. Die Berechnung erfolgt lokal nach
+  den bestehenden neun begrenzten Reads und verursacht keine zusätzliche DB-Abfrage.
+- Die Research-Watchlist umfasst nun auch den 26. und 27. September: TAF-Modal-Flips
+  nach großem Live-Uplift, Driver-Overlap, Plateau/Winddrehung, TAF-vs-Modell-Konflikt
+  und erforderliche Heizrate bis zur TAF-Peakzeit bleiben Research-Hypothesen.
+
+Forecast Engine v10.7.11, geschützte Baseline v10.7.10, Production Champion,
+Biases, TAF-Stufe, Trading Shadow, Live Correction, Regimes und Locks bleiben
+unverändert. `research_only=true`; `automatic_promotion=false`.
+
+Installation: `START_HERE_V1.0.18_DE.md`.
+
+---
+
 # Release Notes – Madrid v1.0.17
 
 ## Neu in v1.0.17
