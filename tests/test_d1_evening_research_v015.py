@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pandas as pd
+from sqlalchemy.dialects import postgresql
 
 from weatherman.d1_evening_research import (
     D1_CHALLENGER_VERSION,
@@ -97,6 +98,41 @@ def test_d1_workflow_is_unique_bounded_and_dry_run_first():
     assert ".limit(" in exporter
     assert "TafReport.raw_taf" not in exporter
     assert "HourlyForecast" not in exporter
+
+
+def test_model_query_uses_per_target_causal_windows_and_two_distinct_runs():
+    from weatherman.d1_evening_export import _model_rows
+
+    targets = [date(2026, 9, 20), date(2026, 9, 21)]
+    checkpoints = pd.DataFrame([
+        {
+            "target_date": target,
+            "checkpoint_at": pd.Timestamp(
+                f"{target - timedelta(days=1)}T18:00:00Z"
+            ),
+        }
+        for target in targets
+    ])
+    captured: dict[str, str] = {}
+
+    def fake_read_sql(statement, _connection):
+        captured["sql"] = str(statement.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        ))
+        return pd.DataFrame()
+
+    with patch("weatherman.d1_evening_export.pd.read_sql", side_effect=fake_read_sql):
+        _model_rows(object(), targets, checkpoints)
+
+    sql = captured["sql"]
+    assert sql.count("forecasts.target_date =") == len(targets)
+    assert sql.count("forecasts.run_at >=") == len(targets)
+    assert sql.count("coalesce(forecasts.available_at") == len(targets) + 1
+    assert "row_number() OVER" in sql
+    assert "capture_rank = 1" in sql
+    assert "model_run_rank <= 2" in sql
+    assert "LIMIT 49" in sql
 
 
 def test_export_keeps_evidence_classes_and_targets_separate():
