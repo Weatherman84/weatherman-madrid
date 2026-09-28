@@ -51,7 +51,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@v4
         with:
-          name: madrid-checkpoint-research-v0.1
+          name: madrid-checkpoint-research-v0.2
           path: checkpoint-research-export.json
           if-no-files-found: error
           retention-days: 14

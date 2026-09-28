@@ -16,6 +16,7 @@ import pandas as pd
 from sqlalchemy import select, tuple_
 
 from . import __version__
+from .checkpoint_challengers import apply_checkpoint_research_challengers
 from .db import DailyActual, ForecastSnapshot, ForecastVariantSnapshot
 from .d1_evening_export import (
     MAX_MODEL_RUNS_PER_MODEL,
@@ -43,7 +44,7 @@ from .research_tracks import (
 )
 
 
-CHECKPOINT_RESEARCH_EXPORT_VERSION = "checkpoint_research_export_v0.1"
+CHECKPOINT_RESEARCH_EXPORT_VERSION = "checkpoint_research_export_v0.2"
 EXPORT_ENGINE_VERSION = "v10.7.11"
 PROTECTED_FORECAST_BASELINE = "v10.7.10"
 MAX_CHECKPOINT_ROWS = MAX_EXPORT_DAYS * len(CHECKPOINT_LABELS)
@@ -54,7 +55,7 @@ MAX_MODEL_SOURCE_ROWS = (
     * MAX_MODEL_RUNS_PER_MODEL
 )
 MAX_TAF_SOURCE_ROWS = MAX_EXPORT_DAYS * 8
-ESTIMATED_BYTES_PER_CHECKPOINT = 7_500
+ESTIMATED_BYTES_PER_CHECKPOINT = 30_000
 
 SNAPSHOT_FIELDS = (
     "id", "airport", "target_date", "captured_at", "checkpoint_label",
@@ -463,6 +464,7 @@ def build_checkpoint_research_export(
             "final_center_c": None if pd.isna(center) else float(center),
             "champion_center_c": None if pd.isna(center) else float(center),
             "champion_modal_bucket": top[0][0],
+            "champion_probabilities": probabilities,
             "top1_bucket": top[0][0], "top1_probability": top[0][1],
             "top2_bucket": top[1][0], "top2_probability": top[1][1],
             "top3_bucket": top[2][0], "top3_probability": top[2][1],
@@ -547,6 +549,25 @@ def build_checkpoint_research_export(
         record["active_regimes"] = active_regimes(regime_record)
         records.append(record)
 
+    records, checkpoint_challenger_evaluation = apply_checkpoint_research_challengers(
+        records
+    )
+    for record in records:
+        shadow = record.get("forecast_research_shadow")
+        if shadow is None:
+            record["forecast_research_shadow"] = {
+                "challenger_version": None,
+                "status": "excluded_from_default_challenger_cohort",
+                "reason_codes": ["scheduled_causal_only"],
+                "evidence_class": record.get("evidence_class"),
+                "research_only": RESEARCH_ONLY,
+                "automatic_promotion": AUTOMATIC_PROMOTION,
+            }
+            shadow = record["forecast_research_shadow"]
+        shadow["target_date"] = record["target_date"]
+        shadow["checkpoint"] = record["checkpoint_label"]
+        shadow["generated_at"] = generated.isoformat()
+
     evidence_counts = dict(Counter(record["evidence_class"] for record in records))
     checkpoint_counts = dict(Counter(record["checkpoint_label"] for record in records))
     regime_records = [
@@ -579,6 +600,7 @@ def build_checkpoint_research_export(
             "never_combine_reconstructed_with_scheduled_by_default": True,
         },
         "checkpoint_research_matrix": _checkpoint_matrix(records),
+        "checkpoint_challenger_evaluation": checkpoint_challenger_evaluation,
         "model_trend_pattern_matrix": _model_pattern_matrix(records),
         "regime_checkpoint_matrix": regime_matrix_views(regime_records),
         "counterfactual_support": {
@@ -586,6 +608,14 @@ def build_checkpoint_research_export(
                 key for record in records for key in record["regime_raw_inputs"]
             }),
             "available_correction_contributions": list(ADJUSTMENT_FIELDS),
+            "checkpoint_shadow_versions": [
+                "d1_evening_challenger_v0.2",
+                "d0_morning_challenger_v0.1",
+                "late_live_ablation_challenger_v0.1",
+            ],
+            "first_live_forecast_policy": (
+                "champion_protected_no_active_forecast_challenger"
+            ),
             "not_reconstructable": [
                 "regime_specific_forecast_before_and_after_when_not_persisted",
                 "trigger_thresholds_not_present_in_features_json_or_snapshot_columns",
@@ -617,6 +647,7 @@ def build_checkpoint_research_export(
             "model_source_rows": model_rows_total,
             "taf_source_rows": len(tafs),
             "database_queries_executed": 9,
+            "additional_queries_for_checkpoint_challengers": 0,
             "output_file_size_bytes": None,
         },
         "transfer_policy": {
@@ -631,5 +662,6 @@ def build_checkpoint_research_export(
             "raw_provider_payloads_exported": False,
             "aemet_read_from_neon": False,
             "market_resolution_read": False,
+            "challengers_computed_locally_after_single_export_read": True,
         },
     })
