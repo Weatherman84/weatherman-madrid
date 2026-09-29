@@ -162,6 +162,27 @@ def test_projected_reads_preserve_forecast_and_oos_evidence(database):
     )
 
 
+def test_forward_shadow_reads_real_checkpoint_schema_without_writes(database):
+    from sqlalchemy.orm import Session as SqlAlchemySession
+    from weatherman.forward_shadow import build_forward_shadow_journal
+
+    engine, target, now = database
+    with SqlAlchemySession(engine) as session:
+        payload = build_forward_shadow_journal(
+            session,
+            existing={"calibration_seed": [], "forward_records": [], "decisions": []},
+            start_date=target,
+            end_date=target,
+            generated_at=now,
+        )
+        session.rollback()
+    assert payload["log"]["new_checkpoint_rows_this_run"] == 1
+    assert payload["log"]["database_queries_executed_this_run"] == 3
+    assert len(payload["decisions"]) == 1
+    assert payload["decisions"][0]["challenger_version"] == "first_live_champion_protected"
+    assert payload["decisions"][0]["outcome"]["outcome_evidence_class"] == "sequential_oos"
+
+
 def test_modal_bucket_reliability_uses_stored_distribution_not_center_rounding():
     target = date(2026, 9, 9)
     captured = datetime(2026, 9, 9, 14, tzinfo=timezone.utc)

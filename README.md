@@ -1,11 +1,11 @@
-> Aktueller Paketstand: v1.0.18. Für dieses Update gilt zuerst
-> `START_HERE_V1.0.18_DE.md`; ältere Einrichtungsangaben unten sind historisch.
+> Aktueller Paketstand: v1.0.19. Für dieses Update gilt zuerst
+> `START_HERE_V1.0.19_DE.md`; ältere Einrichtungsangaben unten sind historisch.
 > AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
 
 # Weatherman Madrid
 
 Eine eigenständige, ressourcenschonende Streamlit-App für **LEMD / Madrid-Barajas**.
-Die aktuelle Madrid-App-Version heißt **v1.0.18** und verwendet Engine **v10.7.11**.
+Die aktuelle Madrid-App-Version heißt **v1.0.19** und verwendet Engine **v10.7.11**.
 Forecastformeln, Gewichte, Biases, Regime und Locks bleiben auf dem Stand v10.7.10;
 v10.7.11 ersetzt ausschließlich die starre 90-Minuten-Modellzulassung durch eine
 modellabhängige Laufkadenz. Das Repository und die Neon-Datenbanken sind vollständig
@@ -29,8 +29,9 @@ vom bisherigen Sechs-Airport-System getrennt.
 - jeder manuelle Refresh als zusätzlicher kausaler `manual-live`-OOS-Snapshot;
 - identische Modellzyklen werden nicht bei jedem Abruf als neue Vollkopie gespeichert;
 - stündlicher GitHub-Fallback und ein garantierter 21:15-LT-Tagesabschluss;
-- offizielle AEMET-Station 3129 als unabhängige Dezimaltemperatur- und Physical-Tmax-
-  Quelle mit fünfminütigem Cockpit-Fragment und zehnminütigem Cloudflare-Abruf;
+- offizielle AEMET-Station 3129 als unabhängige stündliche Dezimaltemperatur- und
+  Physical-Tmax-Quelle mit fünfminütigem Cockpit-Cache und stündlichem
+  Cloudflare-Abruf zur UTC-Minute `:50`;
 - kleiner Cloudflare-KV-Hot-Store und komprimierte AEMET-Tagesarchive ohne zusätzliche
   Neon-Abfragen, Modellabrufe oder GitHub-Workflow-Läufe;
 - strikte Trennung von AEMET Physical Tmax, gespeichertem METAR-Maximum und einem erst
@@ -44,6 +45,9 @@ vom bisherigen Sechs-Airport-System getrennt.
   getrenntem Replay-DB-Journal;
 - Regime Research Matrix v0.1 aus kompakten Fix-Checkpoint-Daten, ohne Enginewirkung;
 - harte Exportgrenzen, Dry-Run, Größenabschätzung und strukturierte Transferprotokolle.
+- eingefrorener Forward-/Shadow-Journal für D−1 v0.1/v0.2, D0 v0.1 und Late Live
+  v0.1; First Live bleibt forecastseitig geschützt. Die Sequential-OOS-Scorecard
+  wird aus Cloudflare KV statt durch zusätzliche App-Abfragen an Neon geladen.
 
 ## Feste Madrid-Checkpoints
 

@@ -13,6 +13,9 @@ const DAILY_ANALYSIS_LATEST_KEY = "daily-analysis-latest.json";
 const DAILY_ANALYSIS_META_KEY = "daily-analysis-publication.json";
 const DAILY_ANALYSIS_MAX_BYTES = 5 * 1024 * 1024;
 const DAILY_ANALYSIS_ARCHIVE_TTL_SECONDS = 90 * 24 * 60 * 60;
+const FORWARD_SHADOW_JOURNAL_KEY = "forward-shadow-journal.json";
+const FORWARD_SHADOW_META_KEY = "forward-shadow-publication.json";
+const FORWARD_SHADOW_MAX_BYTES = 1024 * 1024;
 
 function madridParts(date) {
   return Object.fromEntries(
@@ -72,6 +75,22 @@ async function sha256Hex(bytes) {
   return [...new Uint8Array(digest)]
     .map((value) => value.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function compatibleResolvedOutcome(previous, incoming) {
+  if (previous === null) return true;
+  if (incoming === null) return false;
+  const enrichable = ["aemet_tmax", "resolved_market_bucket"];
+  for (const field of enrichable) {
+    if (previous[field] !== null && incoming[field] !== previous[field]) return false;
+  }
+  const priorCore = { ...previous };
+  const nextCore = { ...incoming };
+  for (const field of enrichable) {
+    priorCore[field] = null;
+    nextCore[field] = null;
+  }
+  return JSON.stringify(priorCore) === JSON.stringify(nextCore);
 }
 
 export async function publishDailyAnalysis(request, env) {
@@ -136,6 +155,94 @@ export async function publishDailyAnalysis(request, env) {
     env.AEMET_HOT.put(DAILY_ANALYSIS_META_KEY, JSON.stringify(metadata)),
   ]);
   console.log(JSON.stringify({ ...metadata, status: "daily-analysis-published" }));
+  return Response.json(metadata, { headers: responseHeaders("no-store") });
+}
+
+export async function publishForwardShadow(request, env) {
+  if (!env.AEMET_HOT) {
+    return Response.json({ error: "AEMET_HOT KV binding is not configured" }, { status: 503 });
+  }
+  const authorization = request.headers.get("Authorization") || "";
+  const suppliedToken = authorization.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length) : "";
+  if (!timingSafeEqual(suppliedToken, env.DAILY_ANALYSIS_PUBLISH_TOKEN)) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const bytes = await request.arrayBuffer();
+  if (!bytes.byteLength || bytes.byteLength > FORWARD_SHADOW_MAX_BYTES) {
+    return Response.json({ error: "invalid journal size" }, { status: 413 });
+  }
+  let payload;
+  let rawText;
+  try {
+    rawText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    payload = JSON.parse(rawText);
+  } catch {
+    return Response.json({ error: "invalid JSON" }, { status: 400 });
+  }
+  const decisions = Array.isArray(payload?.decisions) ? payload.decisions : [];
+  const valid = payload?.airport === "LEMD"
+    && payload?.classification === "READ-ONLY FROZEN FORWARD SHADOW JOURNAL"
+    && payload?.contains_credentials === false
+    && payload?.writes_production_database === false
+    && payload?.research_only === true
+    && payload?.automatic_promotion === false
+    && typeof payload?.generated_at === "string"
+    && decisions.every((row) =>
+      typeof row?.decision_id === "string"
+      && /^[a-f0-9]{64}$/.test(row?.decision_hash || "")
+      && row?.decision_evidence_class === "live_shadow"
+      && row?.research_only === true
+      && row?.automatic_promotion === false
+      && row?.logic_frozen === true
+      && (row?.outcome === null
+        || (row?.outcome?.outcome_evidence_class === "sequential_oos"
+          && Object.hasOwn(row.outcome, "stored_metar_actual")
+          && Object.hasOwn(row.outcome, "aemet_tmax")
+          && Object.hasOwn(row.outcome, "resolved_market_bucket"))));
+  if (!valid) {
+    return Response.json({ error: "forward journal safety validation failed" }, { status: 400 });
+  }
+  const previous = await env.AEMET_HOT.get(FORWARD_SHADOW_JOURNAL_KEY, "json");
+  if (previous) {
+    const incoming = new Map(decisions.map((row) => [row.decision_id, row]));
+    for (const oldRow of Array.isArray(previous.decisions) ? previous.decisions : []) {
+      const nextRow = incoming.get(oldRow.decision_id);
+      if (!nextRow || nextRow.decision_hash !== oldRow.decision_hash) {
+        return Response.json(
+          { error: "immutable forward decision changed", decision_id: oldRow.decision_id },
+          { status: 409 },
+        );
+      }
+      if (!compatibleResolvedOutcome(oldRow.outcome, nextRow.outcome)) {
+        return Response.json(
+          { error: "resolved forward outcome changed", decision_id: oldRow.decision_id },
+          { status: 409 },
+        );
+      }
+    }
+  }
+  const sha256 = await sha256Hex(bytes);
+  const metadata = {
+    schema_version: "1.0",
+    status: "published",
+    generated_at: payload.generated_at,
+    published_at: new Date().toISOString(),
+    size_bytes: bytes.byteLength,
+    sha256,
+    decision_rows: decisions.length,
+    resolved_decision_rows: decisions.filter((row) => row.outcome !== null).length,
+    research_only: true,
+    automatic_promotion: false,
+    writes_production_database: false,
+  };
+  await Promise.all([
+    env.AEMET_HOT.put(FORWARD_SHADOW_JOURNAL_KEY, rawText, {
+      metadata: { content_type: "application/json", sha256 },
+    }),
+    env.AEMET_HOT.put(FORWARD_SHADOW_META_KEY, JSON.stringify(metadata)),
+  ]);
+  console.log(JSON.stringify({ ...metadata, status: "forward-shadow-published" }));
   return Response.json(metadata, { headers: responseHeaders("no-store") });
 }
 
@@ -544,6 +651,9 @@ export default {
     if (request.method === "POST" && url.pathname === "/internal/publish-daily-analysis") {
       return publishDailyAnalysis(request, env);
     }
+    if (request.method === "POST" && url.pathname === "/internal/publish-forward-shadow") {
+      return publishForwardShadow(request, env);
+    }
     if (!["GET", "HEAD"].includes(request.method)) {
       return Response.json({ error: "method not allowed" }, { status: 405 });
     }
@@ -551,6 +661,12 @@ export default {
       return dailyAnalysisResponse(
         request, env, DAILY_ANALYSIS_LATEST_KEY, "public, max-age=60"
       );
+    }
+    if (url.pathname === `/${FORWARD_SHADOW_JOURNAL_KEY}`) {
+      return kvJsonResponse(env, FORWARD_SHADOW_JOURNAL_KEY, "public, max-age=60");
+    }
+    if (url.pathname === `/${FORWARD_SHADOW_META_KEY}`) {
+      return kvJsonResponse(env, FORWARD_SHADOW_META_KEY, "public, max-age=60");
     }
     if (/^\/daily-analysis\/\d{4}-\d{2}-\d{2}\.json$/.test(url.pathname)) {
       return dailyAnalysisResponse(

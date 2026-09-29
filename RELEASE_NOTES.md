@@ -1,3 +1,43 @@
+# Release Notes – Madrid v1.0.19
+
+## Neu in v1.0.19
+
+- Die mit v1.0.18 validierten Research-Challenger sind logisch eingefroren und
+  werden ab jetzt an echten Checkpoints als unveränderliche Forward-Entscheidungen
+  gespeichert.
+- D−1 protokolliert `d1_evening_challenger_v0.1` und
+  `d1_evening_challenger_v0.2` parallel. D0 verwendet
+  `d0_morning_challenger_v0.1`; Late Live verwendet
+  `late_live_ablation_challenger_v0.1`.
+- First Live bleibt ausdrücklich
+  `champion_protected_no_active_forecast_challenger`.
+- Ein kompakter, externer Cloudflare-KV-Journal speichert maximal fünf kleine
+  Entscheidungsobjekte pro Zieltag. Ein SHA-256 über alle unveränderlichen
+  Entscheidungsfelder verhindert rückwirkende Änderungen.
+- Neue Entscheidungen tragen `decision_evidence_class=live_shadow`. Erst nach einem
+  finalen Stored-METAR-Actual ergänzt der Tagesabschluss
+  `outcome_evidence_class=sequential_oos` und die Ergebniskennzahlen.
+- Die Research-UI zeigt eine ausschließlich aus diesen neuen Forward-Fällen gebildete
+  Scorecard. Historical Replay und reconstructed research bleiben ausgeschlossen.
+- Workflow 13 erzeugt den Journal in einer explizit read-only gesetzten
+  Neon-Transaktion. Der historische Kalibrierungs-Seed wird einmalig aus maximal
+  30 Tagen übernommen und danach nicht mit Forward-Outcomes nachtrainiert; laufend
+  werden nur maximal zwei operative Tage geprüft.
+- Bereits gespeicherte Checkpoints werden nicht erneut fachlich aufgebaut. Pro neuem
+  D−1-Checkpoint sind höchstens 180 kompakte Modelllaufzeilen erlaubt; die anderen
+  Checkpoints verwenden das bereits gespeicherte Run-Trend-Signal.
+- Die App liest die Scorecard ausschließlich über den fünf Minuten gecachten
+  Cloudflare-Endpunkt und öffnet dafür keine Neon-Verbindung.
+
+Forecast Engine v10.7.11, geschützte Baseline v10.7.10, Production Champion,
+Trading Shadow, Biases, Regimes, TAF-Stufe und Locks bleiben unverändert.
+`research_only=true`; `automatic_promotion=false`.
+
+Für v1.0.19 muss der aktualisierte Cloudflare Worker einmal deployt und Workflow 13
+einmal manuell gestartet werden. Details: `START_HERE_V1.0.19_DE.md`.
+
+---
+
 # Release Notes – Madrid v1.0.18
 
 ## Neu in v1.0.18

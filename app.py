@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.18")
+discard_stale_weatherman_modules("1.0.19")
 
 import pandas as pd
 import streamlit as st
@@ -47,6 +47,7 @@ from weatherman.service import (
 )
 from weatherman.settings import settings
 from weatherman.research_ui import render_research_tracks
+from weatherman.forward_shadow_public import fetch_forward_shadow_journal
 from weatherman.terminology import EVIDENCE_GLOSSARY, FRESHNESS_GLOSSARY
 
 
@@ -513,7 +514,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.18 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.19 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -800,6 +801,9 @@ render_research_tracks(
     actuals=data["actuals"],
     markets=markets,
     forecasts=data["forecasts"],
+    forward_shadow_journal=fetch_forward_shadow_journal(
+        normalized_public_base_url(settings.aemet_public_base_url)
+    ),
     target=target,
     now=now,
     zone=timezone_name,

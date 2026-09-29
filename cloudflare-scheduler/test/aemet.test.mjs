@@ -279,3 +279,58 @@ test("daily analysis mirror rejects unauthenticated or unsafe payloads", async (
   assert.equal(unsafe.status, 400);
   assert.equal(kv.writes.length, 0);
 });
+
+test("forward shadow journal preserves immutable checkpoint decisions", async () => {
+  const kv = new KV();
+  const env = { AEMET_HOT: kv, DAILY_ANALYSIS_PUBLISH_TOKEN: "secret" };
+  const decision = {
+    decision_id: "LEMD:2026-09-29:D0 Morning @09:00:d0_morning_challenger_v0.1",
+    decision_hash: "a".repeat(64),
+    decision_evidence_class: "live_shadow",
+    research_only: true,
+    automatic_promotion: false,
+    logic_frozen: true,
+    outcome: null,
+  };
+  const payload = {
+    airport: "LEMD",
+    classification: "READ-ONLY FROZEN FORWARD SHADOW JOURNAL",
+    contains_credentials: false,
+    writes_production_database: false,
+    research_only: true,
+    automatic_promotion: false,
+    generated_at: "2026-09-29T07:10:00Z",
+    decisions: [decision],
+  };
+  const publish = async (value) => worker.fetch(new Request(
+    "https://worker.test/internal/publish-forward-shadow",
+    {
+      method: "POST",
+      headers: { Authorization: "Bearer secret" },
+      body: JSON.stringify(value),
+    },
+  ), env);
+  assert.equal((await publish(payload)).status, 200);
+  const enriched = structuredClone(payload);
+  enriched.decisions[0].outcome = {
+    outcome_evidence_class: "sequential_oos",
+    stored_metar_actual: 31,
+    aemet_tmax: null,
+    resolved_market_bucket: null,
+  };
+  assert.equal((await publish(enriched)).status, 200);
+  const withAemet = structuredClone(enriched);
+  withAemet.decisions[0].outcome.aemet_tmax = 31.3;
+  assert.equal((await publish(withAemet)).status, 200);
+  const changedOutcome = structuredClone(withAemet);
+  changedOutcome.decisions[0].outcome.stored_metar_actual = 32;
+  assert.equal((await publish(changedOutcome)).status, 409);
+  const changed = structuredClone(withAemet);
+  changed.decisions[0].decision_hash = "b".repeat(64);
+  assert.equal((await publish(changed)).status, 409);
+  const publicResponse = await worker.fetch(
+    new Request("https://worker.test/forward-shadow-journal.json"), env
+  );
+  assert.equal(publicResponse.status, 200);
+  assert.equal((await publicResponse.json()).decisions[0].decision_hash, "a".repeat(64));
+});
