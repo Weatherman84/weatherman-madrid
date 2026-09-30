@@ -60,3 +60,9 @@ jobs:
           WEATHERMAN_EXPECTED_SLOT_AT: ${{ inputs.scheduled_slot }}
           WEATHERMAN_TRIGGER_SOURCE: ${{ inputs.source }}
           WEATHERMAN_COLLECTION_MODE: ${{ inputs.collection_mode || 'auto' }}
+
+  forward-shadow:
+    needs: collect
+    if: ${{ inputs.collection_mode == 'fixed' }}
+    uses: ./.github/workflows/publish-forward-shadow.yml
+    secrets: inherit

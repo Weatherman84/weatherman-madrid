@@ -1,0 +1,111 @@
+name: 13 - Publish Madrid frozen forward shadow
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    # DST-safe fallback pairs. The local-time gate keeps only 09/12/16/20 Madrid.
+    - cron: "12 7,8,10,11,14,15,18,19 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: madrid-frozen-forward-shadow
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Keep only real Madrid checkpoint hours on scheduled fallbacks
+        id: gate
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" != "schedule" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          hour = datetime.now(ZoneInfo("Europe/Madrid")).hour
+          print(f"should_run={'true' if hour in {9, 12, 16, 20} else 'false'}")
+          PY
+      - uses: actions/checkout@v6
+        if: steps.gate.outputs.should_run == 'true'
+      - uses: actions/setup-python@v6
+        if: steps.gate.outputs.should_run == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.gate.outputs.should_run == 'true'
+        run: pip install -e .
+      - name: Build immutable journal from bounded read-only queries
+        if: steps.gate.outputs.should_run == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PUBLIC_BASE_URL: ${{ vars.AEMET_PUBLIC_BASE_URL }}
+        run: |
+          if [[ -z "$PUBLIC_BASE_URL" ]]; then
+            echo "AEMET_PUBLIC_BASE_URL is required" >&2
+            exit 1
+          fi
+          python scripts/build_forward_shadow_journal.py \
+            --existing-url "${PUBLIC_BASE_URL%/}/forward-shadow-journal.json" \
+            --output forward-shadow-journal.json
+      - name: Validate safety fields and size
+        if: steps.gate.outputs.should_run == 'true'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("forward-shadow-journal.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert path.stat().st_size <= 1_048_576
+          assert payload["airport"] == "LEMD"
+          assert payload["classification"] == "READ-ONLY FROZEN FORWARD SHADOW JOURNAL"
+          assert payload["research_only"] is True
+          assert payload["automatic_promotion"] is False
+          assert payload["writes_production_database"] is False
+          assert payload["contains_credentials"] is False
+          assert payload["log"]["automatic_backfill"] is False
+          print({"status": "validated", "size_bytes": path.stat().st_size,
+                 "decision_rows": len(payload["decisions"])})
+          PY
+      - name: Publish the exact journal bytes to Cloudflare KV
+        if: steps.gate.outputs.should_run == 'true'
+        env:
+          PUBLIC_BASE_URL: ${{ vars.AEMET_PUBLIC_BASE_URL }}
+          PUBLISH_TOKEN: ${{ secrets.DAILY_ANALYSIS_PUBLISH_TOKEN }}
+        run: |
+          if [[ -z "$PUBLISH_TOKEN" ]]; then
+            echo "DAILY_ANALYSIS_PUBLISH_TOKEN is required" >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            -X POST "${PUBLIC_BASE_URL%/}/internal/publish-forward-shadow" \
+            -H "Authorization: Bearer ${PUBLISH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data-binary @forward-shadow-journal.json \
+            --output forward-shadow-publication.json
+          python - <<'PY'
+          import hashlib
+          import json
+          local = open("forward-shadow-journal.json", "rb").read()
+          published = json.load(open("forward-shadow-publication.json", encoding="utf-8"))
+          assert published["status"] == "published"
+          assert published["sha256"] == hashlib.sha256(local).hexdigest()
+          print(published)
+          PY
+      - name: Upload compact audit artifact
+        if: steps.gate.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrid-frozen-forward-shadow-${{ github.run_id }}
+          path: |
+            forward-shadow-journal.json
+            forward-shadow-publication.json
+          if-no-files-found: error
+          retention-days: 14

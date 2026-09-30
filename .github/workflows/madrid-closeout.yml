@@ -57,3 +57,8 @@ jobs:
     needs: closeout
     uses: ./.github/workflows/publish-daily-analysis-export.yml
     secrets: inherit
+
+  forward-shadow-closeout:
+    needs: closeout
+    uses: ./.github/workflows/publish-forward-shadow.yml
+    secrets: inherit

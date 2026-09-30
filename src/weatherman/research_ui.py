@@ -205,8 +205,87 @@ def _render_checkpoint_forecast_research(records: list[dict]) -> None:
     )
 
 
+def _render_forward_shadow_scorecard(journal: dict) -> None:
+    st.subheader("Frozen Forward / Sequential-OOS")
+    st.caption("RESEARCH ONLY – NO AUTOMATIC PROMOTION")
+    if not journal:
+        st.info(
+            "Forward logging starts with App v1.0.19. The first immutable rows "
+            "appear after the next real fixed checkpoint."
+        )
+        return
+    decisions = journal.get("decisions", [])
+    latest: dict[tuple[str, str], dict] = {}
+    for decision in decisions:
+        key = (decision.get("checkpoint_label"), decision.get("challenger_version"))
+        if key not in latest or str(decision.get("generated_at")) > str(
+            latest[key].get("generated_at")
+        ):
+            latest[key] = decision
+    rows = []
+    for score in journal.get("sequential_oos_scorecard", []):
+        key = (score.get("checkpoint_label"), score.get("challenger_version"))
+        last = latest.get(key, {})
+        last_rule = last.get("active_challenger_rule", "—")
+        rows.append({
+            "Checkpoint": score.get("checkpoint_label"),
+            "Version": score.get("challenger_version"),
+            "Status": last.get("status", "FROZEN SHADOW"),
+            "OOS N": score.get("n", 0),
+            "Champion modal": score.get("champion_modal_accuracy"),
+            "Challenger modal": score.get("challenger_modal_accuracy"),
+            "Challenger Top2": score.get("challenger_top2"),
+            "Challenger Top3": score.get("challenger_top3"),
+            "Champion MAE": score.get("champion_mae_c"),
+            "Champion bias": score.get("champion_bias_c"),
+            "Challenger MAE": score.get("challenger_mae_c"),
+            "Challenger bias": score.get("challenger_bias_c"),
+            "Brier": score.get("challenger_brier_score"),
+            "Log loss": score.get("challenger_log_loss"),
+            "Improved / worsened / unchanged": (
+                f"{score.get('improved', 0)} / {score.get('worsened', 0)} / "
+                f"{score.get('unchanged', 0)}"
+            ),
+            "Last rule": last_rule,
+            "Rule N": score.get("rule_sample_sizes", {}).get(last_rule, 0),
+        })
+    if not rows:
+        pending = len(decisions)
+        st.info(
+            f"{pending} immutable live-shadow decision(s) stored; the Sequential-OOS "
+            "scorecard starts after a final Stored-METAR Actual."
+        )
+        return
+    shown = pd.DataFrame(rows)
+    for column in (
+        "Champion modal", "Challenger modal", "Challenger Top2", "Challenger Top3"
+    ):
+        shown[column] = shown[column].map(
+            lambda value: f"{value:.1%}" if pd.notna(value) else "—"
+        )
+    for column in ("Champion MAE", "Challenger MAE"):
+        shown[column] = shown[column].map(
+            lambda value: f"{value:.3f} K" if pd.notna(value) else "—"
+        )
+    for column in ("Champion bias", "Challenger bias"):
+        shown[column] = shown[column].map(
+            lambda value: f"{value:+.3f} K" if pd.notna(value) else "—"
+        )
+    for column in ("Brier", "Log loss"):
+        shown[column] = shown[column].map(
+            lambda value: f"{value:.3f}" if pd.notna(value) else "—"
+        )
+    st.dataframe(shown, hide_index=True, width="stretch")
+    st.caption(
+        "Only decisions captured as live_shadow and later resolved from a final "
+        "Stored-METAR Actual enter this scorecard as sequential_oos. Historical and "
+        "reconstructed research are excluded. Aim: 20–30 new cases per challenger."
+    )
+
+
 def render_research_tracks(
-    *, nowcast, snapshots, variants, actuals, markets, forecasts, target, now, zone
+    *, nowcast, snapshots, variants, actuals, markets, forecasts,
+    forward_shadow_journal, target, now, zone
 ):
     """Render from cached cockpit frames only; never opens a Neon connection."""
     st.header("Research · Shadow Mode")
@@ -214,6 +293,7 @@ def render_research_tracks(
         "Strictly separate from the productive Champion · RESEARCH ONLY · "
         "automatic promotion disabled."
     )
+    _render_forward_shadow_scorecard(forward_shadow_journal)
     checkpoint = _latest_checkpoint(now, zone)
     taf_bucket = positive_temperature_bucket(
         getattr(getattr(nowcast, "taf_guidance", None), "max_temp_c", None)
