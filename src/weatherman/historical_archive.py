@@ -91,6 +91,12 @@ class RawCache:
     def close(self):
         self.client.close()
 
+    def is_cached(self, url: str, params: dict, *, kind: str) -> bool:
+        key = digest(
+            json.dumps({"url": url, "params": params, "kind": kind}, sort_keys=True).encode()
+        )
+        return self.state["requests"].get(key, {}).get("status") == "success"
+
     def get(self, url: str, params: dict, *, kind: str) -> tuple[bytes, dict]:
         request = {"url": url, "params": params, "kind": kind}
         key = digest(json.dumps(request, sort_keys=True).encode())
@@ -118,8 +124,8 @@ class RawCache:
                 response.raise_for_status()
                 data = response.content
                 if kind == "awc_taf":
-                    data = data or b"[]"  # AWC documents 204 for an empty valid query.
-                    if not isinstance(json.loads(data), list):
+                    # Validate documented empty 204s without rewriting raw response bytes.
+                    if not isinstance(json.loads(data or b"[]"), list):
                         raise ArchiveError("Unexpected AWC TAF schema")
                 elif kind == "json":
                     payload = json.loads(data)
@@ -382,20 +388,24 @@ def tafs(cache: RawCache, start: date, end: date, *, checkpoints=()) -> pd.DataF
             }
         )
     for checkpoint in checkpoints:
+        params = {
+            "ids": "LEMD",
+            "format": "json",
+            "time": "issue",
+            "date": utc(checkpoint).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
         # The public AWC endpoint documents a 30-day retention window.
-        if utc(checkpoint) < pd.Timestamp.now(tz="UTC") - timedelta(days=30):
+        # Cached historical bulletins remain replayable after provider retention expires.
+        if utc(checkpoint) < pd.Timestamp.now(tz="UTC") - timedelta(
+            days=30
+        ) and not cache.is_cached(AWC_TAF_URL, params, kind="awc_taf"):
             continue
         payload, awc_meta = cache.get(
             AWC_TAF_URL,
-            {
-                "ids": "LEMD",
-                "format": "json",
-                "time": "issue",
-                "date": utc(checkpoint).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            },
+            params,
             kind="awc_taf",
         )
-        for report in json.loads(payload):
+        for report in json.loads(payload or b"[]"):
             row = awc_taf_row(report, awc_meta)
             if row is not None:
                 rows.append(row)

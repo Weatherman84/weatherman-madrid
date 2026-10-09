@@ -304,8 +304,14 @@ def main() -> int:
             "cached_successful_response_bytes": sum(r.get("bytes", 0) for r in cached_requests),
             "oldest_full_fidelity_date": None,
             "newest_full_fidelity_date": None,
-            "oldest_partial_fidelity_date": min((r["target_date"] for r in records), default=None),
-            "newest_partial_fidelity_date": max((r["target_date"] for r in records), default=None),
+            "oldest_partial_fidelity_date": min(
+                (r["target_date"] for r in records if r.get("champion_center_c") is not None),
+                default=None,
+            ),
+            "newest_partial_fidelity_date": max(
+                (r["target_date"] for r in records if r.get("champion_center_c") is not None),
+                default=None,
+            ),
             "complete_actual_target_days": len(
                 {r["target_date"] for r in records if r.get("actual_complete")}
             ),

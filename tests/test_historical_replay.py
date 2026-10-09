@@ -8,6 +8,7 @@ import pytest
 
 from weatherman.historical_archive import (
     ArchiveError,
+    AWC_TAF_URL,
     BudgetExceeded,
     RawCache,
     actuals_from_metars,
@@ -16,6 +17,7 @@ from weatherman.historical_archive import (
     eligible,
     group_time,
     model_runs,
+    tafs,
 )
 from weatherman.historical_replay import (
     build_checkpoint,
@@ -292,6 +294,50 @@ def test_budget_zero_forbids_download(tmp_path):
     cache.close()
 
 
+def test_empty_archive_response_preserves_original_raw_bytes(tmp_path):
+    cache = RawCache(tmp_path)
+    cache.client.close()
+    cache.client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(204)))
+    payload, meta = cache.get("https://example.test/taf", {}, kind="awc_taf")
+    assert payload == b""
+    assert (tmp_path / meta["path"]).read_bytes() == b""
+    cache.offline = True
+    assert cache.get("https://example.test/taf", {}, kind="awc_taf")[0] == b""
+    cache.close()
+
+
+def test_cached_tafs_remain_usable_after_public_retention_expires(tmp_path):
+    cache = RawCache(tmp_path)
+    cache.client.close()
+    checkpoint = datetime(2024, 1, 1, 7, tzinfo=timezone.utc)
+    report = {
+        "icaoId": "LEMD",
+        "issueTime": "2024-01-01T05:00:00Z",
+        "dbPopTime": "2024-01-01T05:25:00Z",
+        "validTimeFrom": 1704088800,
+        "validTimeTo": 1704196800,
+        "rawTAF": "TAF LEMD 010500Z 0106/0212 TX20/0116Z",
+    }
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        if request.url.host == "aviationweather.gov":
+            return httpx.Response(200, json=[report])
+        return httpx.Response(200, content=b"station,valid,raw\n")
+
+    cache.client = httpx.Client(transport=httpx.MockTransport(handler))
+    params = {"ids": "LEMD", "format": "json", "time": "issue", "date": "2024-01-01T07:00:00Z"}
+    cache.get(AWC_TAF_URL, params, kind="awc_taf")
+    frame = tafs(cache, date(2024, 1, 1), date(2024, 1, 2), checkpoints=[checkpoint])
+    assert len(frame) == 1 and frame.max_temp_c.iloc[0] == 20
+    assert len(calls) == 2  # One archived AWC seed and one IEM query, no stale API query.
+    cache.offline = True
+    assert len(tafs(cache, date(2024, 1, 1), date(2024, 1, 2), checkpoints=[checkpoint])) == 1
+    assert len(calls) == 2
+    cache.close()
+
+
 def test_batch_model_provenance_and_normalized_cache_are_independent(tmp_path):
     cache = RawCache(tmp_path)
     cache.client.close()
@@ -410,3 +456,23 @@ def test_current_and_future_actual_cannot_change_checkpoint_prediction():
     after = build_checkpoint(actuals=actuals, **kwargs)
     assert before["champion_probabilities"] == after["champion_probabilities"]
     assert before["champion_center_c"] == after["champion_center_c"]
+    history = daily_forecasts(paths)
+    history["target_date"] = day - timedelta(days=2)
+    history["model_run_at"] = start - timedelta(days=3)
+    history["available_at"] = start - timedelta(days=3) + timedelta(hours=6)
+    history["run_at"] = history.available_at
+    history["horizon"] = "D-1"
+    history["max_temp_c"] = 25.0
+    prior = actuals.iloc[0].copy()
+    prior["target_date"] = day - timedelta(days=2)
+    prior["available_at"] = start - timedelta(days=1)
+    prior["max_temp_c"] = prior["archive_metar_max_c"] = 20.0
+    with_prior = pd.concat([pd.DataFrame([prior]), actuals], ignore_index=True)
+    trained = build_checkpoint(actuals=with_prior, history_forecasts=history, **kwargs)
+    assert trained["warmup"]["paired_days_by_model"]["gfs_global"] == 1
+    assert trained["champion_center_c"] < before["champion_center_c"]
+    # An old target date cannot bypass a future historical availability timestamp.
+    history["available_at"] = checkpoint + timedelta(hours=1)
+    excluded = build_checkpoint(actuals=with_prior, history_forecasts=history, **kwargs)
+    assert excluded["warmup"]["paired_days_by_model"]["gfs_global"] == 0
+    assert excluded["champion_center_c"] == before["champion_center_c"]

@@ -136,7 +136,10 @@ Teilzeitraum ist ein Adapter integriert: Punktabfragen pro Checkpoint, Original-
 Bulletin und decodierte Änderungsgruppen; `dbPopTime` bleibt der belegte historische
 Archiv-Eingang. Er ist kein Nachweis des damaligen Weatherman-Empfangs. Fehlender
 Archiv-Eingang verwendet eine ausdrücklich geschätzte Issue-plus-5-Minuten-Regel.
-Future/unklare Archiv-Eingänge werden nicht vor dem Checkpoint freigegeben. Die API
+Future/unklare Archiv-Eingänge werden nicht vor dem Checkpoint freigegeben. Bereits gecachte TAF-Bulletins bleiben auch nach Ablauf der öffentlichen
+30-Tage-Aufbewahrung lokal nutzbar. Leere 204-Antworten bleiben im Raw-Archiv byte-
+identisch; die Auswertung interpretiert sie ausschließlich als fehlende Bulletins.
+Die API
 liefert Checkpoint-Abfragen, keinen garantierten vollständigen Revisionstream. Die
 April–August-Lücke bleibt offen; es gibt keine rückdatierte heutige Meldung:
 https://aviationweather.gov/data/api/
