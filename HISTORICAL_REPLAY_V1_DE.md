@@ -167,10 +167,36 @@ Adapter-/Timing-/Warmup-Konfigurationen werden separat gehalten. Zusammengeführ
 Masterdateien betreffen den jeweils angeforderten Zeitraum. Frühere Einzelresultate
 bleiben in der konfigurationsbezogenen Tagesablage erhalten.
 
-Zeitliche/saisonale Turniere, Counterfactual-Reruns, einmaliger Holdout und
-Walk-Forward werden in der folgenden Research-Stufe umgesetzt. Der Holdout wurde
-nicht zur Parameterwahl geöffnet. Baseline- und Regime-Metriken dieser Stufe sind
-rein diagnostisch und wählen keinen neuen Champion.
+Der Backfill vom 1. April bis 8. Oktober 2026 umfasst 191 Tage und 764
+Checkpoints: 755 diagnostische Forecasts, neun Fälle ohne zwei frische Modelle.
+Alle Fälle bleiben `historical_partial_fidelity`.
+
+Die folgende Offline-Stufe nutzt `scripts/historical_parameter_study.py`:
+sechs bestehende D0-Anchor-Policies und neun bestehende Late-Live-Einzelfaktor-
+Policies, unveränderte Auswahlmathematik und additive Verteilungsverschiebungen.
+D1 und First Live bleiben bei ihrer bestehenden Forecast-Baseline. Das ist eine
+begrenzte Policy-Simulation, kein vollständiger Engine-Counterfactual-Rerun.
+Native Engine-Varianten werden ausschließlich im Training verglichen.
+
+Der vorab registrierte Holdout beginnt am 12. August. Die Policy wird anhand
+von Labels eingefroren, die vor dem ersten kalendarischen Holdout-Checkpoint
+verfügbar waren. Drei Dry-Run-Tage sind ausgeschlossen. Ein Fingerprint sperrt
+nachträgliches automatisches Retuning; identische Aufrufe verwenden das gespeicherte
+Ergebnis. Expanding und Rolling-90-Tage verwenden nur ältere vollständige Actuals,
+deren angenommener Empfang vor dem jeweiligen Checkpoint liegt.
+
+Die unveränderten öffentlichen Challenger-Trainer werden ebenfalls ausgeführt.
+Ihre Scheduled-Causal-Schutzregel lässt diese partiellen Fälle nicht als Training
+zu (`eligible_training_n=0`). Die Policy-Studie ist deshalb ausschließlich bedingt
+diagnostisch, kein zertifizierter OOS-Nachweis und keine Promotion. Historische
+handelbare Quotes fehlen; Trading-P&L wird nicht berechnet.
+
+Ergebnisse: `results/historical-parameter-study.json`, Einzelrecords:
+`derived/historical-policy-study-records.json`. Wiederaufnahme:
+
+```bash
+PYTHONPATH=src python scripts/historical_parameter_study.py --archive /path/to/archive
+```
 
 ## Tests
 
