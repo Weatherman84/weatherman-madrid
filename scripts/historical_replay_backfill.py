@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -19,16 +21,87 @@ from weatherman.historical_archive import (
     candidate_runs,
     metars,
     model_run,
+    model_runs,
     tafs,
 )
 from weatherman.historical_replay import (
     build_checkpoint,
     clean,
+    daily_forecasts,
     engine_fingerprint,
     save_records,
     schedule,
     summary,
 )
+
+
+def download_runs(cache, airport, groups):
+    """Eight in-flight point requests, with the shared cache's global rate limit."""
+
+    def fetch(item):
+        run, models = item
+        try:
+            return model_runs(cache, airport, models, run), []
+        except BudgetExceeded:
+            raise
+        except ArchiveError as exc:
+            if len(models) == 1:
+                return pd.DataFrame(), [f"{models[0]} {run}: {exc}"]
+            frames, errors = [], []
+            # Preserve accessible models if one member makes a batch unavailable.
+            for model in models:
+                try:
+                    frames.append(model_run(cache, airport, model, run))
+                except BudgetExceeded:
+                    raise
+                except ArchiveError as inner:
+                    errors.append(f"{model} {run}: {inner}")
+            return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(), errors
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(fetch, sorted(groups.items())))
+    frames = [frame for frame, _ in results if not frame.empty]
+    return (
+        pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(),
+        [error for _, errors in results for error in errors],
+    )
+
+
+def warmup(cache, airport, targets, normalized, days):
+    """Native D-1 calibration pairs only; observations never substitute forecasts."""
+    needed = sorted(
+        {
+            target - timedelta(days=i)
+            for target in targets
+            for i in range(1, days + 1)
+            if target - timedelta(days=i) >= date(2026, 4, 3)
+        }
+    )
+    directory = normalized / "warmup"
+    directory.mkdir(exist_ok=True)
+
+    def one_day(day):
+        path = directory / f"{day}.parquet"
+        if path.exists():
+            return pd.read_parquet(path)
+        print(f"Warmup D-1 {day}", flush=True)
+        groups = {}
+        cutoff = schedule(day)[0][1]
+        for model in airport["models"]:
+            run = candidate_runs(model, cutoff, count=1)[0]
+            groups.setdefault(run, []).append(model)
+        hourly, errors = download_runs(cache, airport, groups)
+        forecasts = daily_forecasts(hourly)
+        if not forecasts.empty:
+            forecasts = forecasts[pd.to_datetime(forecasts.target_date).dt.date == day]
+        # Failed or partial model sets are not certified/resume-skipped.
+        if not errors and not forecasts.empty and set(forecasts.model) == set(airport["models"]):
+            forecasts.to_parquet(path, index=False)
+        return forecasts
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        frames = list(pool.map(one_day, needed))
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 def main() -> int:
@@ -42,8 +115,9 @@ def main() -> int:
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--retry-failed", action="store_true")
     parser.add_argument("--max-requests", type=int, default=250)
+    parser.add_argument("--warmup-days", type=int, default=90)
     args = parser.parse_args()
-    if args.start > args.end or args.max_requests < 0:
+    if args.start > args.end or args.max_requests < 0 or not 0 <= args.warmup_days <= 90:
         parser.error("Invalid range or request budget")
     repo = Path(__file__).resolve().parents[1]
     root = args.archive.resolve()
@@ -51,6 +125,8 @@ def main() -> int:
         parser.error("Archive must be outside the Git repository")
     airport = json.loads((repo / "src/weatherman/data/airports.json").read_text())["LEMD"]
     fingerprint = engine_fingerprint(repo)
+    if args.end >= date.today():
+        parser.error("End must be a completed historical day (before today UTC)")
     if args.mode == "plan":
         n = (args.end - args.start).days + 1
         print(
@@ -84,6 +160,7 @@ def main() -> int:
             and previous.get("engine_sha256") == fingerprint
             and previous.get("timing_policy") == args.timing_policy
             and previous.get("version") == VERSION
+            and previous.get("warmup_days") == args.warmup_days
         ):
             raise SystemExit(
                 "Full backfill blocked: no matching successful fidelity/leakage dry run"
@@ -97,19 +174,51 @@ def main() -> int:
     records = []
     coverage = []
     interrupted = False
+    cohort = hashlib.sha256(
+        json.dumps(
+            {"engine": fingerprint, "timing": args.timing_policy, "warmup_days": args.warmup_days},
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    day_directory = root / "derived" / cohort / "days"
+    day_directory.mkdir(parents=True, exist_ok=True)
     try:
+        history = warmup(cache, airport, targets, normalized, args.warmup_days)
+        if args.mode == "backfill":
+            groups = {}
+            for target in targets:
+                for model in airport["models"]:
+                    for _, cutoff in schedule(target):
+                        for run in candidate_runs(model, cutoff):
+                            groups.setdefault(run, set()).add(model)
+            print(f"Prefetch {len(groups)} distinct model initialization groups", flush=True)
+            download_runs(cache, airport, {run: sorted(models) for run, models in groups.items()})
+        earliest = min(targets) - timedelta(days=args.warmup_days + 3)
+        observations_all = metars(cache, earliest, max(targets) + timedelta(days=2))
+        actuals_all = actuals_from_metars(observations_all)
         for target in targets:
+            saved = day_directory / f"{target}.json"
+            if saved.exists():
+                restored = json.loads(saved.read_text())
+                records.extend(restored["records"])
+                coverage.append(restored["coverage"])
+                print(f"Resume {target}: four persisted checkpoints", flush=True)
+                continue
             print(f"Archive {target}: METAR, TAF and exact model runs", flush=True)
             errors = []
+            start = pd.Timestamp(target - timedelta(days=3), tz="Europe/Madrid")
+            stop = pd.Timestamp(target + timedelta(days=2), tz="Europe/Madrid")
+            observations = observations_all[
+                (pd.to_datetime(observations_all.observed_at, utc=True) >= start)
+                & (pd.to_datetime(observations_all.observed_at, utc=True) < stop)
+            ].copy()
             try:
-                observations = metars(cache, target - timedelta(days=3), target + timedelta(days=2))
-            except ArchiveError as exc:
-                if isinstance(exc, BudgetExceeded):
-                    raise
-                observations = pd.DataFrame()
-                errors.append(f"METAR: {exc}")
-            try:
-                aviation = tafs(cache, target - timedelta(days=2), target + timedelta(days=1))
+                aviation = tafs(
+                    cache,
+                    target - timedelta(days=2),
+                    target + timedelta(days=1),
+                    checkpoints=[cutoff for _, cutoff in schedule(target)],
+                )
             except ArchiveError as exc:
                 if isinstance(exc, BudgetExceeded):
                     raise
@@ -117,29 +226,27 @@ def main() -> int:
                 errors.append(f"TAF: {exc}")
             for name, frame in (("metar", observations), ("taf", aviation)):
                 frame.to_parquet(normalized / f"{target}-{name}.parquet", index=False)
-            actuals = actuals_from_metars(observations)
-            paths = []
+            actuals = actuals_all
             day_coverage = {}
+            groups = {}
             for model in airport["models"]:
                 runs = sorted(
                     {run for _, cutoff in schedule(target) for run in candidate_runs(model, cutoff)}
                 )
-                valid_runs = 0
                 for run in runs:
-                    try:
-                        frame = model_run(cache, airport, model, run)
-                        paths.append(frame)
-                        valid_runs += 1
-                    except ArchiveError as exc:
-                        if isinstance(exc, BudgetExceeded):
-                            raise
-                        errors.append(f"{model} {run.isoformat()}: {exc}")
-                day_coverage[model] = {"candidate_runs": len(runs), "archived_runs": valid_runs}
-            hourly = pd.concat(paths, ignore_index=True) if paths else pd.DataFrame()
+                    groups.setdefault(run, []).append(model)
+                day_coverage[model] = {"candidate_runs": len(runs), "archived_runs": 0}
+            hourly, model_errors = download_runs(cache, airport, groups)
+            errors.extend(model_errors)
+            for model in airport["models"]:
+                day_coverage[model]["archived_runs"] = (
+                    len(set(hourly[hourly.model == model].model_run_at)) if not hourly.empty else 0
+                )
             hourly.to_parquet(normalized / f"{target}-model-paths.parquet", index=False)
             actuals.to_parquet(normalized / f"{target}-actuals.parquet", index=False)
+            day_records = []
             for label, cutoff in schedule(target):
-                records.append(
+                day_records.append(
                     build_checkpoint(
                         airport=airport,
                         target=target,
@@ -151,16 +258,18 @@ def main() -> int:
                         actuals=actuals,
                         timing_policy=args.timing_policy,
                         source_errors=errors,
+                        history_forecasts=history,
                     )
                 )
-            coverage.append(
-                {
-                    "target_date": str(target),
-                    "models": day_coverage,
-                    "metar_reports": len(observations),
-                    "taf_revisions": len(aviation),
-                }
-            )
+            records.extend(day_records)
+            day_info = {
+                "target_date": str(target),
+                "models": day_coverage,
+                "metar_reports": len(observations),
+                "taf_revisions": len(aviation),
+            }
+            coverage.append(day_info)
+            atomic_json(saved, {"records": day_records, "coverage": day_info})
             cache.state.setdefault("days", {})[str(target)] = {
                 "status": "processed_partial" if errors else "processed",
                 "errors": errors,
@@ -174,6 +283,12 @@ def main() -> int:
     finally:
         cache.close()
     report = summary(records)
+    if args.mode == "backfill":
+        complete = not interrupted and len(records) == len(targets) * 4
+        report["large_backfill_status"] = (
+            "completed_diagnostic_only" if complete else "incomplete_resumable"
+        )
+        report["all_requested_days_processed"] = complete
     cached_requests = list(cache.state["requests"].values())
     report.update(
         {
@@ -213,6 +328,8 @@ def main() -> int:
                 "passed": report["dry_run_passed"] and not interrupted,
                 "timing_policy": args.timing_policy,
                 "engine_sha256": fingerprint,
+                "warmup_days": args.warmup_days,
+                "diagnostic_only": not report["full_fidelity_gate_passed"],
             },
         )
     print(
@@ -232,7 +349,8 @@ def main() -> int:
             indent=2,
         )
     )
-    return 0 if report["dry_run_passed"] and not interrupted else 2
+    success = report.get("all_requested_days_processed", report["dry_run_passed"])
+    return 0 if success and not interrupted else 2
 
 
 if __name__ == "__main__":

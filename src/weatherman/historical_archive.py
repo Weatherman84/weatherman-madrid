@@ -12,17 +12,19 @@ import io
 import json
 import re
 import time
+import threading
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
 import pandas as pd
 
-VERSION = "historical_backfill_v0.1.0"
+VERSION = "historical_backfill_v0.2.0"
 ZONE = "Europe/Madrid"
 SINGLE_RUNS_URL = "https://single-runs-api.open-meteo.com/v1/forecast"
 METAR_URL = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
 TAF_URL = "https://mesonet.agron.iastate.edu/cgi-bin/request/taf.py"
+AWC_TAF_URL = "https://aviationweather.gov/api/data/taf"
 HOURLY_FIELDS = {
     "temperature_2m": "temp_c",
     "dew_point_2m": "dewpoint_c",
@@ -81,6 +83,7 @@ class RawCache:
         self.retry_failed = retry_failed
         self.requests = self.download_bytes = self.hits = 0
         self.last_request = 0.0
+        self.lock = threading.Lock()
         ledger = root / "backfill_state.json"
         self.state = json.loads(ledger.read_text()) if ledger.exists() else {"requests": {}}
         self.client = httpx.Client(timeout=25, follow_redirects=True)
@@ -102,17 +105,23 @@ class RawCache:
             raise ArchiveError("Offline cache miss" if not previous else previous["error"])
         error = "request failed"
         for attempt in range(2):
-            if self.requests >= self.max_requests:
-                raise BudgetExceeded("API request budget exhausted; resume with existing cache")
-            time.sleep(max(0.0, 1.1 - (time.monotonic() - self.last_request)))
-            self.last_request = time.monotonic()
-            self.requests += 1
+            with self.lock:
+                if self.requests >= self.max_requests:
+                    raise BudgetExceeded("API request budget exhausted; resume with existing cache")
+                time.sleep(max(0.0, 1.1 - (time.monotonic() - self.last_request)))
+                self.last_request = time.monotonic()
+                self.requests += 1
             try:
                 response = self.client.get(url, params=params)
-                self.download_bytes += len(response.content)
+                with self.lock:
+                    self.download_bytes += len(response.content)
                 response.raise_for_status()
                 data = response.content
-                if kind == "json":
+                if kind == "awc_taf":
+                    data = data or b"[]"  # AWC documents 204 for an empty valid query.
+                    if not isinstance(json.loads(data), list):
+                        raise ArchiveError("Unexpected AWC TAF schema")
+                elif kind == "json":
                     payload = json.loads(data)
                     if payload.get("error") or not payload.get("hourly", {}).get("time"):
                         raise ArchiveError("Missing archived hourly forecast")
@@ -121,7 +130,7 @@ class RawCache:
                     if not data.startswith(expected):
                         raise ArchiveError("Unexpected archive CSV schema/content")
                 sha = digest(data)
-                relative = f"raw/{sha}.{'json' if kind == 'json' else 'csv'}"
+                relative = f"raw/{sha}.{'json' if kind in {'json', 'awc_taf'} else 'csv'}"
                 destination = self.root / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 if not destination.exists():
@@ -135,8 +144,9 @@ class RawCache:
                     "attempts": attempt + 1,
                     "fetched_at": datetime.now(timezone.utc).isoformat(),
                 }
-                self.state["requests"][key] = metadata
-                atomic_json(self.root / "backfill_state.json", self.state)
+                with self.lock:
+                    self.state["requests"][key] = metadata
+                    atomic_json(self.root / "backfill_state.json", self.state)
                 return data, metadata
             except (httpx.HTTPError, ValueError, ArchiveError) as exc:
                 error = str(exc)
@@ -148,14 +158,15 @@ class RawCache:
                     if status == 429:
                         break
                     time.sleep(2)
-        self.state["requests"][key] = {
-            **request,
-            "status": "failed",
-            "error": error,
-            "attempts": attempt + 1,
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
-        }
-        atomic_json(self.root / "backfill_state.json", self.state)
+        with self.lock:
+            self.state["requests"][key] = {
+                **request,
+                "status": "failed",
+                "error": error,
+                "attempts": attempt + 1,
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+            }
+            atomic_json(self.root / "backfill_state.json", self.state)
         raise ArchiveError(error)
 
 
@@ -175,12 +186,36 @@ def candidate_runs(model: str, checkpoint: datetime, *, count=2) -> list[datetim
 
 
 def model_run(cache: RawCache, airport: dict, model: str, run: datetime) -> pd.DataFrame:
+    return model_runs(cache, airport, [model], run)
+
+
+def model_runs(cache: RawCache, airport: dict, models: list[str], run: datetime) -> pd.DataFrame:
+    """Batch identical initializations; never blend model output or change provenance."""
+    stored, missing = [], []
+    directory = cache.root / "normalized/model-runs" / VERSION
+    for model in models:
+        path = directory / model / f"{run:%Y%m%dT%H%M}.parquet"
+        checksum = path.with_suffix(".sha256")
+        if path.exists() and checksum.exists():
+            if digest(path.read_bytes()) != checksum.read_text().strip():
+                raise ArchiveError("Normalized model cache checksum mismatch")
+            frame = pd.read_parquet(path)
+            raw = cache.root / "raw" / f"{frame.source_sha256.iloc[0]}.json"
+            if not raw.exists() or digest(raw.read_bytes()) != frame.source_sha256.iloc[0]:
+                raise ArchiveError("Normalized model provenance checksum mismatch")
+            stored.append(frame)
+            with cache.lock:
+                cache.hits += 1
+        else:
+            missing.append(model)
+    if not missing:
+        return pd.concat(stored, ignore_index=True)
     data, meta = cache.get(
         SINGLE_RUNS_URL,
         {
             "latitude": airport["latitude"],
             "longitude": airport["longitude"],
-            "models": model,
+            "models": ",".join(sorted(missing)),
             "run": run.strftime("%Y-%m-%dT%H:%M"),
             "hourly": ",".join(HOURLY_FIELDS),
             "timezone": "UTC",
@@ -189,25 +224,38 @@ def model_run(cache: RawCache, airport: dict, model: str, run: datetime) -> pd.D
         kind="json",
     )
     hourly = json.loads(data)["hourly"]
-    frame = pd.DataFrame(
-        {
-            column: hourly.get(variable, [None] * len(hourly["time"]))
-            for variable, column in HOURLY_FIELDS.items()
-        }
-    )
-    frame["valid_at"] = pd.to_datetime(hourly["time"], utc=True)
-    frame["model"] = model
-    frame["model_run_at"] = run
-    delay = 3 if len(RUN_HOURS[model]) == 8 else 6
-    frame["available_at"] = run + timedelta(hours=delay, minutes=10)
-    frame["availability_basis"] = "estimated_conservative_schedule"
-    frame["fetched_at"] = pd.Timestamp(meta["fetched_at"])
-    frame["source_sha256"] = meta["sha256"]
-    frame["source"] = "open-meteo"
-    frame["airport"] = "LEMD"
-    # 850 hPa is not retrieved in this first adapter; absence remains explicit.
-    frame["temp_850hpa_c"] = None
-    return frame.dropna(subset=["temp_c"])
+    frames = stored
+    for model in missing:
+        suffix = f"_{model}" if len(missing) > 1 else ""
+        frame = pd.DataFrame(
+            {
+                column: hourly.get(variable + suffix, [None] * len(hourly["time"]))
+                for variable, column in HOURLY_FIELDS.items()
+            }
+        )
+        frame["valid_at"] = pd.to_datetime(hourly["time"], utc=True)
+        frame["model"] = model
+        frame["model_run_at"] = run
+        delay = 3 if len(RUN_HOURS[model]) == 8 else 6
+        frame["available_at"] = run + timedelta(hours=delay, minutes=10)
+        frame["availability_basis"] = "estimated_conservative_schedule"
+        frame["fetched_at"] = pd.Timestamp(meta["fetched_at"])
+        frame["source_sha256"] = meta["sha256"]
+        frame["source"] = "open-meteo"
+        frame["airport"] = "LEMD"
+        frame["temp_850hpa_c"] = None
+        frame = frame.dropna(subset=["temp_c"])
+        if not frame.empty:
+            path = directory / model / f"{run:%Y%m%dT%H%M}.parquet"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = path.with_suffix(".tmp.parquet")
+            frame.to_parquet(temporary, index=False)
+            temporary.replace(path)
+            path.with_suffix(".sha256").write_text(digest(path.read_bytes()) + "\n")
+            frames.append(frame)
+    if not frames:
+        raise ArchiveError("No archived values for requested models")
+    return pd.concat(frames, ignore_index=True)
 
 
 def _temperature(token: str) -> float:
@@ -280,7 +328,7 @@ def group_time(issue: datetime, day: int, hour: int) -> datetime:
     return min(candidates, key=lambda value: abs(value - issue))
 
 
-def tafs(cache: RawCache, start: date, end: date) -> pd.DataFrame:
+def tafs(cache: RawCache, start: date, end: date, *, checkpoints=()) -> pd.DataFrame:
     data, meta = cache.get(
         TAF_URL,
         {
@@ -333,7 +381,85 @@ def tafs(cache: RawCache, start: date, end: date) -> pd.DataFrame:
                 "source_sha256": meta["sha256"],
             }
         )
-    return pd.DataFrame(rows)
+    for checkpoint in checkpoints:
+        # The public AWC endpoint documents a 30-day retention window.
+        if utc(checkpoint) < pd.Timestamp.now(tz="UTC") - timedelta(days=30):
+            continue
+        payload, awc_meta = cache.get(
+            AWC_TAF_URL,
+            {
+                "ids": "LEMD",
+                "format": "json",
+                "time": "issue",
+                "date": utc(checkpoint).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            },
+            kind="awc_taf",
+        )
+        for report in json.loads(payload):
+            row = awc_taf_row(report, awc_meta)
+            if row is not None:
+                rows.append(row)
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).drop_duplicates(["issue_time", "content_hash", "available_at"])
+
+
+def awc_taf_row(report: dict, meta: dict) -> dict | None:
+    """Archive decoder, using the existing engine's period field schema."""
+    if report.get("icaoId") != "LEMD" or not report.get("rawTAF"):
+        return None
+    issue = utc(report["issueTime"]).to_pydatetime()
+    raw = report["rawTAF"]
+    maximum = re.search(r"\bTX(M?\d{2})/(\d{2})(\d{2})Z\b", raw)
+    known = utc(report["dbPopTime"]).to_pydatetime() if report.get("dbPopTime") else None
+    if known is not None and known < issue:
+        raise ArchiveError("TAF ingestion time precedes issue time")
+
+    def epoch(value):
+        return pd.to_datetime(value, unit="s", utc=True).isoformat() if value is not None else None
+
+    periods = [
+        {
+            "time_from": epoch(p.get("timeFrom")),
+            "time_to": epoch(p.get("timeTo")),
+            "time_bec": epoch(p.get("timeBec")),
+            "change": p.get("fcstChange"),
+            "probability": p.get("probability"),
+            "wind_direction": p.get("wdir"),
+            "wind_speed_kt": p.get("wspd"),
+            "wind_gust_kt": p.get("wgst"),
+            "weather": p.get("wxString"),
+            "visibility_sm": p.get("visib"),
+            "clouds": p.get("clouds") or [],
+        }
+        for p in report.get("fcsts") or []
+    ]
+    return {
+        "airport": "LEMD",
+        "issue_time": issue,
+        "available_at": known or issue + timedelta(minutes=5),
+        "valid_from": pd.to_datetime(report["validTimeFrom"], unit="s", utc=True),
+        "valid_to": pd.to_datetime(report["validTimeTo"], unit="s", utc=True),
+        "raw_taf": raw,
+        "is_amended": bool(re.search(r"\bAMD\b", raw)),
+        "is_corrected": bool(re.search(r"\bCOR\b", raw)),
+        "max_temp_c": _temperature(maximum[1]) if maximum else None,
+        "max_temp_at": group_time(issue, int(maximum[2]), int(maximum[3])) if maximum else None,
+        "periods_json": json.dumps(periods),
+        "decoded_periods_available": bool(periods),
+        "first_seen_at": known,
+        "archive_ingested_at": known,
+        "collected_at": meta["fetched_at"],
+        "fetched_at": meta["fetched_at"],
+        "backfilled": True,
+        "source": "aviationweather.gov",
+        "availability_basis": "verified_historical_availability"
+        if known
+        else "estimated_issue_plus_5_minutes",
+        "availability_detail": "AWC archive dbPopTime; not historical application receipt",
+        "content_hash": digest(raw.encode()),
+        "source_sha256": meta["sha256"],
+    }
 
 
 def eligible(frame: pd.DataFrame, checkpoint: datetime, *, policy: str) -> pd.DataFrame:

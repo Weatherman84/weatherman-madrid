@@ -76,11 +76,10 @@ def engine_fingerprint(repo: Path) -> dict:
     paths = [
         *sorted((repo / "src/weatherman").glob("*.py")),
         repo / "src/weatherman/data/airports.json",
+        repo / "scripts/historical_replay_backfill.py",
     ]
     return {
-        str(path.relative_to(repo)): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in paths
-        if not path.name.startswith("historical_")
+        str(path.relative_to(repo)): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths
     }
 
 
@@ -158,11 +157,18 @@ def build_checkpoint(
     actuals: pd.DataFrame,
     timing_policy: str,
     source_errors: list[str],
+    history_forecasts: pd.DataFrame | None = None,
 ) -> dict:
     """Labels are attached AFTER forecasting; only earlier known labels train bias."""
     forecasts = daily_forecasts(
         eligible(paths, checkpoint, policy=timing_policy), include_stitched=True
     )
+    if history_forecasts is not None and not history_forecasts.empty:
+        history = eligible(history_forecasts, checkpoint, policy=timing_policy)
+        history = history[pd.to_datetime(history.target_date).dt.date < target]
+        forecasts = pd.concat([history, forecasts], ignore_index=True).drop_duplicates(
+            ["model", "model_run_at", "target_date"], keep="last"
+        )
     metar = eligible(observations, checkpoint, policy=timing_policy)
     aviation = eligible(tafs, checkpoint, policy=timing_policy)
     prior_actuals = eligible(actuals, checkpoint, policy=timing_policy)
@@ -179,8 +185,34 @@ def build_checkpoint(
         "historical_snapshot_memory",
         "historical_terminal_state",
         "temperature_850hPa",
-        "90_day_warmup_not_validated",
     ]
+    warmup_days = (
+        sorted(set(pd.to_datetime(prior_actuals.target_date).dt.date))
+        if not prior_actuals.empty
+        else []
+    )
+    window_start = target - timedelta(days=90)
+    recent_actual_days = {day for day in warmup_days if window_start <= day < target}
+    training = (
+        forecasts[
+            (pd.to_datetime(forecasts.target_date).dt.date >= window_start)
+            & (pd.to_datetime(forecasts.target_date).dt.date < target)
+            & (forecasts.horizon == "D-1")
+        ]
+        if not forecasts.empty
+        else pd.DataFrame()
+    )
+    warmup_counts = {
+        model: len(
+            set(pd.to_datetime(training[training.model == model].target_date).dt.date)
+            & recent_actual_days
+        )
+        if not training.empty
+        else 0
+        for model in airport["models"]
+    }
+    if any(count < 90 for count in warmup_counts.values()):
+        missing.append("90_day_warmup_incomplete")
     if timing_policy != "strict":
         missing.append("verified_historical_publication_times")
     if not forecasts.empty and "daily_aggregation_method" in forecasts:
@@ -217,6 +249,11 @@ def build_checkpoint(
             "metar_rows": len(metar),
             "taf_rows": len(aviation),
             "prior_actual_days": len(prior_actuals),
+        },
+        "warmup": {
+            "required_days": 90,
+            "paired_days_by_model": warmup_counts,
+            "complete": all(count == 90 for count in warmup_counts.values()),
         },
         "research_only": True,
         "automatic_promotion": False,
@@ -483,15 +520,39 @@ def summary(rows: list[dict]) -> dict:
                         **metrics([r for r in group if regime in r.get("active_regimes", [])]),
                     }
                 )
-    output["dry_run_passed"] = bool(rows) and all(
+    output["full_fidelity_gate_passed"] = bool(rows) and all(
         r["evidence_class"] == "historical_full_fidelity"
         and r.get("actual_complete")
         and r.get("causality_certified")
         and r.get("champion_center_c") is not None
         for r in rows
     )
+    labels = {label for label, _, _ in CHECKPOINTS}
+    dates = {r["target_date"] for r in rows}
+    output["diagnostic_gate_passed"] = (
+        len(dates) >= 3
+        and len(rows) == len(dates) * len(labels)
+        and len({(r["target_date"], r["checkpoint_label"]) for r in rows}) == len(rows)
+        and all(
+            {r["checkpoint_label"] for r in rows if r["target_date"] == day} == labels
+            for day in dates
+        )
+        and all(
+            r.get("actual_complete")
+            and r.get("champion_center_c") is not None
+            and r.get("champion_probabilities")
+            and r.get("leakage_checks") == "passed_for_selected_inputs"
+            and r.get("available_models")
+            and r.get("research_only") is True
+            and r.get("automatic_promotion") is False
+            and r.get("evidence_class")
+            in {"historical_partial_fidelity", "historical_full_fidelity"}
+            for r in rows
+        )
+    )
+    output["dry_run_passed"] = output["diagnostic_gate_passed"]
     output["large_backfill_status"] = (
-        "ready" if output["dry_run_passed"] else "blocked_quality_gate"
+        "ready_diagnostic_only" if output["dry_run_passed"] else "blocked_quality_gate"
     )
     return clean(output)
 

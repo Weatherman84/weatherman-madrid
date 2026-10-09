@@ -1,8 +1,8 @@
-# Historical Replay v1 – Quellenprüfung und Dry Run v0.1.0
+# Historical Replay v1 – Quellenprüfung und diagnostischer Backfill v0.2.0
 
-Dies ist die erste Implementierungsstufe des Auftrags. Der vollständige Backfill,
-das historische Challenger Tournament und die Optimierungsphasen sind **noch nicht
-abgeschlossen**. Die App bleibt v1.0.19; Research-Version: `historical_backfill_v0.1.0`.
+Diese Stufe ergänzt den historischen D−1-Kalibrierungs-Warmup und erlaubt einen
+getrennten diagnostischen Partial-Fidelity-Backfill. Historisches Challenger
+Tournament und Optimierungsphasen sind **noch nicht abgeschlossen**. Die App bleibt v1.0.19; Research-Version: `historical_backfill_v0.2.0`.
 
 ## Isolation
 
@@ -18,6 +18,7 @@ Parameteränderungen. Das Datenarchiv muss außerhalb des Git-Repositories liege
 | Open-Meteo Single Runs | Exakter `model` und UTC-`run`, sechs stündliche Punktvariablen, getrennte Fehler pro Modell | Die Antwort bestätigt keine historische Veröffentlichungszeit. Konservative Kandidaten verwenden globale 6 h / regionale 3 h plus 10 min, ausdrücklich geschätzt. |
 | IEM METAR | Alle Berichtstypen 1–4, rohe Ganzzahltemperatur statt nachträglich präzisiertem Sensorwert | Empfangszeiten fehlen. Ausgabe wird vollständig auf 30-Minuten-Sollmeldungen je lokalem Tag geprüft; ungeklärte Revisionen werden nicht als Live-Inputs genutzt. |
 | IEM TAF | Issuance-Zeitraum, alle Rohrevisionen, TX/Validität/AMD/COR | Stationsabdeckung muss gemessen werden; ein leeres CSV beweist keine weltweite Archivlücke. Decodierte Änderungsgruppen fehlen in v0.1.0. |
+| Aviation Weather Center TAF | Historische Checkpointabfragen innerhalb der letzten 30 Tage; Raw, TX und decodierte Perioden | `dbPopTime` dokumentiert Archiv-Eingang, keinen damaligen App-Empfang. Kein garantierter vollständiger Revisionstream. |
 | Meteoblue | Als fehlender Input im Coverage-Bericht | Kein historischer Adapter; kein anderer Modelltyp als Ersatz. |
 | AEMET 3129 | Separates, derzeit leeres Evaluationsfeld | Noch kein Download-Adapter; kein Ersatz für METAR-Actual. |
 | Polymarket | Vorhandene First-/Late-Live-Hedge-Funktion für Gewichte wiederverwendet | Keine historischen ausführbaren Quotes oder offizielle Resolution: `NO_TRADE`, kein P&L. Probability-Net und weitere Trading-Strategien noch nicht integriert. |
@@ -57,8 +58,13 @@ verworfen. Es werden keine Messwerte als Modellprognose eingefügt.
 Die heutige `build_live_nowcast`-Funktion und bestehende kontinuierliche Regimeprofile
 werden direkt aufgerufen. Regime-Memory wird mit leerer historischer Snapshot- und
 Variantentabelle, ohne Promotion aufgerufen. Das ist ausdrücklich eine fehlende
-Fidelity-Komponente. Ein 90-Tage-Warmup, historischer Terminalzustand, 850-hPa-Inputs
-und TAF-Änderungsgruppen sind noch nicht vollständig rekonstruiert. Die aktuelle
+Fidelity-Komponente. Der Warmup sammelt bis zu 90 frühere D−1-Checkpoint-Prognosen pro Modell und
+paarweise vollständige, vor dem aktuellen Checkpoint verfügbare Actuals. Wegen
+des Archivbeginns 2. April fehlen im frühen April Forecasts der Vorgeschichte;
+unvollständige Actuals und am D−1-Abend noch nicht abgeschlossene Tage zählen
+nicht als Trainingspaare. `warmup.paired_days_by_model` weist die echte Abdeckung
+je Checkpoint aus. Historischer Terminalzustand, 850-hPa-Inputs und
+TAF-Änderungsgruppen sind weiterhin nicht vollständig rekonstruiert. Die aktuelle
 Engine wird so auf historisch verfügbaren Wetterdaten diagnostiziert; es wird keine
 damalige produktive Entscheidung behauptet.
 
@@ -81,14 +87,14 @@ Hedge-Gewichte werden exportiert, ohne neue Logik zu entwickeln.
 ```bash
 python -m pip install -r requirements-historical-replay.txt
 PYTHONPATH=src python scripts/historical_replay_backfill.py \
-  --mode plan --start 2026-04-01 --end 2026-10-09 \
+  --mode plan --start 2026-04-01 --end 2026-10-08 \
   --archive ../madrid-historical-archive
 
 PYTHONPATH=src python scripts/historical_replay_backfill.py \
-  --mode dry-run --start 2026-04-01 --end 2026-10-09 \
+  --mode dry-run --start 2026-04-01 --end 2026-10-08 \
   --days 2026-04-04,2026-07-15,2026-09-10 \
   --archive ../madrid-historical-archive \
-  --timing-policy conservative --max-requests 250
+  --timing-policy conservative --max-requests 800 --warmup-days 90
 ```
 
 Exit-Code `2` bedeutet: Qualitätsfreigabe fehlt oder Requestbudget wurde erreicht.
@@ -98,10 +104,43 @@ Downloads. Gescheiterte Abrufe werden erst mit `--retry-failed` erneut versucht.
 429 beendet den betroffenen Abruf ohne Retry-Schleife. Maximal zwei Versuche pro
 Request, mindestens 1,1 s zwischen Requests, 25 s Requesttimeout.
 
-Der Modus `backfill` ist gesperrt, solange kein zur Engine-Version und Timing-Policy
-passender erfolgreicher Dry Run vorliegt. v0.1.0 kann wegen der explizit fehlenden
-Inputs noch keine Full-Fidelity-Freigabe erteilen. Eine Fortsetzung auf Hunderten
-Tagen würde deshalb zunächst weitere Arbeit an Quellen und Engine-Historie erfordern.
+Der Modus `backfill` benötigt einen erfolgreichen Dry Run mit mindestens drei
+verschiedenen Tagen und allen vier eindeutigen Checkpoints pro Tag. Jeder Fall
+muss Forecast-Wahrscheinlichkeiten, ein vollständiges Actual, bestandene
+Input-Leakage-Prüfungen und Research-Isolation haben. Dieser diagnostische Gate
+akzeptiert ausdrücklich Partial Fidelity. Der separate `full_fidelity_gate_passed`
+verlangt weiterhin vollständige Inputs und eine Kausalitätszertifizierung.
+Geschätzte Verfügbarkeit wird niemals zu historisch belegter Verfügbarkeit
+umetikettiert. Freigaben müssen zur gesamten Engine-/Adapter-/CLI-Version,
+Timing-Policy und Warmup-Konfiguration passen.
+
+```bash
+PYTHONPATH=src python scripts/historical_replay_backfill.py \
+  --mode backfill --start 2026-04-01 --end 2026-10-08 \
+  --archive ../madrid-historical-archive \
+  --timing-policy conservative --max-requests 3000 --warmup-days 90
+```
+
+Nur abgeschlossene Tage sind zulässig. Mehrere Modelle derselben Initialisierung
+werden in Punktabfragen gebündelt; Normalisierung, Runs, Verfügbarkeitsannahmen
+und Fehler bleiben modellbezogen. Acht gleichzeitige Requests und vier parallele
+Warmup-Tage teilen ein globales Intervall von mindestens 1,1 Sekunden. Einmal
+normalisierte Modell-Runs werden mit ihrem eigenen Checksum und der ursprünglichen
+Raw-Response geprüft und für überlappende Checkpoints wiederverwendet.
+
+TAF-Quellenprüfung: IEM lieferte in den repräsentativen LEMD-Zeiträumen keine
+Meldungen. Eine OGIMET-Abfrage für 9.–11. September lieferte ebenfalls keine
+Bulletins; das beweist keine generelle Archivlücke. Aviation Weather Center
+beschränkt die öffentliche API auf die vergangenen 30 Tage. Für diesen jüngeren
+Teilzeitraum ist ein Adapter integriert: Punktabfragen pro Checkpoint, Original-
+Bulletin und decodierte Änderungsgruppen; `dbPopTime` bleibt der belegte historische
+Archiv-Eingang. Er ist kein Nachweis des damaligen Weatherman-Empfangs. Fehlender
+Archiv-Eingang verwendet eine ausdrücklich geschätzte Issue-plus-5-Minuten-Regel.
+Future/unklare Archiv-Eingänge werden nicht vor dem Checkpoint freigegeben. Die API
+liefert Checkpoint-Abfragen, keinen garantierten vollständigen Revisionstream. Die
+April–August-Lücke bleibt offen; es gibt keine rückdatierte heutige Meldung:
+https://aviationweather.gov/data/api/
+https://www.ogimet.com/metars.phtml.en
 
 ## Dateien und Wiederaufnahme
 
@@ -116,11 +155,17 @@ Tagen würde deshalb zunächst weitere Arbeit an Quellen und Engine-Historie erf
 - `results/dry-run-gate.json`: versionierte, fail-closed Freigabe.
 
 Die Reports zählen ausschließlich tatsächlich verarbeitete Tage. Bei Budgetabbruch
-bleiben Rohdaten erhalten; Wiederholung rekonstruiert Ergebnisse ohne identische
-Downloads. Noch keine inkrementelle Zusammenführung verschiedener Dry-Run-Kohorten:
-getrennte Archivordner für unabhängige Versuche verwenden. Zeitliche/saisonale
-Turniere, Counterfactual-Reruns, einmaliger Holdout und Walk-Forward werden erst nach
-der Quellen-/Fidelity-Prüfung umgesetzt. Der Holdout wurde nicht geöffnet.
+bleiben Rohdaten und normalisierte Modell-Runs erhalten. Jeder vollständig
+verarbeitete Target Day wird unter `derived/<configuration-hash>/days/` atomar
+persistiert. Wiederaufnahme überspringt diese Checkpoints; unabhängige Engine-/
+Adapter-/Timing-/Warmup-Konfigurationen werden separat gehalten. Zusammengeführte
+Masterdateien betreffen den jeweils angeforderten Zeitraum. Frühere Einzelresultate
+bleiben in der konfigurationsbezogenen Tagesablage erhalten.
+
+Zeitliche/saisonale Turniere, Counterfactual-Reruns, einmaliger Holdout und
+Walk-Forward werden in der folgenden Research-Stufe umgesetzt. Der Holdout wurde
+nicht zur Parameterwahl geöffnet. Baseline- und Regime-Metriken dieser Stufe sind
+rein diagnostisch und wählen keinen neuen Champion.
 
 ## Tests
 

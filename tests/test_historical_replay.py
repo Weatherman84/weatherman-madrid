@@ -11,9 +11,11 @@ from weatherman.historical_archive import (
     BudgetExceeded,
     RawCache,
     actuals_from_metars,
+    awc_taf_row,
     candidate_runs,
     eligible,
     group_time,
+    model_runs,
 )
 from weatherman.historical_replay import (
     build_checkpoint,
@@ -127,6 +129,37 @@ def test_taf_hour24_rollover():
     assert group_time(issue, 30, 24) == datetime(2026, 10, 1, tzinfo=timezone.utc)
 
 
+def test_archive_taf_receipt_controls_availability_without_backdating_fetch():
+    report = {
+        "icaoId": "LEMD",
+        "issueTime": "2026-09-10T05:00:00Z",
+        "dbPopTime": "2026-09-10T05:25:00Z",
+        "validTimeFrom": 1789020000,
+        "validTimeTo": 1789128000,
+        "rawTAF": "TAF LEMD 100500Z 1006/1112 TX28/1016Z",
+        "fcsts": [
+            {
+                "timeFrom": 1789020000,
+                "timeTo": 1789128000,
+                "fcstChange": "BECMG",
+                "wdir": 30,
+                "wspd": 8,
+            }
+        ],
+    }
+    meta = {"fetched_at": "2026-10-09T20:00:00Z", "sha256": "test"}
+    row = awc_taf_row(report, meta)
+    assert row["max_temp_c"] == 28
+    assert row["fetched_at"] == meta["fetched_at"]
+    assert json.loads(row["periods_json"])[0]["change"] == "BECMG"
+    frame = pd.DataFrame([row])
+    assert eligible(frame, pd.Timestamp("2026-09-10T05:24Z"), policy="strict").empty
+    assert len(eligible(frame, pd.Timestamp("2026-09-10T05:25Z"), policy="strict")) == 1
+    report["dbPopTime"] = "2026-09-10T04:59:00Z"
+    with pytest.raises(ArchiveError, match="precedes issue"):
+        awc_taf_row(report, meta)
+
+
 def test_model_maximum_requires_full_local_day():
     day = date(2026, 9, 10)
     start = pd.Timestamp(day, tz="Europe/Madrid").tz_convert("UTC")
@@ -188,7 +221,7 @@ def test_modal_accuracy_is_not_center_rounding():
     assert result["brier_multiclass"] == pytest.approx(0.18)
 
 
-def test_partial_never_unlocks_backfill():
+def test_incomplete_sample_never_unlocks_backfill():
     row = {
         "target_date": "2026-09-10",
         "evidence_class": "historical_partial_fidelity",
@@ -199,6 +232,37 @@ def test_partial_never_unlocks_backfill():
     }
     assert not summary([row])["dry_run_passed"]
     assert summary([])["large_backfill_status"] == "blocked_quality_gate"
+
+
+def test_diagnostic_gate_requires_unique_complete_checkpoints_without_certifying_causality():
+    rows = []
+    for day in (date(2026, 4, 4), date(2026, 7, 15), date(2026, 9, 10)):
+        for label, _ in schedule(day):
+            rows.append(
+                {
+                    "target_date": str(day),
+                    "checkpoint_label": label,
+                    "evidence_class": "historical_partial_fidelity",
+                    "status": "diagnostic_partial_replay",
+                    "missing_fields": ["publication"],
+                    "actual_complete": True,
+                    "champion_center_c": 20,
+                    "champion_probabilities": {20: 1},
+                    "available_models": ["gfs_global"],
+                    "leakage_checks": "passed_for_selected_inputs",
+                    "research_only": True,
+                    "automatic_promotion": False,
+                    "causality_certified": False,
+                }
+            )
+    report = summary(rows)
+    assert report["dry_run_passed"] and report["diagnostic_gate_passed"]
+    assert not report["full_fidelity_gate_passed"]
+    assert report["large_backfill_status"] == "ready_diagnostic_only"
+    duplicate = [*rows[:-1], rows[0]]
+    assert not summary(duplicate)["dry_run_passed"]
+    rows[0]["leakage_checks"] = "failed"
+    assert not summary(rows)["dry_run_passed"]
 
 
 def test_cache_no_second_download_and_checksum_corruption_fails(tmp_path):
@@ -225,6 +289,38 @@ def test_budget_zero_forbids_download(tmp_path):
     cache = RawCache(tmp_path, max_requests=0)
     with pytest.raises(BudgetExceeded):
         cache.get("https://example.test/model", {}, kind="json")
+    cache.close()
+
+
+def test_batch_model_provenance_and_normalized_cache_are_independent(tmp_path):
+    cache = RawCache(tmp_path)
+    cache.client.close()
+    models = ["gfs_global", "icon_eu"]
+    hourly = {"time": ["2026-09-10T00:00"]}
+    for model, temperature in zip(models, [20, 25], strict=True):
+        hourly[f"temperature_2m_{model}"] = [temperature]
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json={"hourly": hourly})
+
+    cache.client = httpx.Client(transport=httpx.MockTransport(handler))
+    run = datetime(2026, 9, 10, tzinfo=timezone.utc)
+    airport = {"latitude": 40.47, "longitude": -3.56}
+    frame = model_runs(cache, airport, models, run)
+    assert frame.set_index("model").temp_c.to_dict() == {"gfs_global": 20, "icon_eu": 25}
+    assert frame.set_index("model").available_at["gfs_global"] == run + timedelta(
+        hours=6, minutes=10
+    )
+    assert frame.set_index("model").available_at["icon_eu"] == run + timedelta(hours=3, minutes=10)
+    cache.offline = True
+    assert model_runs(cache, airport, ["icon_eu"], run).temp_c.iloc[0] == 25
+    assert len(calls) == 1
+    raw = next((tmp_path / "raw").glob("*.json"))
+    raw.write_bytes(b"corrupt")
+    with pytest.raises(ArchiveError, match="provenance checksum"):
+        model_runs(cache, airport, ["gfs_global"], run)
     cache.close()
 
 
