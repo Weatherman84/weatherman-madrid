@@ -184,3 +184,8 @@ Prüfungen umfassen DST, vollständige lokale Modelltage, fehlende Routine-METAR
 Look-ahead in Modell/METAR/TAF-Zeitstempeln, unbekannte Revisionen, Cacheintegrität,
 Requestbudget und die Wirkungslosigkeit aktueller/zukünftiger Actuals auf eine
 bereits berechnete Vorhersage.
+
+TAF-Abfragen werden ebenfalls gebündelt: eine IEM-Abfrage über den gesamten
+angeforderten Issuance-Zeitraum wird pro Tag auf dessen ursprüngliches Issue-Fenster
+gefiltert; jüngere AWC-Checkpoint-Abfragen werden parallel vorab gecacht. Nach dem
+Prefetch laufen alle Checkpoint-Berechnungen aus den geprüften Cache-Dateien.

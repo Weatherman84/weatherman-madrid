@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 
 from weatherman.historical_archive import (
+    AWC_TAF_URL,
     VERSION,
     ArchiveError,
     BudgetExceeded,
@@ -102,6 +103,36 @@ def warmup(cache, airport, targets, normalized, days):
     with ThreadPoolExecutor(max_workers=4) as pool:
         frames = list(pool.map(one_day, needed))
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
+def prefetch_recent_tafs(cache, targets):
+    """Cache scalar historical AWC queries once, under the same global rate limit."""
+    queries = {}
+    for target in targets:
+        for _, cutoff in schedule(target):
+            stamp = pd.Timestamp(cutoff).tz_convert("UTC")
+            params = {
+                "ids": "LEMD",
+                "format": "json",
+                "time": "issue",
+                "date": stamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            }
+            if stamp >= pd.Timestamp.now(tz="UTC") - timedelta(days=30) or cache.is_cached(
+                AWC_TAF_URL, params, kind="awc_taf"
+            ):
+                queries[params["date"]] = params
+
+    def fetch(params):
+        try:
+            cache.get(AWC_TAF_URL, params, kind="awc_taf")
+        except BudgetExceeded:
+            raise
+        except ArchiveError:
+            pass  # Immutable failure ledger and per-day source error preserve this gap.
+
+    print(f"Prefetch {len(queries)} recent TAF checkpoint queries", flush=True)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(fetch, queries.values()))
 
 
 def main() -> int:
@@ -196,6 +227,9 @@ def main() -> int:
         earliest = min(targets) - timedelta(days=args.warmup_days + 3)
         observations_all = metars(cache, earliest, max(targets) + timedelta(days=2))
         actuals_all = actuals_from_metars(observations_all)
+        if args.mode == "backfill":
+            prefetch_recent_tafs(cache, targets)
+        iem_range = (min(targets) - timedelta(days=2), max(targets) + timedelta(days=1))
         for target in targets:
             saved = day_directory / f"{target}.json"
             if saved.exists():
@@ -218,6 +252,7 @@ def main() -> int:
                     target - timedelta(days=2),
                     target + timedelta(days=1),
                     checkpoints=[cutoff for _, cutoff in schedule(target)],
+                    iem_range=iem_range,
                 )
             except ArchiveError as exc:
                 if isinstance(exc, BudgetExceeded):
@@ -285,6 +320,9 @@ def main() -> int:
     report = summary(records)
     if args.mode == "backfill":
         complete = not interrupted and len(records) == len(targets) * 4
+        report["all_rows_pass_diagnostic_sample_checks"] = report["diagnostic_gate_passed"]
+        report["dry_run_passed"] = previous["passed"]
+        report["validated_dry_run_gate"] = previous
         report["large_backfill_status"] = (
             "completed_diagnostic_only" if complete else "incomplete_resumable"
         )

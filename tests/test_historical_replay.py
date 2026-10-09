@@ -350,6 +350,30 @@ def test_cached_tafs_remain_usable_after_public_retention_expires(tmp_path):
     cache.close()
 
 
+def test_taf_bulk_range_downloads_once_and_filters_target_issue_window(tmp_path):
+    cache = RawCache(tmp_path)
+    cache.client.close()
+    payload = (
+        b"station,valid,raw\n"
+        b"LEMD,2026-07-15 05:00,TAF LEMD 150500Z 1506/1612 TX36/1516Z\n"
+        b"LEMD,2026-09-10 05:00,TAF LEMD 100500Z 1006/1112 TX28/1016Z\n"
+    )
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, content=payload)
+
+    cache.client = httpx.Client(transport=httpx.MockTransport(handler))
+    window = (date(2026, 4, 1), date(2026, 10, 9))
+    first = tafs(cache, date(2026, 9, 9), date(2026, 9, 11), iem_range=window)
+    second = tafs(cache, date(2026, 9, 10), date(2026, 9, 12), iem_range=window)
+    assert len(first) == len(second) == 1
+    assert first.max_temp_c.iloc[0] == 28
+    assert len(calls) == 1
+    cache.close()
+
+
 def test_batch_model_provenance_and_normalized_cache_are_independent(tmp_path):
     cache = RawCache(tmp_path)
     cache.client.close()

@@ -334,13 +334,16 @@ def group_time(issue: datetime, day: int, hour: int) -> datetime:
     return min(candidates, key=lambda value: abs(value - issue))
 
 
-def tafs(cache: RawCache, start: date, end: date, *, checkpoints=()) -> pd.DataFrame:
+def tafs(
+    cache: RawCache, start: date, end: date, *, checkpoints=(), iem_range=None
+) -> pd.DataFrame:
+    query_start, query_end = iem_range or (start, end)
     data, meta = cache.get(
         TAF_URL,
         {
             "station": "LEMD",
-            "sts": f"{start}T00:00Z",
-            "ets": f"{end}T00:00Z",
+            "sts": f"{query_start}T00:00Z",
+            "ets": f"{query_end}T00:00Z",
             "fmt": "csv",
             "tz": "UTC",
             "last": 0,
@@ -387,6 +390,11 @@ def tafs(cache: RawCache, start: date, end: date, *, checkpoints=()) -> pd.DataF
                 "source_sha256": meta["sha256"],
             }
         )
+    rows = [
+        row
+        for row in rows
+        if pd.Timestamp(start, tz="UTC") <= utc(row["issue_time"]) < pd.Timestamp(end, tz="UTC")
+    ]
     for checkpoint in checkpoints:
         params = {
             "ids": "LEMD",
