@@ -126,6 +126,18 @@ def test_actual_requires_every_routine_half_hour_and_accounts_for_dst():
     assert incomplete.archive_metar_max_c == 20
 
 
+def test_unknown_correction_or_missing_temperature_cannot_train_actuals():
+    frame = observation_day(date(2026, 9, 10))
+    frame["is_correction"] = False
+    frame.loc[0, "is_correction"] = True
+    corrected = actuals_from_metars(frame).iloc[0]
+    assert not corrected.actual_complete and pd.isna(corrected.max_temp_c)
+    assert corrected.unknown_correction_reports == 1
+    frame["is_correction"] = False
+    frame.loc[0, "temp_c"] = None
+    assert not actuals_from_metars(frame).iloc[0].actual_complete
+
+
 def test_taf_hour24_rollover():
     issue = datetime(2026, 9, 30, 23, tzinfo=timezone.utc)
     assert group_time(issue, 30, 24) == datetime(2026, 10, 1, tzinfo=timezone.utc)

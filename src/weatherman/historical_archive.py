@@ -506,7 +506,13 @@ def actuals_from_metars(observations: pd.DataFrame) -> pd.DataFrame:
         expected = pd.date_range(start, end, freq="30min", inclusive="left").tz_convert("UTC")
         observed = pd.DatetimeIndex(pd.to_datetime(group.observed_at, utc=True))
         missing = expected.difference(observed)
-        complete = not len(missing) and not group.revision_conflict.any()
+        corrections = int(group.is_correction.sum()) if "is_correction" in group else 0
+        complete = (
+            not len(missing)
+            and not group.revision_conflict.any()
+            and not corrections
+            and group.temp_c.notna().all()
+        )
         maximum = float(group.temp_c.max())
         rows.append(
             {
@@ -519,6 +525,8 @@ def actuals_from_metars(observations: pd.DataFrame) -> pd.DataFrame:
                 "expected_reports": len(expected),
                 "actual_reports": len(group),
                 "missing_routine_reports": len(missing),
+                "unknown_correction_reports": corrections,
+                "has_revision_conflict": bool(group.revision_conflict.any()),
                 "available_at": end + timedelta(minutes=10),
                 "availability_basis": "estimated_day_end_plus_10_minutes",
             }

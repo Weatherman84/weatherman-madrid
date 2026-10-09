@@ -73,7 +73,9 @@ Actuals mit `available_at <= checkpoint_at` freigegeben. Die native Engine kann
 zusätzlich ihren unveränderten kausalen METAR-Fallback aus bereits verfügbaren
 Meldungen verwenden. Evaluiert wird ausschließlich ein Tag mit allen geplanten
 30-Minuten-Meldungen. Ein unvollständiges Maximum bleibt `archive_metar_max_c` und
-fließt nicht in Standardmetriken ein. Auch ein vollständiges Archivmaximum ist
+fließt nicht in Standardmetriken ein. COR-Meldungen mit unbekanntem Empfangszeitpunkt und fehlende Temperaturen machen
+einen Tag ebenfalls unvollständig; solche Maxima trainieren weder Bias noch
+Challenger und bleiben reine Archiv-Proxies. Auch ein vollständiges Archivmaximum ist
 kein Nachweis der offiziellen Polymarket-Resolution.
 
 Die existing D−1/D0/Late-Live-Forecast-Challenger trainieren derzeit nur auf
