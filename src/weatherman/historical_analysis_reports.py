@@ -68,6 +68,47 @@ d1_prediction = types.FunctionType(
 d1_prediction.__kwdefaults__ = _original_d1_prediction.__kwdefaults__
 
 
+@lru_cache(maxsize=40000)
+def _existing_counterfactual_cell(center, actual_c, actual_bucket, probabilities, delta):
+    record = {
+        "champion_center_c": center,
+        "stored_metar_actual_c": actual_c,
+        "actual_bucket": actual_bucket,
+        "champion_probabilities": dict(probabilities),
+    }
+    return cc._policy_metrics([record], lambda r: delta)
+
+
+def _cached_existing_policy_metrics(prior, builder):
+    if not prior or any(not valid(r) for r in prior):
+        return cc._policy_metrics(prior, builder)
+    cells = [
+        _existing_counterfactual_cell(
+            r["champion_center_c"],
+            r["stored_metar_actual_c"],
+            r["actual_bucket"],
+            tuple(sorted((int(k), v) for k, v in r["champion_probabilities"].items())),
+            float(builder(r)),
+        )
+        for r in prior
+    ]
+    return {
+        "n": len(cells),
+        **{k: sum(c[k] for c in cells) / len(cells) for k in cells[0] if k != "n"},
+    }
+
+
+_existing_selector = types.FunctionType(
+    cc._select_conservative_policy.__code__,
+    {
+        **cc._select_conservative_policy.__globals__,
+        "_policy_metrics": _cached_existing_policy_metrics,
+    },
+    cc._select_conservative_policy.__name__,
+    cc._select_conservative_policy.__defaults__,
+)
+
+
 def comparison(base, candidate):
     result = _base_comparison(base, candidate)
     pairs = [(a, b) for a, b in zip(base, candidate, strict=True) if valid(a) and valid(b)]
@@ -243,7 +284,7 @@ def legacy_adaptive(row, prior, late=False):
             for name in cc.D0_ANCHOR_POLICIES
         }
     )
-    selected, calibration = cc._select_conservative_policy(prior, policies)
+    selected, calibration = _existing_selector(prior, policies)
     delta = policies[selected](row)
     probabilities = cc.shift_bucket_distribution(row["champion_probabilities"], delta)
     return prediction(
@@ -364,6 +405,7 @@ def policy_matrix(root, groups, forecasts, specs):
             "unavailable_implementations": ["existing_probability_net_not_found"],
             "training": "Diagnostic adapters use earlier accepted labels with actual availability checks. Public scheduled-causal guards unchanged. No evidence relabelling.",
             "state_scope": "Fixed v0.3 earlier memory/terminal state; full checkpoint engine reruns, not an altered historical production trajectory.",
+            "existing_d1_v2_code_limit": "Boundary TAF empirical rate uses the final prior-loop item_taf rather than each comparable record's TAF. Existing implementation preserved; no corrected challenger added.",
         },
     )
     return entries, summaries
@@ -396,7 +438,7 @@ def select_existing(training, options, minimum=30):
     if len(training) < minimum:
         return "current_protected_forecast"
     allowed = {
-        name: score([values[key(r)] for r in training if key(r) in values])
+        name: selection_score([values[key(r)] for r in training if key(r) in values])
         for name, values in options.items()
     }
     baseline = allowed["current_protected_forecast"]
@@ -414,6 +456,42 @@ def select_existing(training, options, minimum=30):
         )
     }
     return min(usable, key=lambda n: (*rank_key(usable[n]), n != "current_protected_forecast", n))
+
+
+@lru_cache(maxsize=30000)
+def _selection_loss(center, actual_c, actual_bucket, modal_bucket, probabilities):
+    probs = dict(probabilities)
+    return (
+        int(actual_bucket == modal_bucket),
+        abs(center - actual_c),
+        sum((probs.get(k, 0) - int(k == actual_bucket)) ** 2 for k in set(probs) | {actual_bucket}),
+        -math.log(max(1e-12, probs.get(actual_bucket, 0))),
+    )
+
+
+def selection_score(rows):
+    selected = [r for r in rows if valid(r)]
+    if not selected:
+        return {"n": 0}
+    cells = [
+        _selection_loss(
+            r["champion_center_c"],
+            r["stored_metar_actual_c"],
+            r["actual_bucket"],
+            r["champion_modal_bucket"],
+            tuple(sorted((int(k), p) for k, p in r["champion_probabilities"].items())),
+        )
+        for r in selected
+    ]
+    return {
+        "n": len(cells),
+        **{
+            name: sum(c[index] for c in cells) / len(cells)
+            for index, name in enumerate(
+                ("modal_accuracy", "mae_c", "brier_multiclass", "log_loss")
+            )
+        },
+    }
 
 
 def parameter_and_walk_forward(root, groups, forecasts, specs):
@@ -1237,6 +1315,7 @@ def analyze(root, archive):
             "Gross hypothetical P&L ignores fees, slippage, liquidity, stake caps and settlement capital lock.",
             "Small/overlapping regimes, correlated checkpoints/scenarios and multiple comparisons; April-October only, no full-year inference.",
             "Probability Net implementation absent; full quote-dependent NO TRADE pass unavailable.",
+            "Existing D-1 v0.2 boundary TAF empirical rate references the final prior-loop TAF value rather than each comparable row's TAF. Evaluated as implemented; research code issue requires separate correction before candidate certification.",
         ],
         "production_forecast_engine_unchanged": True,
         "production_champion_unchanged": True,

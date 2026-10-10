@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from weatherman import d1_evening_research as d1
+from weatherman import checkpoint_challengers as cc
 from weatherman.historical_analysis import (
     CHECKPOINTS,
     SCENARIOS,
@@ -17,11 +18,14 @@ from weatherman.historical_analysis import (
     valid,
 )
 from weatherman.historical_analysis_reports import (
+    _existing_selector,
     d1_prediction as cached_d1_prediction,
     execute_price_trade,
     market_view,
     parameter_and_walk_forward,
     policy_matrix,
+    selection_score,
+    score,
     strategy_legs,
     trading_metrics,
 )
@@ -122,6 +126,39 @@ def test_reason_memoization_matches_existing_d1_formula():
         {"version": 2, "boundary_threshold": 0.2, "bias_strength": 0.5},
     ]:
         assert cached_d1_prediction(current, prior, params) == d1_prediction(current, prior, params)
+
+
+def test_cached_legacy_selector_has_identical_metrics_and_selection():
+    prior = [
+        {
+            **row(f"2026-06-{day:02d}"),
+            "champion_center_c": 30 + day / 20,
+            "stored_metar_actual_c": 30 + day % 2,
+            "actual_bucket": 30 + day % 2,
+            "correction_contributions": {
+                "temp_anchor_adjustment_c": day / 100,
+                "clear_sky_override_adjustment_c": day / 50,
+                "taf_adjustment_c": -0.1,
+            },
+        }
+        for day in range(1, 21)
+    ]
+    policies = {
+        name: lambda r, name=name: cc._d0_anchor_delta(r, name) for name in cc.D0_ANCHOR_POLICIES
+    }
+    for values in [prior[:3], prior, prior[10:]]:
+        assert _existing_selector(values, policies) == cc._select_conservative_policy(
+            values, policies
+        )
+
+
+def test_selection_loss_cache_matches_report_metrics_and_detects_changed_actual():
+    rows = [row("2026-06-18"), row("2026-06-19")]
+    for actual in [30, 32]:
+        rows[1]["actual_bucket"] = actual
+        rows[1]["stored_metar_actual_c"] = actual
+        fast, full = selection_score(rows), score(rows)
+        assert all(fast[k] == full[k] for k in fast)
 
 
 def test_future_price_is_rejected_and_range_probability_is_summed():

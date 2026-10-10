@@ -20,6 +20,22 @@ run and adds uncached engine-prefix identity checks. It does not define a new
 holdout. Full runs also require exact identity with the archived v0.3 main
 Champion at every checkpoint.
 
+After a completed 191-day run, compact the summary, attach the audited findings,
+and package master files plus forecast/trade caches:
+
+```bash
+PYTHONPATH=src python scripts/finalize_historical_analysis.py \
+  --output /absolute/path/madrid-historical-analysis-v1
+```
+
+The finalizer checks source hashes, all portfolio stakes/payouts and causal price
+ages; the complete curves remain in the master files, while the summary omits
+large repeated arrays. The editorial interpretation applies specifically to the
+completed v0.3 April–October run. The existing D−1 v0.2 boundary-TAF estimator
+references its final prior-loop TAF value in its empirical-rate expression. It
+is evaluated as implemented, without introducing a corrected challenger; no
+nonzero boundary probability shift occurred in the main-cohort v0.2 run.
+
 The process prohibits internet sockets, reads only local normalized archive
 files, fingerprints all inputs and forecast code, checks source immutability,
 and resumes completed days from fingerprinted caches. Output must be outside
