@@ -23,6 +23,11 @@ PYTHONPATH=src python scripts/deep_seasonal_replay.py \
   --root /absolute/path/madrid-deep-seasonal-replay-v1 \
   --archive /absolute/path/madrid-historical-archive-v03 \
   --source /absolute/path/madrid-historical-archive --mode analyze
+
+PYTHONPATH=src python scripts/finalize_deep_seasonal_replay.py \
+  --root /absolute/path/madrid-deep-seasonal-replay-v1 \
+  --archive /absolute/path/madrid-historical-archive-v03 \
+  --source /absolute/path/madrid-historical-archive
 ```
 
 Six existing models use Previous Runs hourly 48h/24h forecasts. A complete
@@ -59,3 +64,19 @@ Source requests use content-addressed caches. Model, METAR and TAF normalization
 all replay inputs and code are fingerprinted. Replay and analysis require no
 production services or Neon reads. All cohorts, checkpoints and freshness caps
 remain separate in results.
+
+The audited execution uses commit `b442503712bb09e6cb1506ef667d4d28d1b25a09`.
+Later formatting and reporting changes preserve the forecast/replay function
+ASTs, verified in `deep-seasonal-validation.json`. The original full METAR raw
+cache is reused on fresh acquisitions. Its 13,865 forecast observations are
+identical to the executed normalized observations; warm evaluation labels are
+also identical to v0.3. The finalizer expects the existing Analysis v1 input
+manifest and the original source archives alongside the new archive. Fetching
+the research branch retains the executed commit for the AST audit.
+
+Findings: 707 target days, 2,828 checkpoints, 685 accepted Actual days and 2,740
+evaluable forecasts; 516 days are additional. Modal agreement with v0.3 is only
+60--68% by checkpoint. Winter anchor-25% improves accuracy by 1.15 pp but spring
+loses 2.23 pp. Seasonal counterfactuals and method drift prohibit treating the
+results as a universal production prescription. Only 15 additional market
+events were found, starting March 16, 2026; there is no DJF trading validation.
