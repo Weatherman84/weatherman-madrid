@@ -31,10 +31,11 @@ def main():
     p.add_argument("--archive", type=Path, required=True)
     p.add_argument("--start", type=date.fromisoformat, default=date(2026, 4, 1))
     p.add_argument("--end", type=date.fromisoformat, default=date(2026, 10, 8))
+    p.add_argument("--max-requests", type=int, default=500)
     a = p.parse_args()
     root = a.archive.resolve() / "markets"
     root.mkdir(parents=True, exist_ok=True)
-    cache = RawCache(root, max_requests=500)
+    cache = RawCache(root, max_requests=a.max_requests)
     days = [a.start + timedelta(days=i) for i in range((a.end - a.start).days + 1)]
     records = []
     errors = []
