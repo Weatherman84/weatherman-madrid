@@ -331,9 +331,11 @@ def replay_one_day(item):
         return stored["records"], stored["sensitivity"]
     day = date.fromisoformat(day_string)
     paths = pd.read_parquet(source / f"normalized/{day}-model-paths.parquet")
-    paths = paths.drop(columns=["temp_850hpa_c"], errors="ignore").merge(
-        pressure, on=["model", "model_run_at", "valid_at"], how="left", validate="many_to_one"
-    )
+    # Original unavailable days can have a columnless empty Parquet; retain their missing status.
+    if not paths.empty:
+        paths = paths.drop(columns=["temp_850hpa_c"], errors="ignore").merge(
+            pressure, on=["model", "model_run_at", "valid_at"], how="left", validate="many_to_one"
+        )
     write_parquet(root / f"normalized/{day}-model-paths.parquet", paths)
     observations = pd.read_parquet(source / f"normalized/{day}-metar.parquet")
     old_taf = pd.read_parquet(source / f"normalized/{day}-taf.parquet")
