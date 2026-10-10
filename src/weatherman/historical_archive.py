@@ -83,6 +83,7 @@ class RawCache:
         self.retry_failed = retry_failed
         self.requests = self.download_bytes = self.hits = 0
         self.last_request = 0.0
+        self.rate_limited = False
         self.lock = threading.Lock()
         ledger = root / "backfill_state.json"
         self.state = json.loads(ledger.read_text()) if ledger.exists() else {"requests": {}}
@@ -97,8 +98,12 @@ class RawCache:
         )
         return self.state["requests"].get(key, {}).get("status") == "success"
 
-    def get(self, url: str, params: dict, *, kind: str) -> tuple[bytes, dict]:
+    def get(self, url: str, params: dict, *, kind: str, read_only_post=False) -> tuple[bytes, dict]:
         request = {"url": url, "params": params, "kind": kind}
+        if read_only_post:
+            if url != "https://clob.polymarket.com/batch-prices-history" or kind != "market_json":
+                raise ArchiveError("Only the read-only batch price-history POST is permitted")
+            request["method"] = "POST"
         key = digest(json.dumps(request, sort_keys=True).encode())
         previous = self.state["requests"].get(key)
         if previous and previous["status"] == "success":
@@ -112,13 +117,24 @@ class RawCache:
         error = "request failed"
         for attempt in range(2):
             with self.lock:
+                if self.rate_limited:
+                    raise BudgetExceeded("Provider rate limit reached; stop and resume later")
                 if self.requests >= self.max_requests:
                     raise BudgetExceeded("API request budget exhausted; resume with existing cache")
-                time.sleep(max(0.0, 1.1 - (time.monotonic() - self.last_request)))
+                interval = (
+                    21.0
+                    if kind == "ogimet_taf"
+                    else (2.0 if params.get("hourly") == "temperature_850hPa" else 1.1)
+                )
+                time.sleep(max(0.0, interval - (time.monotonic() - self.last_request)))
                 self.last_request = time.monotonic()
                 self.requests += 1
             try:
-                response = self.client.get(url, params=params)
+                response = (
+                    self.client.post(url, json=params)
+                    if read_only_post
+                    else self.client.get(url, params=params)
+                )
                 with self.lock:
                     self.download_bytes += len(response.content)
                 response.raise_for_status()
@@ -127,6 +143,12 @@ class RawCache:
                     # Validate documented empty 204s without rewriting raw response bytes.
                     if not isinstance(json.loads(data or b"[]"), list):
                         raise ArchiveError("Unexpected AWC TAF schema")
+                elif kind == "ogimet_taf":
+                    if data.strip() and not data.startswith(b"LEMD,"):
+                        raise ArchiveError("Unexpected OGIMET TAF content")
+                elif kind == "market_json":
+                    if not isinstance(json.loads(data), (dict, list)):
+                        raise ArchiveError("Unexpected market JSON")
                 elif kind == "json":
                     payload = json.loads(data)
                     if payload.get("error") or not payload.get("hourly", {}).get("time"):
@@ -136,7 +158,9 @@ class RawCache:
                     if not data.startswith(expected):
                         raise ArchiveError("Unexpected archive CSV schema/content")
                 sha = digest(data)
-                relative = f"raw/{sha}.{'json' if kind in {'json', 'awc_taf'} else 'csv'}"
+                relative = (
+                    f"raw/{sha}.{'json' if kind in {'json', 'awc_taf', 'market_json'} else 'csv'}"
+                )
                 destination = self.root / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 if not destination.exists():
@@ -162,6 +186,8 @@ class RawCache:
                 if attempt == 0:
                     # Rate-limit stops avoid repeatedly hitting an unavailable provider.
                     if status == 429:
+                        with self.lock:
+                            self.rate_limited = True
                         break
                     time.sleep(2)
         with self.lock:
@@ -173,6 +199,8 @@ class RawCache:
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
             }
             atomic_json(self.root / "backfill_state.json", self.state)
+        if self.rate_limited:
+            raise BudgetExceeded("Provider rate limit reached; stop and resume later")
         raise ArchiveError(error)
 
 
@@ -494,7 +522,21 @@ def eligible(frame: pd.DataFrame, checkpoint: datetime, *, policy: str) -> pd.Da
     for column in ("observed_at", "issue_time", "model_run_at"):
         if column in selected and not selected.empty:
             times = pd.to_datetime(selected[column], utc=True, errors="coerce")
-            if times.isna().any() or (times > cutoff).any():
+            bounded = pd.Series(False, index=selected.index)
+            if column == "model_run_at" and "model_run_upper_bound_at" in selected:
+                bounds = pd.to_datetime(
+                    selected.model_run_upper_bound_at, utc=True, errors="coerce"
+                )
+                declared = selected.get(
+                    "calibration_evidence", pd.Series(index=selected.index, dtype=object)
+                )
+                bounded = (
+                    declared.eq("fixed_48h_lead_sensitivity_not_exact_d1_run")
+                    & bounds.notna()
+                    & (bounds <= cutoff)
+                    & (bounds <= pd.to_datetime(selected.available_at, utc=True))
+                )
+            if (times.isna() & ~bounded).any() or (times > cutoff).any():
                 raise ArchiveError(f"Leakage: {column} after checkpoint")
     if "revision_conflict" in selected:
         selected = selected[~selected.revision_conflict & ~selected.is_correction]

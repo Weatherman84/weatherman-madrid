@@ -215,3 +215,54 @@ TAF-Abfragen werden ebenfalls gebündelt: eine IEM-Abfrage über den gesamten
 angeforderten Issuance-Zeitraum wird pro Tag auf dessen ursprüngliches Issue-Fenster
 gefiltert; jüngere AWC-Checkpoint-Abfragen werden parallel vorab gecacht. Nach dem
 Prefetch laufen alle Checkpoint-Berechnungen aus den geprüften Cache-Dateien.
+
+## Archiv-Update v0.3
+
+`historical_replay_update.py` erweitert das bestehende Archiv in einem separaten
+Verzeichnis. Alte Ergebnisse werden erhalten. OGIMET liefert Original-TAFs mit
+Ausgabezeit, AMD/COR-Status, TX und dekodierten FM/BECMG/TEMPO/PROB-Gruppen.
+Widersprüchliche Änderungsintervalle werden markiert und nicht korrigiert.
+Verfügbarkeit bleibt konservativ geschätzt, nicht als App-Empfang zertifiziert.
+
+850-hPa-Temperaturen werden getrennt für dieselben ursprünglichen Modellläufe
+nachgeladen und ausschließlich über Modell, Init und Valid Time verbunden.
+Abruflimits stoppen weitere Netzwerkabfragen; Wiederaufnahme verwendet geprüfte
+Rohantworten und bereits normalisierte Dateien.
+
+Die bestehende D0-/Late-Policy-Familie wird durch die vollständige Forecast-Funktion
+neu berechnet. Vier geprüfte Hooks in einer isolierten Research-Kopie verändern
+Anchor, TAF-Center, Clear-Sky und Dry-Mixing vor nachfolgenden Guardrails,
+Wind-Interaktionen, Ensemble- und Bucket-Berechnungen. Kein produktives Modul wird
+ersetzt oder gepatcht. Unveränderte Parameter müssen bitgleich zur nativen Funktion
+sein. Das ist eine Research-Instrumentierung bestehender Parameter, kein neuer
+Challenger und keine neue Regime-Definition.
+
+Feste Sensitivitäten: zusätzliche Modell-Verzögerung 60/120 Minuten, zusätzliche
+METAR-/TAF-Verzögerung 10 Minuten, ausschließlich vollständige Single Runs sowie
+separate ältere Warmup-Prognosen mit festem 48-Stunden-Lead. Letztere erhalten einen
+expliziten Laufzeit-Upper-Bound und werden niemals still als exakte native D1-Läufe
+in die Hauptkohorte gemischt. Nicht verfügbare Modelle bleiben fehlend.
+
+Virtuelle Snapshot-Memory wird in einem zweiten Durchlauf aus den aktualisierten
+Forecasts chronologisch rekonstruiert. Nur frühere Target Days und vor dem
+Checkpoint erzeugte Snapshots sind zugelassen; Promotion bleibt deaktiviert.
+Diese Shadow-Memory darf Champion-Center und Wahrscheinlichkeiten nicht verändern.
+Terminal-State wird innerhalb der vier fixen Tages-Checkpoints weitergereicht.
+Beides ersetzt keinen Nachweis des exakten historischen App-Zustands.
+
+Der bereits ausgewertete August–Oktober-Zeitraum ist **kein neuer unberührter
+Holdout**. Das Update berichtet einen bedingten Vergleich und Walk-Forward;
+öffentliche Scheduled-Causal-Challenger-Verträge bleiben unverändert.
+
+```bash
+PYTHONPATH=src python scripts/historical_replay_update.py \
+  --source /path/to/original-archive --archive /path/to/update-archive --mode all
+PYTHONPATH=src python scripts/historical_market_prices.py \
+  --archive /path/to/update-archive
+```
+
+Der Marktadapter liest öffentliche Event-Metadaten und historische YES-Preisreihen
+gebündelt je Tag. Checkpoint-Preise stammen ausschließlich aus davorliegenden
+Punkten; Alter und fehlende Punkte sind explizit. Die Reihen sind keine
+historischen ausführbaren Bid-/Ask-/Depth-Snapshots. Keine Orders und keine
+Ausführungs-P&L werden berechnet.

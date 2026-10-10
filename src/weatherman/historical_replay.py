@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from dataclasses import asdict
 from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -158,10 +159,15 @@ def build_checkpoint(
     timing_policy: str,
     source_errors: list[str],
     history_forecasts: pd.DataFrame | None = None,
+    nowcast_builder=None,
+    include_stitched: bool = True,
+    build_challengers: bool = True,
+    snapshot_history: pd.DataFrame | None = None,
+    prior_terminal_status=None,
 ) -> dict:
     """Labels are attached AFTER forecasting; only earlier known labels train bias."""
     forecasts = daily_forecasts(
-        eligible(paths, checkpoint, policy=timing_policy), include_stitched=True
+        eligible(paths, checkpoint, policy=timing_policy), include_stitched=include_stitched
     )
     if history_forecasts is not None and not history_forecasts.empty:
         history = eligible(history_forecasts, checkpoint, policy=timing_policy)
@@ -184,8 +190,9 @@ def build_checkpoint(
         "meteoblue_historical_forecasts",
         "historical_snapshot_memory",
         "historical_terminal_state",
-        "temperature_850hPa",
     ]
+    if hourly.empty or "temp_850hpa_c" not in hourly or hourly.temp_850hpa_c.isna().all():
+        missing.append("temperature_850hPa")
     warmup_days = (
         sorted(set(pd.to_datetime(prior_actuals.target_date).dt.date))
         if not prior_actuals.empty
@@ -266,7 +273,7 @@ def build_checkpoint(
     profiles = continuous_regime_profiles(airport)
     # Preserve historical fetched_at in provenance; do not substitute the later fetch.
     # The engine's freshness assessment reads available_at first.
-    nowcast = build_live_nowcast(
+    nowcast = (nowcast_builder or build_live_nowcast)(
         forecasts=forecasts,
         actuals=prior_actuals,
         observations=metar,
@@ -289,10 +296,18 @@ def build_checkpoint(
         recent_warm_bias_profile=airport.get("recent_warm_bias_challenger"),
         future_reheating_profile=airport.get("future_reheating"),
         maximum_model_age_minutes=90,
+        _build_challengers=build_challengers,
+        prior_terminal_status=prior_terminal_status,
     )
+    snapshots = pd.DataFrame()
+    if snapshot_history is not None and not snapshot_history.empty:
+        snapshots = snapshot_history[
+            (pd.to_datetime(snapshot_history.captured_at, utc=True) < utc(checkpoint))
+            & (pd.to_datetime(snapshot_history.target_date).dt.date < target)
+        ].copy()
     nowcast = enrich_nowcast_with_regime_memory(
         nowcast,
-        pd.DataFrame(),
+        snapshots,
         prior_actuals,
         metar,
         pd.DataFrame(),
@@ -351,6 +366,9 @@ def build_checkpoint(
                 "taf_bucket": None,
                 "taf_history": aviation.to_dict("records"),
                 "engine_challenger_variants": nowcast.challenger_variants,
+                "terminal_state": clean(asdict(nowcast.day_status)),
+                "reconstructed_memory_snapshot_rows": len(snapshots),
+                "reconstructed_terminal_carry": prior_terminal_status is not None,
             }
         )
         for index, (bucket, probability) in enumerate(ranked[:3], 1):
