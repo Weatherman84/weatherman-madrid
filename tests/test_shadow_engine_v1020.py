@@ -5,17 +5,23 @@ from copy import deepcopy
 import pytest
 
 from weatherman.forward_shadow import (
-    _shadow_engine_decision, _validate_shadow_engine_decision,
+    _shadow_engine_decision,
+    _shadow_engine_outcome,
+    _shadow_engine_scorecard,
+    _validate_shadow_engine_decision,
 )
-from weatherman.shadow_engine_v1 import build_shadow_mirror
+from weatherman.shadow_engine_v1 import build_shadow_mirror, season_for_target_date
 
 
-def record(checkpoint: str, *, anchor: float = -0.4, dry: float = 0.18):
+def record(
+    checkpoint: str, *, target_date: str = "2026-10-10",
+    anchor: float = -0.4, dry: float = 0.18,
+):
     return {
-        "target_date": "2026-10-10",
+        "target_date": target_date,
         "checkpoint_label": checkpoint,
-        "checkpoint_at": "2026-10-10T14:00:00+00:00",
-        "generated_at": "2026-10-10T14:07:00+00:00",
+        "checkpoint_at": f"{target_date}T14:00:00+00:00",
+        "generated_at": f"{target_date}T14:07:00+00:00",
         "forecast_snapshot_id": 10,
         "evidence_class": "scheduled_causal",
         "champion_center_c": 24.38,
@@ -35,33 +41,50 @@ def record(checkpoint: str, *, anchor: float = -0.4, dry: float = 0.18):
             "status": "available",
             "market_snapshot_age_minutes": 4,
             "markets": [{
-                "bucket_c": 25, "yes_price": 0.37, "best_bid": 0.36,
-                "best_ask": 0.37, "spread": 0.01,
+                "bucket_c": 25, "yes_price": 0.20, "best_bid": 0.19,
+                "best_ask": 0.20, "spread": 0.01,
             }],
         },
     }
 
 
-def test_d0_uses_fixed_anchor_25pct_policy():
-    mirror = build_shadow_mirror(record("D0 Morning @09:00"))
-    assert mirror["selected_policy"] == "anchor_25pct"
-    assert mirror["center_delta_c"] == pytest.approx(0.3)
-    assert mirror["shadow_center_c"] == pytest.approx(24.68)
+@pytest.mark.parametrize(
+    ("target_date", "season"),
+    [("2026-01-10", "Winter"), ("2026-04-10", "Spring"),
+     ("2026-07-10", "Summer"), ("2026-10-10", "Autumn")],
+)
+def test_season_comes_from_target_date(target_date, season):
+    assert season_for_target_date(target_date) == season
+
+
+@pytest.mark.parametrize(
+    ("target_date", "policy", "delta"),
+    [("2026-01-10", "anchor_50pct", 0.2),
+     ("2026-04-10", "current_protected_forecast", 0.0),
+     ("2026-07-10", "anchor_25pct", 0.3),
+     ("2026-10-10", "anchor_25pct", 0.3)],
+)
+def test_d0_uses_frozen_seasonal_mapping(target_date, policy, delta):
+    mirror = build_shadow_mirror(record("D0 Morning @09:00", target_date=target_date))
+    assert mirror["selected_policy"] == policy
+    assert mirror["center_delta_c"] == pytest.approx(delta)
+    assert mirror["candidate_policies"] == [
+        "current_protected_forecast", "anchor_disabled", "anchor_25pct",
+        "anchor_50pct", "anchor_75pct",
+    ]
     assert mirror["research_only"] is True
     assert mirror["automatic_promotion"] is False
 
 
-def test_late_uses_fixed_dry_mixing_zero_policy():
-    mirror = build_shadow_mirror(record("Late Live @16:00"))
-    assert mirror["selected_policy"] == "late_dry_mixing_0pct"
-    assert mirror["center_delta_c"] == pytest.approx(-0.18)
-    assert mirror["shadow_center_c"] == pytest.approx(24.20)
+@pytest.mark.parametrize("target_date", ["2026-01-10", "2026-04-10", "2026-07-10", "2026-10-10"])
+def test_late_uses_25pct_and_keeps_all_variants(target_date):
+    mirror = build_shadow_mirror(record("Late Live @16:00", target_date=target_date))
+    assert mirror["selected_policy"] == "late_dry_mixing_25pct"
+    assert mirror["center_delta_c"] == pytest.approx(-0.135)
+    assert len(mirror["candidate_variants"]) == 5
 
 
-@pytest.mark.parametrize(
-    "checkpoint",
-    ["D-1 Evening @20:00", "First Live @12:00"],
-)
+@pytest.mark.parametrize("checkpoint", ["D-1 Evening @20:00", "First Live @12:00"])
 def test_protected_checkpoints_mirror_champion(checkpoint):
     mirror = build_shadow_mirror(record(checkpoint))
     assert mirror["selected_policy"] == "current_protected_forecast"
@@ -69,21 +92,40 @@ def test_protected_checkpoints_mirror_champion(checkpoint):
     assert mirror["production_probabilities"] == mirror["shadow_probabilities"]
 
 
-def test_missing_drawdown_caps_high_interest_candidate_at_watch():
-    source = record("D0 Morning @09:00", anchor=-0.4)
-    source["champion_probabilities"] = {24: 0.30, 25: 0.55, 26: 0.15}
+def test_winter_without_forward_trading_evidence_never_high_interest():
+    source = record("D0 Morning @09:00", target_date="2026-01-10")
+    source["champion_probabilities"] = {24: 0.20, 25: 0.65, 26: 0.15}
     mirror = build_shadow_mirror(source, market=source["market_checkpoint"])
     signal = mirror["trading_opportunity"]
-    assert signal["classification"] == "WATCH"
-    assert "high_interest_candidate_but_drawdown_unavailable" in signal["reason_codes"]
-    assert signal["automatic_execution"] is False
+    assert signal["classification"] != "HIGH INTEREST"
+    assert signal["winter_watch_cap"] is True
+    assert "winter_trading_roi_unavailable_caps_at_watch" in signal["reason_codes"]
 
 
-def test_shadow_engine_decision_is_immutable_and_hash_protected():
+def test_d0_temperature_plateau_is_no_trade():
+    source = record("D0 Morning @09:00")
+    source["active_regimes"] = ["Temperature Plateau"]
+    mirror = build_shadow_mirror(source, market=source["market_checkpoint"])
+    assert mirror["trading_opportunity"]["classification"] == "NO TRADE"
+    assert "d0_temperature_plateau_robust_negative" in mirror["trading_opportunity"]["warning_codes"]
+
+
+def test_shadow_engine_decision_is_immutable_and_stores_all_candidates():
     decision = _shadow_engine_decision(record("D0 Morning @09:00"))
+    assert len(decision["candidate_variants"]) == 5
+    assert decision["season"] == "Autumn"
     _validate_shadow_engine_decision(decision)
     changed = deepcopy(decision)
-    changed["shadow_center_c"] += 0.1
+    changed["candidate_forecast_centers"]["anchor_25pct"] += 0.1
     with pytest.raises(RuntimeError, match="Immutable Shadow Engine"):
         _validate_shadow_engine_decision(changed)
 
+
+def test_forward_scorecard_is_checkpoint_and_season_specific():
+    decision = _shadow_engine_decision(record("D0 Morning @09:00"))
+    decision["outcome"] = _shadow_engine_outcome(decision, 25.0)
+    score = _shadow_engine_scorecard([decision])[0]
+    assert score["checkpoint_label"] == "D0 Morning @09:00"
+    assert score["season"] == "Autumn"
+    assert score["oos_n"] == 1
+    assert set(decision["outcome"]["candidate_outcomes"]) == set(decision["candidate_policies"])

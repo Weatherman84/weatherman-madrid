@@ -1,5 +1,6 @@
-> Aktueller Paketstand: v1.0.20. Die Shadow Engine v1 ist eine additive,
-> research-only Ansicht; die Production Forecast Engine bleibt unverändert.
+> Aktueller Paketstand: v1.0.20. Die saisonale Shadow Engine v1.1 ist eine
+> additive Research-only-Ansicht mit immutable Multi-Variant-Logging; die
+> Production Forecast Engine bleibt unverändert.
 > AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
 
 # Weatherman Madrid

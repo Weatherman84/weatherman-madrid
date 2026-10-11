@@ -599,7 +599,25 @@ def _shadow_engine_decision(record: dict[str, Any]) -> dict[str, Any]:
         "evidence_class": DECISION_EVIDENCE,
         "production_engine_version": EXPORT_ENGINE_VERSION,
         "shadow_version": SHADOW_VERSION,
+        "season": mirror["season"],
         "selected_policy": mirror["selected_policy"],
+        "selected_shadow_policy": mirror["selected_shadow_policy"],
+        "selection_reason": mirror["selection_reason"],
+        "candidate_policies": mirror["candidate_policies"],
+        "candidate_forecast_centers": {
+            row["policy"]: row["forecast_center_c"]
+            for row in mirror["candidate_variants"]
+        },
+        "candidate_modals": {
+            row["policy"]: row["modal_bucket"]
+            for row in mirror["candidate_variants"]
+        },
+        "candidate_variants": [{
+            "policy": row["policy"],
+            "forecast_center_c": row["forecast_center_c"],
+            "modal_bucket": row["modal_bucket"],
+            "seasonal_policy_evidence": row["seasonal_policy_evidence"],
+        } for row in mirror["candidate_variants"]],
         "production_center_c": mirror["production_center_c"],
         "shadow_center_c": mirror["shadow_center_c"],
         "production_modal_bucket": mirror["production_modal_bucket"],
@@ -617,13 +635,32 @@ def _shadow_engine_decision(record: dict[str, Any]) -> dict[str, Any]:
             "status": "unavailable", "markets": []
         },
         "trading_opportunity": mirror["trading_opportunity"],
-        "forecast_historical_evidence": mirror["forecast_historical_evidence"],
+        "seasonal_evidence_source": mirror["historical_evidence_source"],
+        "fidelity_class": mirror["fidelity_class"],
+        "fidelity_warning": mirror["fidelity_warning"],
+        "seasonal_n": mirror["seasonal_policy_evidence"].get("n"),
+        "seasonal_accuracy_delta_pp": mirror["seasonal_policy_evidence"].get(
+            "accuracy_delta_pp"
+        ),
+        "seasonal_mae_delta_c": mirror["seasonal_policy_evidence"].get(
+            "mae_delta_c"
+        ),
+        "seasonal_regime_classifications": mirror["seasonal_regime_evidence"],
+        "seasonal_trading_evidence_availability": mirror["trading_opportunity"].get(
+            "seasonal_trading_evidence"
+        ),
+        "opportunity_level": mirror["trading_opportunity"]["classification"],
+        "opportunity_reason_codes": mirror["trading_opportunity"].get(
+            "reason_codes", []
+        ),
+        "opportunity_warning_codes": mirror["trading_opportunity"].get(
+            "warning_codes", []
+        ),
         "reason_codes": [
-            f"fixed_policy:{mirror['selected_policy']}",
+            f"seasonal_policy:{mirror['selected_policy']}",
             *mirror["trading_opportunity"].get("reason_codes", []),
-            *mirror["trading_opportunity"].get("blockers", []),
+            *mirror["trading_opportunity"].get("warning_codes", []),
         ],
-        "seasonal_coverage": mirror["seasonal_coverage"],
         "research_only": True,
         "automatic_promotion": False,
         "automatic_execution": False,
@@ -713,14 +750,57 @@ def _shadow_engine_outcome(decision: dict[str, Any], actual_c: float) -> dict[st
     outcome = _outcome(translated, actual_c)
     production = outcome.pop("champion")
     shadow = outcome.pop("challenger")
+    candidate_outcomes = {}
+    actual_bucket = positive_temperature_bucket(actual_c)
+    for candidate in decision.get("candidate_variants", []):
+        center_error = float(candidate["forecast_center_c"]) - actual_c
+        modal_bucket = int(candidate["modal_bucket"])
+        candidate_outcomes[candidate["policy"]] = {
+            "center_error_c": center_error,
+            "absolute_error_c": abs(center_error),
+            "bucket_error": modal_bucket - actual_bucket,
+            "modal_hit": modal_bucket == actual_bucket,
+        }
     return {
         **outcome,
         "production": production,
         "shadow": shadow,
+        "candidate_outcomes": candidate_outcomes,
         "hypothetical_trading_result": None,
         "aemet_tmax": None,
         "official_market_resolution": None,
     }
+
+
+def _shadow_engine_scorecard(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Score only genuinely forward, immutable Shadow Engine decisions."""
+    resolved = [
+        row for row in decisions
+        if (row.get("outcome") or {}).get("outcome_evidence_class")
+        == OUTCOME_EVIDENCE
+    ]
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in resolved:
+        groups.setdefault((row["checkpoint_label"], row["season"]), []).append(row)
+    result = []
+    for (checkpoint, season), rows in sorted(groups.items()):
+        production = [row["outcome"]["production"] for row in rows]
+        shadow = [row["outcome"]["shadow"] for row in rows]
+        comparisons = Counter(row["outcome"]["outcome_vs_champion"] for row in rows)
+        result.append({
+            "checkpoint_label": checkpoint,
+            "season": season,
+            "oos_n": len(rows),
+            "production_wins": comparisons["worsened"],
+            "shadow_wins": comparisons["improved"],
+            "ties": comparisons["unchanged"],
+            "production_accuracy": sum(item["modal_hit"] for item in production) / len(rows),
+            "shadow_accuracy": sum(item["modal_hit"] for item in shadow) / len(rows),
+            "production_mae_c": sum(item["absolute_error_c"] for item in production) / len(rows),
+            "shadow_mae_c": sum(item["absolute_error_c"] for item in shadow) / len(rows),
+            "evidence_class": OUTCOME_EVIDENCE,
+        })
+    return result
 
 
 def _scorecard(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -895,6 +975,9 @@ def build_forward_shadow_journal(
         "decisions": decisions,
         "shadow_engine_version": SHADOW_VERSION,
         "shadow_engine_decisions": shadow_engine_decisions,
+        "shadow_engine_sequential_oos_scorecard": _shadow_engine_scorecard(
+            shadow_engine_decisions
+        ),
         "sequential_oos_scorecard": _scorecard(decisions),
         "log": {
             "calibration_seed_rows": len(seed),

@@ -291,12 +291,34 @@ def _display_probability(value: object) -> str:
     return f"{float(number):.1%}" if pd.notna(number) else "—"
 
 
+def _render_seasonal_shadow_scorecard(journal: dict) -> None:
+    rows = journal.get("shadow_engine_sequential_oos_scorecard", [])
+    st.subheader("Production vs Seasonal Shadow · Forward OOS")
+    if not rows:
+        st.info("No resolved forward Shadow v1.1 cases yet. Historical Replay stays separate.")
+        return
+    shown = pd.DataFrame(rows).rename(columns={
+        "checkpoint_label": "Checkpoint", "season": "Season", "oos_n": "OOS N",
+        "production_wins": "Production wins", "shadow_wins": "Shadow wins",
+        "ties": "Ties", "production_accuracy": "Production accuracy",
+        "shadow_accuracy": "Shadow accuracy", "production_mae_c": "Production MAE",
+        "shadow_mae_c": "Shadow MAE",
+    })
+    for column in ("Production accuracy", "Shadow accuracy"):
+        shown[column] = shown[column].map(lambda value: f"{value:.1%}")
+    for column in ("Production MAE", "Shadow MAE"):
+        shown[column] = shown[column].map(lambda value: f"{value:.3f} K")
+    st.dataframe(shown, hide_index=True, width="stretch")
+    st.caption("Only genuine forward live_shadow decisions resolved from Stored METAR.")
+
+
 def _render_shadow_engine_mirror(
     *, nowcast, checkpoint: str, taf_bucket: int | None,
-    market_payload: dict, journal: dict,
+    market_payload: dict, journal: dict, target,
 ) -> None:
     ranked = probability_ranking(nowcast.probabilities)
     current_record = {
+        "target_date": target.isoformat(),
         "checkpoint_label": checkpoint,
         "evidence_class": "live_preview",
         "champion_center_c": nowcast.final_forecast_mean,
@@ -353,7 +375,7 @@ def _render_shadow_engine_mirror(
 
     st.subheader("Shadow Engine Mirror")
     st.caption(
-        f"{SHADOW_VERSION} · {checkpoint} · RESEARCH ONLY – NO AUTOMATIC "
+        f"{SHADOW_VERSION} · {checkpoint} · {mirror['season']} · RESEARCH ONLY – NO AUTOMATIC "
         "PROMOTION OR EXECUTION"
     )
     mirror_rows = [
@@ -404,6 +426,34 @@ def _render_shadow_engine_mirror(
         },
     ])
     st.dataframe(pd.DataFrame(mirror_rows), hide_index=True, width="stretch")
+    evidence = mirror["seasonal_policy_evidence"]
+    st.info(mirror["selection_reason"])
+    st.caption(
+        f"Evidence source: {mirror['historical_evidence_source']} · "
+        f"Fidelity: {mirror['fidelity_class']} · N={evidence.get('n') or '—'} · "
+        f"MAE Δ={evidence.get('mae_delta_c') if evidence.get('mae_delta_c') is not None else '—'} · "
+        f"{mirror['fidelity_warning']}"
+    )
+
+    with st.expander("Shadow Candidate Comparison", expanded=False):
+        candidate_rows = []
+        for candidate in mirror["candidate_variants"]:
+            candidate_evidence = candidate["seasonal_policy_evidence"]
+            ranking = candidate["ranking"] + [(None, None)] * 2
+            candidate_rows.append({
+                "Selected": candidate["policy"] == mirror["selected_policy"],
+                "Policy": candidate["policy"],
+                "Center": candidate["forecast_center_c"],
+                "Modal": candidate["modal_bucket"],
+                "Top1 p": ranking[0][1],
+                "Top2": ranking[1][0],
+                "Top2 p": ranking[1][1],
+                "Seasonal N": candidate_evidence.get("n"),
+                "Accuracy Δ pp": candidate_evidence.get("accuracy_delta_pp"),
+                "MAE Δ K": candidate_evidence.get("mae_delta_c"),
+                "Fidelity": candidate_evidence.get("fidelity_class"),
+            })
+        st.dataframe(pd.DataFrame(candidate_rows), hide_index=True, width="stretch")
 
     left, right = st.columns(2)
     with left:
@@ -429,32 +479,33 @@ def _render_shadow_engine_mirror(
         st.write(f"Raw edge: **{_display_probability(signal['raw_model_market_edge'])}**")
         st.write(f"Top1/Top2 gap: **{signal['top1_top2_gap_pp']:.1f} pp**" if signal["top1_top2_gap_pp"] is not None else "Top1/Top2 gap: —")
         st.write(f"Market freshness: **{signal['market_freshness']}**")
-        for blocker in signal["blockers"]:
-            st.write(f"• {blocker}")
+        for reason in signal["reason_codes"]:
+            st.write(f"• {reason}")
+        for warning in signal["warning_codes"]:
+            st.write(f"• ⚠ {warning}")
+        st.write("Evidence labels: " + ", ".join(signal["evidence_labels"]))
         st.caption(
             "Raw edge is diagnostic only. Historical Replay did not show a monotonic "
             "edge-to-profit relation. No automatic execution."
         )
 
-    with st.expander("Historical research evidence and market layer", expanded=False):
-        evidence = signal["historical_evidence_used"]
-        if evidence:
-            evidence_frame = pd.DataFrame(evidence)
-            evidence_frame["historical_roi"] = evidence_frame.historical_roi.map(
-                _display_probability
-            )
-            st.dataframe(evidence_frame.rename(columns={
-                "regime": "Regime", "historical_n": "Historical N",
-                "historical_roi": "Historical ROI",
-                "robustness_classification": "Robustness",
-                "historical_max_drawdown": "Max drawdown",
-                "seasonal_coverage": "Seasonal coverage",
-            }), hide_index=True, width="stretch")
+    with st.expander("Seasonal research evidence and market layer", expanded=False):
+        regime_evidence = mirror["seasonal_regime_evidence"]
+        if regime_evidence:
+            st.dataframe(pd.DataFrame(regime_evidence), hide_index=True, width="stretch")
         else:
-            st.info("No quantitative historical regime evidence for the active setup.")
-        forecast_evidence = mirror.get("forecast_historical_evidence")
-        if forecast_evidence:
-            st.json(forecast_evidence)
+            st.info("Insufficient same-season regime evidence for the active setup.")
+        trading_evidence = signal["seasonal_trading_evidence"]
+        if mirror["season"] == "Winter" and trading_evidence.get("status") != "available":
+            st.warning(
+                "Winter Forecast Evidence: available · Winter Trading ROI Evidence: "
+                "insufficient/unavailable · signal capped at WATCH."
+            )
+        st.json({
+            "seasonal_policy_evidence": evidence,
+            "seasonal_trading_evidence": trading_evidence,
+            "evidence_labels": signal["evidence_labels"],
+        })
         market_rows = []
         by_bucket = {row.get("bucket_c"): row for row in market_payload.get("markets", [])}
         for bucket, probability in shadow[:3]:
@@ -474,7 +525,9 @@ def _render_shadow_engine_mirror(
                 "Snapshot age": market_payload.get("market_snapshot_age_minutes"),
             })
         st.dataframe(pd.DataFrame(market_rows), hide_index=True, width="stretch")
-        st.caption("Historical research evidence · Seasonal coverage: Apr–Oct 2026 only")
+        st.caption(
+            "Deep Seasonal is directional seasonal evidence, not Production replication."
+        )
 
     persisted = [
         row for row in journal.get("shadow_engine_decisions", [])
@@ -501,6 +554,7 @@ def render_research_tracks(
         "automatic promotion disabled."
     )
     _render_forward_shadow_scorecard(forward_shadow_journal)
+    _render_seasonal_shadow_scorecard(forward_shadow_journal)
     checkpoint = _latest_checkpoint(now, zone)
     taf_bucket = positive_temperature_bucket(
         getattr(getattr(nowcast, "taf_guidance", None), "max_temp_c", None)
@@ -512,6 +566,7 @@ def render_research_tracks(
         taf_bucket=taf_bucket,
         market_payload=market_payload,
         journal=forward_shadow_journal,
+        target=target,
     )
     decision = build_trading_shadow_decision(
         target_date=target.isoformat(), checkpoint=checkpoint,

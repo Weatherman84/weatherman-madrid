@@ -302,7 +302,7 @@ test("forward shadow journal preserves immutable checkpoint decisions", async ()
     generated_at: "2026-09-29T07:10:00Z",
     decisions: [decision],
     shadow_engine_decisions: [{
-      decision_id: "LEMD:2026-09-29:D0 Morning @09:00:shadow_engine_v1.0",
+      decision_id: "LEMD:2026-09-29:D0 Morning @09:00:shadow_engine_v1.1",
       decision_hash: "c".repeat(64),
       evidence_class: "live_shadow",
       research_only: true,
