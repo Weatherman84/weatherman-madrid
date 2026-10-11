@@ -1,4 +1,21 @@
-# Release Notes – Madrid v1.0.19
+# Release Notes – Madrid v1.0.20
+
+## Neu in v1.0.20
+
+- vollständiger Production-vs-Shadow-Mirror im Research-Bereich;
+- saisonales, vom `target_date` abgeleitetes Candidate Mapping in
+  `shadow_engine_v1.1`, ohne Production-Promotion;
+- D0-Parallelvarianten `current`, `disabled`, 25/50/75 Prozent Anchor und
+  Late-Parallelvarianten `current`, 0/25/50/75 Prozent Dry Mixing;
+- transparente Correction-, saisonale Regime-, Fidelity-, Market- und
+  Opportunity-Ansichten mit Winter-Cap bei fehlender Trading-Evidenz;
+- additive, hashgeschützte Entscheidungen mit unveränderlich gespeicherten
+  Kandidaten und saisonalem Forward-OOS-Scorecard in Workflow 13;
+- keine Änderung der Production Forecast Engine oder des Champions.
+
+Details: `V1.0.20_SHADOW_ENGINE_REPORT_DE.md`.
+
+## Vorheriger Stand v1.0.19
 
 ## Neu in v1.0.19
 

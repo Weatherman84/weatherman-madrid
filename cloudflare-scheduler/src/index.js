@@ -80,7 +80,7 @@ async function sha256Hex(bytes) {
 function compatibleResolvedOutcome(previous, incoming) {
   if (previous === null) return true;
   if (incoming === null) return false;
-  const enrichable = ["aemet_tmax", "resolved_market_bucket"];
+  const enrichable = ["aemet_tmax", "resolved_market_bucket", "official_market_resolution"];
   for (const field of enrichable) {
     if (previous[field] !== null && incoming[field] !== previous[field]) return false;
   }
@@ -181,6 +181,8 @@ export async function publishForwardShadow(request, env) {
     return Response.json({ error: "invalid JSON" }, { status: 400 });
   }
   const decisions = Array.isArray(payload?.decisions) ? payload.decisions : [];
+  const shadowEngineDecisions = Array.isArray(payload?.shadow_engine_decisions)
+    ? payload.shadow_engine_decisions : [];
   const valid = payload?.airport === "LEMD"
     && payload?.classification === "READ-ONLY FROZEN FORWARD SHADOW JOURNAL"
     && payload?.contains_credentials === false
@@ -199,7 +201,20 @@ export async function publishForwardShadow(request, env) {
         || (row?.outcome?.outcome_evidence_class === "sequential_oos"
           && Object.hasOwn(row.outcome, "stored_metar_actual")
           && Object.hasOwn(row.outcome, "aemet_tmax")
-          && Object.hasOwn(row.outcome, "resolved_market_bucket"))));
+          && Object.hasOwn(row.outcome, "resolved_market_bucket"))))
+    && shadowEngineDecisions.every((row) =>
+      typeof row?.decision_id === "string"
+      && /^[a-f0-9]{64}$/.test(row?.decision_hash || "")
+      && row?.evidence_class === "live_shadow"
+      && row?.research_only === true
+      && row?.automatic_promotion === false
+      && row?.automatic_execution === false
+      && row?.logic_frozen === true
+      && (row?.outcome === null
+        || (row?.outcome?.outcome_evidence_class === "sequential_oos"
+          && Object.hasOwn(row.outcome, "stored_metar_actual")
+          && Object.hasOwn(row.outcome, "aemet_tmax")
+          && Object.hasOwn(row.outcome, "official_market_resolution"))));
   if (!valid) {
     return Response.json({ error: "forward journal safety validation failed" }, { status: 400 });
   }
@@ -221,6 +236,25 @@ export async function publishForwardShadow(request, env) {
         );
       }
     }
+    const incomingShadow = new Map(
+      shadowEngineDecisions.map((row) => [row.decision_id, row]),
+    );
+    for (const oldRow of Array.isArray(previous.shadow_engine_decisions)
+      ? previous.shadow_engine_decisions : []) {
+      const nextRow = incomingShadow.get(oldRow.decision_id);
+      if (!nextRow || nextRow.decision_hash !== oldRow.decision_hash) {
+        return Response.json(
+          { error: "immutable shadow engine decision changed", decision_id: oldRow.decision_id },
+          { status: 409 },
+        );
+      }
+      if (!compatibleResolvedOutcome(oldRow.outcome, nextRow.outcome)) {
+        return Response.json(
+          { error: "resolved shadow engine outcome changed", decision_id: oldRow.decision_id },
+          { status: 409 },
+        );
+      }
+    }
   }
   const sha256 = await sha256Hex(bytes);
   const metadata = {
@@ -232,6 +266,10 @@ export async function publishForwardShadow(request, env) {
     sha256,
     decision_rows: decisions.length,
     resolved_decision_rows: decisions.filter((row) => row.outcome !== null).length,
+    shadow_engine_decision_rows: shadowEngineDecisions.length,
+    resolved_shadow_engine_rows: shadowEngineDecisions.filter(
+      (row) => row.outcome !== null,
+    ).length,
     research_only: true,
     automatic_promotion: false,
     writes_production_database: false,

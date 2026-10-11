@@ -301,6 +301,16 @@ test("forward shadow journal preserves immutable checkpoint decisions", async ()
     automatic_promotion: false,
     generated_at: "2026-09-29T07:10:00Z",
     decisions: [decision],
+    shadow_engine_decisions: [{
+      decision_id: "LEMD:2026-09-29:D0 Morning @09:00:shadow_engine_v1.1",
+      decision_hash: "c".repeat(64),
+      evidence_class: "live_shadow",
+      research_only: true,
+      automatic_promotion: false,
+      automatic_execution: false,
+      logic_frozen: true,
+      outcome: null,
+    }],
   };
   const publish = async (value) => worker.fetch(new Request(
     "https://worker.test/internal/publish-forward-shadow",
@@ -328,6 +338,9 @@ test("forward shadow journal preserves immutable checkpoint decisions", async ()
   const changed = structuredClone(withAemet);
   changed.decisions[0].decision_hash = "b".repeat(64);
   assert.equal((await publish(changed)).status, 409);
+  const changedShadow = structuredClone(withAemet);
+  changedShadow.shadow_engine_decisions[0].decision_hash = "d".repeat(64);
+  assert.equal((await publish(changedShadow)).status, 409);
   const publicResponse = await worker.fetch(
     new Request("https://worker.test/forward-shadow-journal.json"), env
   );

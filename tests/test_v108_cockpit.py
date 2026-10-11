@@ -177,7 +177,8 @@ def test_forward_shadow_reads_real_checkpoint_schema_without_writes(database):
         )
         session.rollback()
     assert payload["log"]["new_checkpoint_rows_this_run"] == 1
-    assert payload["log"]["database_queries_executed_this_run"] == 3
+    # Two bounded index reads, one Champion row and one causal market snapshot.
+    assert payload["log"]["database_queries_executed_this_run"] == 4
     assert len(payload["decisions"]) == 1
     assert payload["decisions"][0]["challenger_version"] == "first_live_champion_protected"
     assert payload["decisions"][0]["outcome"]["outcome_evidence_class"] == "sequential_oos"

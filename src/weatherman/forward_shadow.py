@@ -34,8 +34,11 @@ from .d1_evening_research import (
     build_d1_walk_forward_challenger,
     build_d1_walk_forward_challenger_v2,
 )
-from .db import DailyActual, Forecast, ForecastSnapshot, ForecastVariantSnapshot
+from .db import (
+    DailyActual, Forecast, ForecastSnapshot, ForecastVariantSnapshot, MarketSnapshot,
+)
 from .research_tracks import active_regimes, positive_temperature_bucket, probability_ranking
+from .shadow_engine_v1 import SHADOW_VERSION, build_shadow_mirror
 
 
 SCHEMA_VERSION = "1.0"
@@ -45,6 +48,7 @@ MAX_SEED_DAYS = 30
 MAX_FORWARD_DAYS = 120
 MAX_SNAPSHOT_ROWS = MAX_FORWARD_DAYS * 4
 MAX_MODEL_ROWS_PER_TARGET = 180
+MAX_MARKET_ROWS_PER_CHECKPOINT = 50
 OPERATIONAL_LOOKBACK_DAYS = 2
 MAX_OPERATIONAL_SNAPSHOT_ROWS = (OPERATIONAL_LOOKBACK_DAYS + 1) * 4
 DECISION_EVIDENCE = "live_shadow"
@@ -237,6 +241,57 @@ def _model_history(session, target: date, cutoff: datetime) -> dict[str, Any]:
     return _safe(model_history_features(frame, target, cutoff))
 
 
+def _market_checkpoint(session, target: date, cutoff: datetime) -> dict[str, Any]:
+    """Read one bounded causal market snapshot for a new checkpoint."""
+    rows = list(session.scalars(
+        select(MarketSnapshot).where(
+            MarketSnapshot.airport == "LEMD",
+            MarketSnapshot.target_date == target,
+            MarketSnapshot.captured_at <= cutoff,
+        ).order_by(MarketSnapshot.captured_at.desc()).limit(MAX_MARKET_ROWS_PER_CHECKPOINT)
+    ))
+    if not rows:
+        return {"status": "unavailable", "markets": []}
+    captured_at = rows[0].captured_at
+    selected = [row for row in rows if row.captured_at == captured_at]
+    captured_ts = pd.Timestamp(captured_at)
+    cutoff_ts = pd.Timestamp(cutoff)
+    captured_ts = (
+        captured_ts.tz_localize("UTC") if captured_ts.tzinfo is None
+        else captured_ts.tz_convert("UTC")
+    )
+    cutoff_ts = (
+        cutoff_ts.tz_localize("UTC") if cutoff_ts.tzinfo is None
+        else cutoff_ts.tz_convert("UTC")
+    )
+    age = max(0.0, (cutoff_ts - captured_ts).total_seconds() / 60)
+    markets = []
+    for row in selected:
+        bucket = (
+            int(row.bucket_low_c)
+            if row.bucket_low_c is not None
+            and row.bucket_high_c is not None
+            and row.bucket_low_c == row.bucket_high_c
+            and float(row.bucket_low_c).is_integer()
+            else None
+        )
+        markets.append({
+            "bucket_label": row.bucket_label,
+            "bucket_c": bucket,
+            "yes_price": row.yes_price,
+            "best_bid": row.best_bid,
+            "best_ask": row.best_ask,
+            "spread": row.spread,
+            "price_kind": row.price_kind,
+        })
+    return _safe({
+        "status": "available",
+        "market_captured_at": captured_ts,
+        "market_snapshot_age_minutes": round(age, 3),
+        "markets": markets,
+    })
+
+
 def _seed_records(session, start_date: date) -> list[dict[str, Any]]:
     payload = build_checkpoint_research_export(
         session.connection(),
@@ -354,12 +409,16 @@ def _forward_records(
             if snapshot.checkpoint_label == D1_CHECKPOINT
             else _compact_snapshot_model_signal(snapshot)
         )
-        result.append(_base_record(
+        record = _base_record(
             snapshot,
             champion,
             model_history,
             actuals.get(snapshot.target_date.isoformat()),
-        ))
+        )
+        record["market_checkpoint"] = _market_checkpoint(
+            session, snapshot.target_date, cutoff
+        )
+        result.append(record)
     return result, actuals
 
 
@@ -528,6 +587,108 @@ def _validate_stored_decision(decision: Mapping[str, Any]) -> None:
         )
 
 
+def _shadow_engine_decision(record: dict[str, Any]) -> dict[str, Any]:
+    mirror = build_shadow_mirror(
+        record, market=record.get("market_checkpoint") or {}
+    )
+    immutable = {
+        "target_date": record["target_date"],
+        "checkpoint_label": record["checkpoint_label"],
+        "checkpoint_at": record["checkpoint_at"],
+        "generated_at": record["generated_at"],
+        "evidence_class": DECISION_EVIDENCE,
+        "production_engine_version": EXPORT_ENGINE_VERSION,
+        "shadow_version": SHADOW_VERSION,
+        "season": mirror["season"],
+        "selected_policy": mirror["selected_policy"],
+        "selected_shadow_policy": mirror["selected_shadow_policy"],
+        "selection_reason": mirror["selection_reason"],
+        "candidate_policies": mirror["candidate_policies"],
+        "candidate_forecast_centers": {
+            row["policy"]: row["forecast_center_c"]
+            for row in mirror["candidate_variants"]
+        },
+        "candidate_modals": {
+            row["policy"]: row["modal_bucket"]
+            for row in mirror["candidate_variants"]
+        },
+        "candidate_variants": [{
+            "policy": row["policy"],
+            "forecast_center_c": row["forecast_center_c"],
+            "modal_bucket": row["modal_bucket"],
+            "seasonal_policy_evidence": row["seasonal_policy_evidence"],
+        } for row in mirror["candidate_variants"]],
+        "production_center_c": mirror["production_center_c"],
+        "shadow_center_c": mirror["shadow_center_c"],
+        "production_modal_bucket": mirror["production_modal_bucket"],
+        "shadow_modal_bucket": mirror["shadow_modal_bucket"],
+        "production_probabilities": mirror["production_probabilities"],
+        "shadow_probabilities": mirror["shadow_probabilities"],
+        "active_regimes": mirror["active_regimes"],
+        "correction_comparison": mirror["correction_comparison"],
+        "top1_top2_gap_pp": mirror["trading_opportunity"]["top1_top2_gap_pp"],
+        "taf": {
+            "bucket": mirror["taf_bucket"],
+            "agreement": mirror["taf_agreement"],
+        },
+        "market": record.get("market_checkpoint") or {
+            "status": "unavailable", "markets": []
+        },
+        "trading_opportunity": mirror["trading_opportunity"],
+        "seasonal_evidence_source": mirror["historical_evidence_source"],
+        "fidelity_class": mirror["fidelity_class"],
+        "fidelity_warning": mirror["fidelity_warning"],
+        "seasonal_n": mirror["seasonal_policy_evidence"].get("n"),
+        "seasonal_accuracy_delta_pp": mirror["seasonal_policy_evidence"].get(
+            "accuracy_delta_pp"
+        ),
+        "seasonal_mae_delta_c": mirror["seasonal_policy_evidence"].get(
+            "mae_delta_c"
+        ),
+        "seasonal_regime_classifications": mirror["seasonal_regime_evidence"],
+        "seasonal_trading_evidence_availability": mirror["trading_opportunity"].get(
+            "seasonal_trading_evidence"
+        ),
+        "opportunity_level": mirror["trading_opportunity"]["classification"],
+        "opportunity_reason_codes": mirror["trading_opportunity"].get(
+            "reason_codes", []
+        ),
+        "opportunity_warning_codes": mirror["trading_opportunity"].get(
+            "warning_codes", []
+        ),
+        "reason_codes": [
+            f"seasonal_policy:{mirror['selected_policy']}",
+            *mirror["trading_opportunity"].get("reason_codes", []),
+            *mirror["trading_opportunity"].get("warning_codes", []),
+        ],
+        "research_only": True,
+        "automatic_promotion": False,
+        "automatic_execution": False,
+        "logic_frozen": True,
+    }
+    return {
+        "decision_id": (
+            f"LEMD:{record['target_date']}:{record['checkpoint_label']}:"
+            f"{SHADOW_VERSION}"
+        ),
+        **_safe(immutable),
+        "decision_hash": _hash(immutable),
+        "outcome": None,
+    }
+
+
+def _validate_shadow_engine_decision(decision: Mapping[str, Any]) -> None:
+    immutable = {
+        key: value for key, value in decision.items()
+        if key not in {"decision_id", "decision_hash", "outcome"}
+    }
+    if decision.get("decision_hash") != _hash(immutable):
+        raise RuntimeError(
+            f"Immutable Shadow Engine decision mismatch: "
+            f"{decision.get('decision_id', 'unknown')}"
+        )
+
+
 def _outcome(decision: dict[str, Any], actual_c: float) -> dict[str, Any]:
     actual_bucket = positive_temperature_bucket(actual_c)
     champion_center = float(decision["champion_center_c"])
@@ -575,6 +736,71 @@ def _outcome(decision: dict[str, Any], actual_c: float) -> dict[str, Any]:
         },
         "outcome_vs_champion": comparison,
     })
+
+
+def _shadow_engine_outcome(decision: dict[str, Any], actual_c: float) -> dict[str, Any]:
+    translated = {
+        "champion_center_c": decision["production_center_c"],
+        "challenger_center_c": decision["shadow_center_c"],
+        "champion_modal_bucket": decision["production_modal_bucket"],
+        "challenger_modal_bucket": decision["shadow_modal_bucket"],
+        "champion_probabilities": decision["production_probabilities"],
+        "challenger_probabilities": decision["shadow_probabilities"],
+    }
+    outcome = _outcome(translated, actual_c)
+    production = outcome.pop("champion")
+    shadow = outcome.pop("challenger")
+    candidate_outcomes = {}
+    actual_bucket = positive_temperature_bucket(actual_c)
+    for candidate in decision.get("candidate_variants", []):
+        center_error = float(candidate["forecast_center_c"]) - actual_c
+        modal_bucket = int(candidate["modal_bucket"])
+        candidate_outcomes[candidate["policy"]] = {
+            "center_error_c": center_error,
+            "absolute_error_c": abs(center_error),
+            "bucket_error": modal_bucket - actual_bucket,
+            "modal_hit": modal_bucket == actual_bucket,
+        }
+    return {
+        **outcome,
+        "production": production,
+        "shadow": shadow,
+        "candidate_outcomes": candidate_outcomes,
+        "hypothetical_trading_result": None,
+        "aemet_tmax": None,
+        "official_market_resolution": None,
+    }
+
+
+def _shadow_engine_scorecard(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Score only genuinely forward, immutable Shadow Engine decisions."""
+    resolved = [
+        row for row in decisions
+        if (row.get("outcome") or {}).get("outcome_evidence_class")
+        == OUTCOME_EVIDENCE
+    ]
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in resolved:
+        groups.setdefault((row["checkpoint_label"], row["season"]), []).append(row)
+    result = []
+    for (checkpoint, season), rows in sorted(groups.items()):
+        production = [row["outcome"]["production"] for row in rows]
+        shadow = [row["outcome"]["shadow"] for row in rows]
+        comparisons = Counter(row["outcome"]["outcome_vs_champion"] for row in rows)
+        result.append({
+            "checkpoint_label": checkpoint,
+            "season": season,
+            "oos_n": len(rows),
+            "production_wins": comparisons["worsened"],
+            "shadow_wins": comparisons["improved"],
+            "ties": comparisons["unchanged"],
+            "production_accuracy": sum(item["modal_hit"] for item in production) / len(rows),
+            "shadow_accuracy": sum(item["modal_hit"] for item in shadow) / len(rows),
+            "production_mae_c": sum(item["absolute_error_c"] for item in production) / len(rows),
+            "shadow_mae_c": sum(item["absolute_error_c"] for item in shadow) / len(rows),
+            "evidence_class": OUTCOME_EVIDENCE,
+        })
+    return result
 
 
 def _scorecard(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -691,6 +917,32 @@ def build_forward_shadow_journal(
             item["target_date"], item["checkpoint_label"], item["challenger_version"]
         ),
     )
+    stored_shadow_decisions = journal.get("shadow_engine_decisions", [])
+    for stored_decision in stored_shadow_decisions:
+        _validate_shadow_engine_decision(stored_decision)
+    shadow_decision_map = {
+        row["decision_id"]: row for row in stored_shadow_decisions
+    }
+    # Never manufacture v1 decisions for checkpoints that pre-date deployment.
+    # Only checkpoint rows first observed by this run may create a new immutable
+    # Shadow Engine decision; later runs can enrich only their outcomes.
+    for record in new_records:
+        candidate = _shadow_engine_decision(record)
+        existing_shadow = shadow_decision_map.get(candidate["decision_id"])
+        if existing_shadow is None:
+            shadow_decision_map[candidate["decision_id"]] = candidate
+        elif existing_shadow.get("decision_hash") != candidate["decision_hash"]:
+            raise RuntimeError(
+                f"Immutable Shadow Engine decision mismatch: {candidate['decision_id']}"
+            )
+    for decision in shadow_decision_map.values():
+        actual = actuals.get(decision["target_date"])
+        if decision.get("outcome") is None and actual is not None:
+            decision["outcome"] = _shadow_engine_outcome(decision, actual)
+    shadow_engine_decisions = sorted(
+        shadow_decision_map.values(),
+        key=lambda item: (item["target_date"], item["checkpoint_label"]),
+    )
     return _safe({
         "schema_version": SCHEMA_VERSION,
         "journal_version": JOURNAL_VERSION,
@@ -721,11 +973,17 @@ def build_forward_shadow_journal(
         "calibration_seed": seed,
         "forward_records": forward_records,
         "decisions": decisions,
+        "shadow_engine_version": SHADOW_VERSION,
+        "shadow_engine_decisions": shadow_engine_decisions,
+        "shadow_engine_sequential_oos_scorecard": _shadow_engine_scorecard(
+            shadow_engine_decisions
+        ),
         "sequential_oos_scorecard": _scorecard(decisions),
         "log": {
             "calibration_seed_rows": len(seed),
             "forward_checkpoint_rows": len(forward_records),
             "decision_rows": len(decisions),
+            "shadow_engine_decision_rows": len(shadow_engine_decisions),
             "resolved_decision_rows": sum(row.get("outcome") is not None for row in decisions),
             "maximum_seed_days": MAX_SEED_DAYS,
             "maximum_forward_days": MAX_FORWARD_DAYS,
@@ -734,7 +992,7 @@ def build_forward_shadow_journal(
             "maximum_model_rows_per_target": MAX_MODEL_ROWS_PER_TARGET,
             "operational_lookback_days": OPERATIONAL_LOOKBACK_DAYS,
             "new_checkpoint_rows_this_run": len(new_records),
-            "maximum_new_decision_rows_per_target_day": 5,
+            "maximum_new_decision_rows_per_target_day": 9,
             "database_queries_executed_this_run": (
                 2
                 + len(new_records)
@@ -742,6 +1000,7 @@ def build_forward_shadow_journal(
                     row["checkpoint_label"] == D1_CHECKPOINT
                     for row in new_records
                 )
+                + len(new_records)
                 + (9 if seed_created else 0)
             ),
             "production_access": "read_only_transaction",
