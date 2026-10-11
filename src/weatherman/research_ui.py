@@ -19,6 +19,9 @@ from .research_tracks import (
     probability_ranking,
     regime_matrix_views,
 )
+from .shadow_engine_v1 import (
+    OPPORTUNITY_VERSION, SHADOW_VERSION, build_shadow_mirror,
+)
 
 
 def _latest_checkpoint(now: datetime, zone: str) -> str:
@@ -283,6 +286,210 @@ def _render_forward_shadow_scorecard(journal: dict) -> None:
     )
 
 
+def _display_probability(value: object) -> str:
+    number = pd.to_numeric(value, errors="coerce")
+    return f"{float(number):.1%}" if pd.notna(number) else "—"
+
+
+def _render_shadow_engine_mirror(
+    *, nowcast, checkpoint: str, taf_bucket: int | None,
+    market_payload: dict, journal: dict,
+) -> None:
+    ranked = probability_ranking(nowcast.probabilities)
+    current_record = {
+        "checkpoint_label": checkpoint,
+        "evidence_class": "live_preview",
+        "champion_center_c": nowcast.final_forecast_mean,
+        "champion_probabilities": nowcast.probabilities,
+        "model_spread_c": nowcast.raw_model_spread,
+        "taf_bucket": taf_bucket,
+        "taf_agreement": (
+            "agreement" if taf_bucket in {item[0] for item in ranked[:2]}
+            else "disagreement" if taf_bucket is not None else "unavailable"
+        ),
+        "forecast_confidence": nowcast.forecast_confidence,
+        "correction_contributions": dict(nowcast.adjustment_contributions),
+        "features_json": nowcast.live_features,
+        "top1_top2_gap_pp": (
+            (ranked[0][1] - ranked[1][1]) * 100 if len(ranked) > 1 else None
+        ),
+        "raw_spread_c": nowcast.raw_model_spread,
+        "temp_anchor_adjustment_c": nowcast.adjustment_contributions.get(
+            "temperature_anchor"
+        ),
+        "cloud_adjustment_c": nowcast.adjustment_contributions.get("cloud"),
+        "radiation_adjustment_c": nowcast.adjustment_contributions.get("radiation"),
+        "wind_adjustment_c": nowcast.adjustment_contributions.get("wind"),
+        "late_dry_mixing_adjustment_c": nowcast.adjustment_contributions.get(
+            "late_dry_mixing"
+        ),
+        "failed_convection_adjustment_c": nowcast.adjustment_contributions.get(
+            "failed_convection"
+        ),
+        "clear_sky_override_adjustment_c": nowcast.adjustment_contributions.get(
+            "clear_sky_override"
+        ),
+        "rapid_heat_ramp_active": bool(
+            nowcast.live_features.get("rapid_heat_ramp_active")
+        ),
+        "regional_cluster_active": bool(
+            nowcast.live_features.get("regional_cluster_active")
+        ),
+        "persistent_hot_active": bool(
+            nowcast.live_features.get("persistent_hot_active")
+        ),
+        "phase_vs_amplitude_active": bool(
+            nowcast.live_features.get("phase_vs_amplitude_active")
+        ),
+        "maritime_advection_active": bool(
+            nowcast.live_features.get("maritime_advection_active")
+        ),
+    }
+    current_record["active_regimes"] = active_regimes(current_record)
+    mirror = build_shadow_mirror(current_record, market=market_payload)
+    production = mirror["production_ranking"] + [(None, None)] * 3
+    shadow = mirror["shadow_ranking"] + [(None, None)] * 3
+    signal = mirror["trading_opportunity"]
+
+    st.subheader("Shadow Engine Mirror")
+    st.caption(
+        f"{SHADOW_VERSION} · {checkpoint} · RESEARCH ONLY – NO AUTOMATIC "
+        "PROMOTION OR EXECUTION"
+    )
+    mirror_rows = [
+        {
+            "Field": "Forecast center",
+            "Production": f"{mirror['production_center_c']:.2f} °C",
+            "Shadow": f"{mirror['shadow_center_c']:.2f} °C",
+            "Delta": f"{mirror['center_delta_c']:+.2f} K",
+        },
+        {
+            "Field": "Modal bucket",
+            "Production": f"{mirror['production_modal_bucket']} °C",
+            "Shadow": f"{mirror['shadow_modal_bucket']} °C",
+            "Delta": f"{mirror['modal_delta_buckets']:+d} bucket",
+        },
+    ]
+    for index, label in enumerate(("Top1", "Top2", "Top3")):
+        mirror_rows.append({
+            "Field": label,
+            "Production": f"{production[index][0]} °C · {_display_probability(production[index][1])}",
+            "Shadow": f"{shadow[index][0]} °C · {_display_probability(shadow[index][1])}",
+            "Delta": (
+                f"{(shadow[index][1] - production[index][1]) * 100:+.1f} pp"
+                if production[index][1] is not None and shadow[index][1] is not None
+                else "—"
+            ),
+        })
+    mirror_rows.extend([
+        {
+            "Field": "Model spread", "Production": f"{nowcast.raw_model_spread:.2f} K",
+            "Shadow": f"{nowcast.raw_model_spread:.2f} K", "Delta": "0",
+        },
+        {
+            "Field": "TAF TX", "Production": f"{taf_bucket} °C" if taf_bucket is not None else "—",
+            "Shadow": f"{taf_bucket} °C" if taf_bucket is not None else "—", "Delta": "0",
+        },
+        {
+            "Field": "Regimes", "Production": ", ".join(mirror["active_regimes"]) or "none",
+            "Shadow": ", ".join(mirror["active_regimes"]) or "none", "Delta": "—",
+        },
+        {
+            "Field": "Confidence", "Production": str(nowcast.forecast_confidence),
+            "Shadow": "research confidence not independently calibrated", "Delta": "—",
+        },
+        {
+            "Field": "Trading signal", "Production": "—",
+            "Shadow": signal["classification"], "Delta": "research only",
+        },
+    ])
+    st.dataframe(pd.DataFrame(mirror_rows), hide_index=True, width="stretch")
+
+    left, right = st.columns(2)
+    with left:
+        st.markdown("**Correction comparison**")
+        corrections = pd.DataFrame(mirror["correction_comparison"])
+        for column in ("production_c", "shadow_c", "delta_c"):
+            corrections[column] = corrections[column].map(lambda value: f"{value:+.3f} K")
+        st.dataframe(corrections.rename(columns={
+            "correction": "Correction", "production_c": "Production",
+            "shadow_c": "Shadow", "delta_c": "Delta",
+        }), hide_index=True, width="stretch")
+    with right:
+        icons = {
+            "HIGH INTEREST": "🟢", "WATCH": "🟡", "NO TRADE": "🔴",
+            "NO SIGNAL": "⚪",
+        }
+        st.markdown(
+            f"### {icons.get(signal['classification'], '⚪')} "
+            f"{signal['classification']}"
+        )
+        st.caption(f"{OPPORTUNITY_VERSION} · transparent rule set")
+        st.write(f"Policy: **{mirror['selected_policy']}**")
+        st.write(f"Raw edge: **{_display_probability(signal['raw_model_market_edge'])}**")
+        st.write(f"Top1/Top2 gap: **{signal['top1_top2_gap_pp']:.1f} pp**" if signal["top1_top2_gap_pp"] is not None else "Top1/Top2 gap: —")
+        st.write(f"Market freshness: **{signal['market_freshness']}**")
+        for blocker in signal["blockers"]:
+            st.write(f"• {blocker}")
+        st.caption(
+            "Raw edge is diagnostic only. Historical Replay did not show a monotonic "
+            "edge-to-profit relation. No automatic execution."
+        )
+
+    with st.expander("Historical research evidence and market layer", expanded=False):
+        evidence = signal["historical_evidence_used"]
+        if evidence:
+            evidence_frame = pd.DataFrame(evidence)
+            evidence_frame["historical_roi"] = evidence_frame.historical_roi.map(
+                _display_probability
+            )
+            st.dataframe(evidence_frame.rename(columns={
+                "regime": "Regime", "historical_n": "Historical N",
+                "historical_roi": "Historical ROI",
+                "robustness_classification": "Robustness",
+                "historical_max_drawdown": "Max drawdown",
+                "seasonal_coverage": "Seasonal coverage",
+            }), hide_index=True, width="stretch")
+        else:
+            st.info("No quantitative historical regime evidence for the active setup.")
+        forecast_evidence = mirror.get("forecast_historical_evidence")
+        if forecast_evidence:
+            st.json(forecast_evidence)
+        market_rows = []
+        by_bucket = {row.get("bucket_c"): row for row in market_payload.get("markets", [])}
+        for bucket, probability in shadow[:3]:
+            row = by_bucket.get(bucket, {})
+            ask = row.get("best_ask")
+            price = ask if ask is not None else row.get("yes_price")
+            market_rows.append({
+                "Bucket": f"{bucket} °C" if bucket is not None else "—",
+                "Shadow probability": _display_probability(probability),
+                "Market price": _display_probability(price),
+                "Raw edge": _display_probability(
+                    probability - price if probability is not None and price is not None else None
+                ),
+                "Best bid": _display_probability(row.get("best_bid")),
+                "Best ask": _display_probability(ask),
+                "Spread": _display_probability(row.get("spread")),
+                "Snapshot age": market_payload.get("market_snapshot_age_minutes"),
+            })
+        st.dataframe(pd.DataFrame(market_rows), hide_index=True, width="stretch")
+        st.caption("Historical research evidence · Seasonal coverage: Apr–Oct 2026 only")
+
+    persisted = [
+        row for row in journal.get("shadow_engine_decisions", [])
+        if row.get("checkpoint_label") == checkpoint
+    ]
+    if persisted:
+        latest = sorted(persisted, key=lambda row: str(row.get("generated_at")))[-1]
+        st.caption(
+            f"Latest immutable {SHADOW_VERSION} decision: {latest.get('target_date')} · "
+            f"hash {str(latest.get('decision_hash', ''))[:12]}…"
+        )
+    else:
+        st.caption("Live preview; immutable row appears after Workflow 13 publishes this checkpoint.")
+
+
 def render_research_tracks(
     *, nowcast, snapshots, variants, actuals, markets, forecasts,
     forward_shadow_journal, target, now, zone
@@ -298,10 +505,18 @@ def render_research_tracks(
     taf_bucket = positive_temperature_bucket(
         getattr(getattr(nowcast, "taf_guidance", None), "max_temp_c", None)
     )
+    market_payload = _market_payload(markets, now)
+    _render_shadow_engine_mirror(
+        nowcast=nowcast,
+        checkpoint=checkpoint,
+        taf_bucket=taf_bucket,
+        market_payload=market_payload,
+        journal=forward_shadow_journal,
+    )
     decision = build_trading_shadow_decision(
         target_date=target.isoformat(), checkpoint=checkpoint,
         generated_at=now.isoformat(), probabilities=nowcast.probabilities,
-        taf_bucket=taf_bucket, market_checkpoint=_market_payload(markets, now),
+        taf_bucket=taf_bucket, market_checkpoint=market_payload,
         forecast_confidence=nowcast.forecast_confidence,
         regimes=[str(nowcast.day_status.label)],
     )

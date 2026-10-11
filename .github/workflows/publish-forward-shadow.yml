@@ -71,8 +71,12 @@ jobs:
           assert payload["writes_production_database"] is False
           assert payload["contains_credentials"] is False
           assert payload["log"]["automatic_backfill"] is False
+          assert payload["shadow_engine_version"] == "shadow_engine_v1.0"
+          assert all(row["research_only"] is True for row in payload["shadow_engine_decisions"])
+          assert all(row["automatic_execution"] is False for row in payload["shadow_engine_decisions"])
           print({"status": "validated", "size_bytes": path.stat().st_size,
-                 "decision_rows": len(payload["decisions"])})
+                 "decision_rows": len(payload["decisions"]),
+                 "shadow_engine_decision_rows": len(payload["shadow_engine_decisions"])})
           PY
       - name: Publish the exact journal bytes to Cloudflare KV
         if: steps.gate.outputs.should_run == 'true'

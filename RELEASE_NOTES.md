@@ -1,4 +1,16 @@
-# Release Notes – Madrid v1.0.19
+# Release Notes – Madrid v1.0.20
+
+## Neu in v1.0.20
+
+- vollständiger Production-vs-Shadow-Mirror im Research-Bereich;
+- feste Policies `anchor_25pct` (D0) und `late_dry_mixing_0pct` (Late Live);
+- transparente Correction-, Regime-, Market- und Opportunity-Ansichten;
+- additive, hashgeschützte `shadow_engine_v1.0`-Entscheidungen in Workflow 13;
+- keine Änderung der Production Forecast Engine oder des Champions.
+
+Details: `V1.0.20_SHADOW_ENGINE_REPORT_DE.md`.
+
+## Vorheriger Stand v1.0.19
 
 ## Neu in v1.0.19
 
