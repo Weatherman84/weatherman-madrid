@@ -1,0 +1,1211 @@
+{
+  "schema_version": "frozen_opportunity_rule_set_v1",
+  "frozen_rule_set_id": "frozen_opportunity_rule_set_v1",
+  "frozen_at": "2026-10-12T16:47:19.506446+00:00",
+  "source_file": "market_validation/input/opportunity/cross-airport-opportunity-candidates.json",
+  "source_sha256": "be793e2142fd477661195f28318b1f602416623c08a8ad707f9f1bf682f46457",
+  "canonical_rules_sha256": "b08f9e5be300a46dc82eebd8b5f09d35ae480799ea2ccbd6d5e816b65cbd4420",
+  "rule_count": 24,
+  "class_counts": {
+    "HC-A": 4,
+    "HC-B": 20
+  },
+  "immutability": "Frozen before market matching; market/P&L outcomes must not modify selectors, thresholds, regimes, classes, or quality scores.",
+  "historical_status": "historical_research_not_independent_oos",
+  "research_only": true,
+  "automatic_promotion": false,
+  "certified_oos": false,
+  "rules": [
+    {
+      "rule_id": "EDDM_ALL_P30_CLEAR_SKY_OVERRIDE_GAP_GE010_v1",
+      "airport": "EDDM",
+      "checkpoint": "W60 Peak -30m",
+      "season": "ALL",
+      "regimes": [
+        "Clear Sky Override"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Clear Sky Override"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 40,
+      "discovery_accuracy": 0.725,
+      "discovery_accuracy_ci95": [
+        0.571647,
+        0.838921
+      ],
+      "validation_n": 29,
+      "validation_accuracy": 0.62069,
+      "validation_accuracy_ci95": [
+        0.440022,
+        0.773122
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.619735,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EDDM_DJF_P120_TEMPERATURE_PLATEAU_SPREAD_LT050_v1",
+      "airport": "EDDM",
+      "checkpoint": "W60 Peak -120m",
+      "season": "DJF",
+      "regimes": [
+        "Temperature Plateau"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": null,
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Temperature Plateau"
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season"
+      ],
+      "discovery_n": 16,
+      "discovery_accuracy": 0.5625,
+      "discovery_accuracy_ci95": [
+        0.331782,
+        0.769016
+      ],
+      "validation_n": 17,
+      "validation_accuracy": 0.588235,
+      "validation_accuracy_ci95": [
+        0.360051,
+        0.783892
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.476604,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EHAM_ALL_P30_GAP_GE020_v1",
+      "airport": "EHAM",
+      "checkpoint": "W60 Peak -30m",
+      "season": "ALL",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.2
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 119,
+      "discovery_accuracy": 0.831933,
+      "discovery_accuracy_ci95": [
+        0.754617,
+        0.888488
+      ],
+      "validation_n": 91,
+      "validation_accuracy": 0.681319,
+      "validation_accuracy_ci95": [
+        0.579907,
+        0.768041
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.741796,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EHAM_DJF_P90_GAP_GE020_v1",
+      "airport": "EHAM",
+      "checkpoint": "W60 Peak -90m",
+      "season": "DJF",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.2
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 26,
+      "discovery_accuracy": 0.730769,
+      "discovery_accuracy_ci95": [
+        0.539166,
+        0.862957
+      ],
+      "validation_n": 40,
+      "validation_accuracy": 0.6,
+      "validation_accuracy_ci95": [
+        0.445956,
+        0.736519
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.600103,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EHAM_SON_P120_SPREAD_LT050_v1",
+      "airport": "EHAM",
+      "checkpoint": "W60 Peak -120m",
+      "season": "SON",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": null,
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "season"
+      ],
+      "discovery_n": 36,
+      "discovery_accuracy": 0.694444,
+      "discovery_accuracy_ci95": [
+        0.531434,
+        0.819957
+      ],
+      "validation_n": 28,
+      "validation_accuracy": 0.678571,
+      "validation_accuracy_ci95": [
+        0.493385,
+        0.82067
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.582389,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EHAM_SON_P60_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "EHAM",
+      "checkpoint": "W60 Peak -60m",
+      "season": "SON",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 23,
+      "discovery_accuracy": 0.826087,
+      "discovery_accuracy_ci95": [
+        0.628619,
+        0.930215
+      ],
+      "validation_n": 19,
+      "validation_accuracy": 0.736842,
+      "validation_accuracy_ci95": [
+        0.51208,
+        0.881938
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.683761,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_ALL_P30_GAP_GE015_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -30m",
+      "season": "ALL",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.15
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 81,
+      "discovery_accuracy": 0.641975,
+      "discovery_accuracy_ci95": [
+        0.533329,
+        0.737765
+      ],
+      "validation_n": 98,
+      "validation_accuracy": 0.714286,
+      "validation_accuracy_ci95": [
+        0.618091,
+        0.794314
+      ],
+      "hc_class": "HC-A",
+      "discovery_quality_score": 0.589679,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_ALL_P30_GAP_GE020_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -30m",
+      "season": "ALL",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.2
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.2
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 37,
+      "discovery_accuracy": 0.702703,
+      "discovery_accuracy_ci95": [
+        0.542166,
+        0.825107
+      ],
+      "validation_n": 54,
+      "validation_accuracy": 0.777778,
+      "validation_accuracy_ci95": [
+        0.650611,
+        0.868047
+      ],
+      "hc_class": "HC-A",
+      "discovery_quality_score": 0.595262,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_ALL_P90_PERSISTENT_HOT_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -90m",
+      "season": "ALL",
+      "regimes": [
+        "Persistent Hot"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Persistent Hot"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 15,
+      "discovery_accuracy": 0.666667,
+      "discovery_accuracy_ci95": [
+        0.417131,
+        0.848239
+      ],
+      "validation_n": 16,
+      "validation_accuracy": 0.625,
+      "validation_accuracy_ci95": [
+        0.386406,
+        0.81519
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.564421,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_DJF_P30_CLOUD_RADIATION_SUPPRESSION_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -30m",
+      "season": "DJF",
+      "regimes": [
+        "Cloud / Radiation Suppression"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Cloud / Radiation Suppression"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 16,
+      "discovery_accuracy": 0.75,
+      "discovery_accuracy_ci95": [
+        0.505012,
+        0.898181
+      ],
+      "validation_n": 19,
+      "validation_accuracy": 0.684211,
+      "validation_accuracy_ci95": [
+        0.4601,
+        0.846358
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.614795,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_DJF_P30_GAP_GE015_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -30m",
+      "season": "DJF",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.15
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 20,
+      "discovery_accuracy": 0.75,
+      "discovery_accuracy_ci95": [
+        0.531295,
+        0.88814
+      ],
+      "validation_n": 23,
+      "validation_accuracy": 0.73913,
+      "validation_accuracy_ci95": [
+        0.535296,
+        0.874516
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.593795,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_DJF_P60_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -60m",
+      "season": "DJF",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 18,
+      "discovery_accuracy": 0.666667,
+      "discovery_accuracy_ci95": [
+        0.437491,
+        0.837214
+      ],
+      "validation_n": 21,
+      "validation_accuracy": 0.619048,
+      "validation_accuracy_ci95": [
+        0.408783,
+        0.792492
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.549593,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_DJF_P90_GAP_GE015_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -90m",
+      "season": "DJF",
+      "regimes": [],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.15
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.15
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 18,
+      "discovery_accuracy": 0.666667,
+      "discovery_accuracy_ci95": [
+        0.437491,
+        0.837214
+      ],
+      "validation_n": 21,
+      "validation_accuracy": 0.714286,
+      "validation_accuracy_ci95": [
+        0.500432,
+        0.861863
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.569406,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_DJF_P90_TEMPERATURE_PLATEAU_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -90m",
+      "season": "DJF",
+      "regimes": [
+        "Temperature Plateau"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Temperature Plateau"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 15,
+      "discovery_accuracy": 0.666667,
+      "discovery_accuracy_ci95": [
+        0.417131,
+        0.848239
+      ],
+      "validation_n": 15,
+      "validation_accuracy": 0.6,
+      "validation_accuracy_ci95": [
+        0.357464,
+        0.801758
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.573072,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "EPWA_SON_P90_TEMPERATURE_PLATEAU_GAP_GE010_v1",
+      "airport": "EPWA",
+      "checkpoint": "W60 Peak -90m",
+      "season": "SON",
+      "regimes": [
+        "Temperature Plateau"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Temperature Plateau"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 15,
+      "discovery_accuracy": 0.666667,
+      "discovery_accuracy_ci95": [
+        0.417131,
+        0.848239
+      ],
+      "validation_n": 15,
+      "validation_accuracy": 0.666667,
+      "validation_accuracy_ci95": [
+        0.417131,
+        0.848239
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.568249,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LEMD_ALL_P30_LATE_DRY_MIXING_TOP1_GE050_v1",
+      "airport": "LEMD",
+      "checkpoint": "W60 Peak -30m",
+      "season": "ALL",
+      "regimes": [
+        "Late Dry Mixing"
+      ],
+      "top1_threshold": {
+        "op": "ge",
+        "value": 0.5
+      },
+      "gap_threshold": null,
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Late Dry Mixing"
+        },
+        {
+          "field": "top1_probability",
+          "op": "ge",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_probability"
+      ],
+      "discovery_n": 20,
+      "discovery_accuracy": 0.85,
+      "discovery_accuracy_ci95": [
+        0.639577,
+        0.947632
+      ],
+      "validation_n": 32,
+      "validation_accuracy": 0.71875,
+      "validation_accuracy_ci95": [
+        0.546252,
+        0.844356
+      ],
+      "hc_class": "HC-A",
+      "discovery_quality_score": 0.689012,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LEMD_JJA_P30_LATE_DRY_MIXING_GAP_GE010_v1",
+      "airport": "LEMD",
+      "checkpoint": "W60 Peak -30m",
+      "season": "JJA",
+      "regimes": [
+        "Late Dry Mixing"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Late Dry Mixing"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 25,
+      "discovery_accuracy": 0.84,
+      "discovery_accuracy_ci95": [
+        0.65346,
+        0.935967
+      ],
+      "validation_n": 34,
+      "validation_accuracy": 0.617647,
+      "validation_accuracy_ci95": [
+        0.450407,
+        0.761
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.676059,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LEMD_JJA_P90_LATE_DRY_MIXING_TOP1_GE050_v1",
+      "airport": "LEMD",
+      "checkpoint": "W60 Peak -90m",
+      "season": "JJA",
+      "regimes": [
+        "Late Dry Mixing"
+      ],
+      "top1_threshold": {
+        "op": "ge",
+        "value": 0.5
+      },
+      "gap_threshold": null,
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Late Dry Mixing"
+        },
+        {
+          "field": "top1_probability",
+          "op": "ge",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_probability"
+      ],
+      "discovery_n": 15,
+      "discovery_accuracy": 0.666667,
+      "discovery_accuracy_ci95": [
+        0.417131,
+        0.848239
+      ],
+      "validation_n": 19,
+      "validation_accuracy": 0.684211,
+      "validation_accuracy_ci95": [
+        0.4601,
+        0.846358
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.563235,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LTAC_ALL_P30_CLOUD_RADIATION_SUPPRESSION_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "LTAC",
+      "checkpoint": "W60 Peak -30m",
+      "season": "ALL",
+      "regimes": [
+        "Cloud / Radiation Suppression"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Cloud / Radiation Suppression"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 27,
+      "discovery_accuracy": 0.777778,
+      "discovery_accuracy_ci95": [
+        0.592427,
+        0.893929
+      ],
+      "validation_n": 38,
+      "validation_accuracy": 0.605263,
+      "validation_accuracy_ci95": [
+        0.447176,
+        0.744021
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.65663,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LTAC_DJF_P30_CLOUD_RADIATION_SUPPRESSION_SPREAD_LT050_v1",
+      "airport": "LTAC",
+      "checkpoint": "W60 Peak -30m",
+      "season": "DJF",
+      "regimes": [
+        "Cloud / Radiation Suppression"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": null,
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Cloud / Radiation Suppression"
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season"
+      ],
+      "discovery_n": 24,
+      "discovery_accuracy": 0.791667,
+      "discovery_accuracy_ci95": [
+        0.595292,
+        0.907553
+      ],
+      "validation_n": 23,
+      "validation_accuracy": 0.608696,
+      "validation_accuracy_ci95": [
+        0.407852,
+        0.778426
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.65658,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LTAC_JJA_P90_RAPID_HEAT_RAMP_SPREAD_LT050_v1",
+      "airport": "LTAC",
+      "checkpoint": "W60 Peak -90m",
+      "season": "JJA",
+      "regimes": [
+        "Rapid Heat Ramp"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": null,
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Rapid Heat Ramp"
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season"
+      ],
+      "discovery_n": 16,
+      "discovery_accuracy": 0.5625,
+      "discovery_accuracy_ci95": [
+        0.331782,
+        0.769016
+      ],
+      "validation_n": 15,
+      "validation_accuracy": 0.666667,
+      "validation_accuracy_ci95": [
+        0.417131,
+        0.848239
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.507838,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LTFM_ALL_P120_TEMPERATURE_PLATEAU_GAP_GE010_v1",
+      "airport": "LTFM",
+      "checkpoint": "W60 Peak -120m",
+      "season": "ALL",
+      "regimes": [
+        "Temperature Plateau"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Temperature Plateau"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 120,
+      "discovery_accuracy": 0.65,
+      "discovery_accuracy_ci95": [
+        0.561212,
+        0.729482
+      ],
+      "validation_n": 116,
+      "validation_accuracy": 0.706897,
+      "validation_accuracy_ci95": [
+        0.618498,
+        0.782031
+      ],
+      "hc_class": "HC-A",
+      "discovery_quality_score": 0.630009,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LTFM_MAM_P30_TEMPERATURE_PLATEAU_GAP_GE010_SPREAD_LT050_v1",
+      "airport": "LTFM",
+      "checkpoint": "W60 Peak -30m",
+      "season": "MAM",
+      "regimes": [
+        "Temperature Plateau"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": {
+        "op": "lt",
+        "value": 0.5
+      },
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Temperature Plateau"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        },
+        {
+          "field": "model_spread_c",
+          "op": "lt",
+          "value": 0.5
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "model_spread_c",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 21,
+      "discovery_accuracy": 0.809524,
+      "discovery_accuracy_ci95": [
+        0.59999,
+        0.923326
+      ],
+      "validation_n": 15,
+      "validation_accuracy": 0.733333,
+      "validation_accuracy_ci95": [
+        0.480491,
+        0.891027
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.680365,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    },
+    {
+      "rule_id": "LTFM_SON_P120_TEMPERATURE_PLATEAU_GAP_GE010_v1",
+      "airport": "LTFM",
+      "checkpoint": "W60 Peak -120m",
+      "season": "SON",
+      "regimes": [
+        "Temperature Plateau"
+      ],
+      "top1_threshold": null,
+      "gap_threshold": {
+        "op": "ge",
+        "value": 0.1
+      },
+      "spread_threshold": null,
+      "other_selector_conditions": [],
+      "selector_conditions": [
+        {
+          "field": "regimes",
+          "op": "contains",
+          "value": "Temperature Plateau"
+        },
+        {
+          "field": "top1_top2_gap",
+          "op": "ge",
+          "value": 0.1
+        }
+      ],
+      "selector_fields": [
+        "airport",
+        "checkpoint",
+        "regimes",
+        "season",
+        "top1_top2_gap"
+      ],
+      "discovery_n": 37,
+      "discovery_accuracy": 0.756757,
+      "discovery_accuracy_ci95": [
+        0.598824,
+        0.866388
+      ],
+      "validation_n": 21,
+      "validation_accuracy": 0.666667,
+      "validation_accuracy_ci95": [
+        0.453731,
+        0.828055
+      ],
+      "hc_class": "HC-B",
+      "discovery_quality_score": 0.637243,
+      "evidence_class": "cross_airport_opportunity_density_research_v1"
+    }
+  ]
+}

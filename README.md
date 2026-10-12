@@ -12,6 +12,14 @@ v10.7.11 ersetzt ausschließlich die starre 90-Minuten-Modellzulassung durch ein
 modellabhängige Laufkadenz. Das Repository und die Neon-Datenbanken sind vollständig
 vom bisherigen Sechs-Airport-System getrennt.
 
+## Separate Opportunity-Scanner-App
+
+Der additive **Weatherman Opportunity Scanner v0.1-shadow** startet über
+`opportunity_scanner_app.py` als eigene Streamlit-App. Er verwendet einen eigenen
+append-only Shadow Store und keine Production-Neon-Verbindung. Madrid-App, Madrid
+Forecast Engine und Production-Regeln bleiben unverändert. Details stehen in
+[OPPORTUNITY_SCANNER_V0.1_SHADOW.md](OPPORTUNITY_SCANNER_V0.1_SHADOW.md).
+
 ## Was diese Version löst
 
 - nur ein Airport statt Airport-Research und sechs parallelen Trading-Pfaden;
