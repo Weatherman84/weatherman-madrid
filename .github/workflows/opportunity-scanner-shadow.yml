@@ -1,0 +1,73 @@
+name: 14 - Cross-airport Opportunity Scanner shadow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opportunity-scanner-shadow-v1
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Require separate scanner endpoints
+        env:
+          FEED_URL: ${{ vars.OPPORTUNITY_SCANNER_FEED_URL }}
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+          ACTIVATION_DATE: ${{ vars.OPPORTUNITY_SCANNER_ACTIVATION_DATE }}
+        run: |
+          test -n "$FEED_URL"
+          test -n "$PUBLIC_BASE_URL"
+          test -n "$ACTIVATION_DATE"
+      - name: Fetch compact causal feed
+        env:
+          FEED_URL: ${{ vars.OPPORTUNITY_SCANNER_FEED_URL }}
+        run: curl --fail --silent --show-error "$FEED_URL" --output scanner-feed.json
+      - name: Build append-only shadow journal
+        env:
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+          ACTIVATION_DATE: ${{ vars.OPPORTUNITY_SCANNER_ACTIVATION_DATE }}
+        run: |
+          python scripts/run_opportunity_scanner.py \
+            --input scanner-feed.json \
+            --database "${RUNNER_TEMP}/opportunity-scanner.db" \
+            --existing-url "${PUBLIC_BASE_URL%/}/opportunity-scanner-journal.json" \
+            --activation-date "$ACTIVATION_DATE" \
+            --output opportunity-scanner-journal.json
+      - name: Validate and publish separate journal
+        env:
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+          PUBLISH_TOKEN: ${{ secrets.OPPORTUNITY_SCANNER_PUBLISH_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json
+          payload=json.load(open("opportunity-scanner-journal.json", encoding="utf-8"))
+          assert payload["research_only"] is True
+          assert payload["automatic_promotion"] is False
+          assert payload["automatic_execution"] is False
+          assert payload["writes_production_database"] is False
+          assert payload["active_rule_count"] == 24
+          PY
+          curl --fail --silent --show-error -X POST "${PUBLIC_BASE_URL%/}/internal/publish" \
+            -H "Authorization: Bearer ${PUBLISH_TOKEN}" -H "Content-Type: application/json" \
+            --data-binary @opportunity-scanner-journal.json --output scanner-publication.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opportunity-scanner-shadow-${{ github.run_id }}
+          path: |
+            opportunity-scanner-journal.json
+            scanner-publication.json
+          retention-days: 14

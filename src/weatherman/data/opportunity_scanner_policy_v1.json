@@ -1,0 +1,21 @@
+{
+  "schema_version": "opportunity_scanner_policy_v1",
+  "app_version": "0.1-shadow",
+  "rule_set_version": "frozen_opportunity_rule_set_v1",
+  "research_only": true,
+  "automatic_promotion": false,
+  "automatic_execution": false,
+  "nominal_stake_usd": 1.0,
+  "high_interest": {
+    "allowed_hc_classes": ["HC-A", "HC-B"],
+    "maximum_quote_age_minutes": 30,
+    "maximum_spread": 0.15,
+    "minimum_conservative_edge": 0.0,
+    "edge_probability": "min(top1_probability, historical_validation_accuracy)",
+    "critical_warning_count": 0
+  },
+  "market_freshness_minutes": {"fresh_max": 15, "acceptable_max": 30, "stale_max": 60},
+  "expected_peak": {"method": "rolling_median_peak_time", "window_valid_days": 60, "minimum_valid_days": 20},
+  "checkpoint_offsets_minutes": [120, 90, 60, 30],
+  "forward_evidence_class": "sequential_oos_shadow"
+}

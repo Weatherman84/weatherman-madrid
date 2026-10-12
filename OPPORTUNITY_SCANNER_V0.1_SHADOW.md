@@ -1,0 +1,72 @@
+# Weatherman Opportunity Scanner v0.1-shadow
+
+Separate Research-/Shadow-App für `LEMD`, `EHAM`, `EDDM`, `EPWA`, `LTAC` und `LTFM`.
+Sie verändert weder die Madrid Forecast Engine noch Madrid-Daten oder Production-Regeln.
+
+## Unveränderliche Sicherheitsgrenzen
+
+- `research_only=true`
+- `automatic_promotion=false`
+- `automatic_execution=false`
+- keine Production-Neon-Verbindung im Scanner
+- keine Backfills vor dem expliziten Aktivierungsdatum
+- `$1` nominal je Shadow Trade, kein Echtgeld und kein Kelly-Sizing
+- Historical Research Evidence und `sequential_oos_shadow` bleiben getrennt
+
+## Komponenten
+
+| Komponente | Zweck |
+|---|---|
+| `opportunity_scanner_app.py` | separate Streamlit-App |
+| `opportunity_scanner.py` | Rule-Hash, kausale Peak-Zeit, Frozen Rule Matching, Status/Edge/P&L |
+| `opportunity_portfolio.py` | Scanner-Zyklus, Portfolio, Funnel, Forward-Metriken |
+| `opportunity_store.py` | separate append-only SQLite-Shadow-Persistenz |
+| `scripts/run_opportunity_scanner.py` | feed-basierter, Production-isolierter Collector |
+| `opportunity-scanner-worker/` | eigener KV-Publisher mit Append-only-Prüfung |
+| `.github/workflows/opportunity-scanner-shadow.yml` | 10-Minuten-Shadow-Lauf |
+
+## Frozen Inputs
+
+Aktiv sind exakt 24 Regeln: 4 HC-A und 20 HC-B. Der kanonische Hash ist:
+
+`b08f9e5be300a46dc82eebd8b5f09d35ae480799ea2ccbd6d5e816b65cbd4420`
+
+12 HC-C-Regeln sind nur lesbar. Rejected Rules sind nicht im aktiven Paket. Die
+Common-Model-Menge ist exakt `ecmwf_ifs025`, `gfs_global`, `icon_global`.
+
+## Kompakter Feed-Vertrag
+
+Der Scanner liest keine Forecast-Historie aus Production. Ein separater Publisher
+liefert nur aktuelle kausale Snapshots, maximal 60 valide frühere Peak-Zeiten je Airport
+und aktuelle Marktquotes. `schema_version` ist `opportunity_scanner_feed_v1` und
+`contains_outcomes` muss `false` sein.
+
+Outcome-Felder werden im Live-Feed abgewiesen. Resolutionen kommen ausschließlich über
+ein separates `opportunity_scanner_resolution_feed_v1` und müssen eine offizielle
+Settlement-Quelle nennen. Ein METAR-Bucket wird getrennt gespeichert und niemals als
+Market Resolution interpretiert.
+
+## Frozen HIGH INTEREST Policy
+
+HIGH INTEREST verlangt HC-A/B, exakten Bucket-Market-Match, Best Ask, Quote-Alter höchstens
+30 Minuten, Spread höchstens 0,15, keine Data-Quality-Warnung und positiven konservativen
+Edge `min(Model Probability, Historical Validation Accuracy) - Best Ask`.
+
+Fehlender/alter Quote ergibt WATCH. Kritische Forecast-Warnungen, aufgelöster Markt,
+zu breiter Spread oder nichtpositiver konservativer Edge ergeben NO TRADE. Ohne HC-A/B
+Trigger lautet der Status NO SIGNAL. `DATA UNAVAILABLE` wird in der App separat gezeigt.
+
+## Aktivierung
+
+Vor dem ersten Forward-Lauf müssen gesetzt und fachlich geprüft sein:
+
+1. separater Cloudflare-KV-Namespace und Worker-Secret `PUBLISH_TOKEN`;
+2. GitHub-Variablen `OPPORTUNITY_SCANNER_FEED_URL`,
+   `OPPORTUNITY_SCANNER_PUBLIC_BASE_URL`, `OPPORTUNITY_SCANNER_ACTIVATION_DATE`;
+3. Secret `OPPORTUNITY_SCANNER_PUBLISH_TOKEN`;
+4. Streamlit-Variable `OPPORTUNITY_SCANNER_JOURNAL_URL`;
+5. Market Mapping und Bid/Ask-Semantik jedes Airports;
+6. Tests inklusive Rule Hash, Testtag, DST, P&L und Production-Isolation.
+
+Ohne diese Aktivierungswerte scheitert der Workflow geschlossen; er erzeugt weder
+NO SIGNAL noch rückwirkende Shadow Evidence.

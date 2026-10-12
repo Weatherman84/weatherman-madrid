@@ -1,0 +1,13 @@
+{
+  "schema_version": "opportunity_scanner_airports_v1",
+  "research_only": true,
+  "common_models": ["ecmwf_ifs025", "gfs_global", "icon_global"],
+  "airports": {
+    "LEMD": {"name": "Madrid-Barajas", "timezone": "Europe/Madrid", "station": "LEMD", "market_city": "madrid", "latitude": 40.466, "longitude": -3.555, "enabled": true, "research_only": true},
+    "EHAM": {"name": "Amsterdam-Schiphol", "timezone": "Europe/Amsterdam", "station": "EHAM", "market_city": "amsterdam", "latitude": 52.3086, "longitude": 4.7639, "enabled": true, "research_only": true},
+    "EDDM": {"name": "München", "timezone": "Europe/Berlin", "station": "EDDM", "market_city": "munich", "latitude": 48.3538, "longitude": 11.7861, "enabled": true, "research_only": true},
+    "EPWA": {"name": "Warschau", "timezone": "Europe/Warsaw", "station": "EPWA", "market_city": "warsaw", "latitude": 52.1657, "longitude": 20.9671, "enabled": true, "research_only": true},
+    "LTAC": {"name": "Ankara", "timezone": "Europe/Istanbul", "station": "LTAC", "market_city": "ankara", "latitude": 40.1281, "longitude": 32.9951, "enabled": true, "research_only": true},
+    "LTFM": {"name": "Istanbul", "timezone": "Europe/Istanbul", "station": "LTFM", "market_city": "istanbul", "latitude": 41.2753, "longitude": 28.7519, "enabled": true, "research_only": true}
+  }
+}
