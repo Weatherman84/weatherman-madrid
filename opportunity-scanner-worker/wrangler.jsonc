@@ -2,5 +2,5 @@
   "name": "weatherman-opportunity-scanner-shadow",
   "main": "src/index.js",
   "compatibility_date": "2026-10-01",
-  "kv_namespaces": [{"binding": "SCANNER_KV", "id": "REPLACE_WITH_SCANNER_KV_NAMESPACE_ID"}]
+  "kv_namespaces": [{"binding": "SCANNER_KV", "id": "0db3b64eea0b47889f76d3fd592fe4a1"}]
 }
