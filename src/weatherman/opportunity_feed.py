@@ -22,9 +22,10 @@ from .opportunity_scanner import (
     load_airport_config,
 )
 from .providers import (
+    PREVIOUS_RUNS_URL,
+    _get,
     polymarket_order_books,
     polymarket_prices,
-    previous_run_hourly_d1,
     recent_metars,
 )
 
@@ -33,6 +34,73 @@ FEED_SCHEMA = "opportunity_scanner_feed_v1"
 CALIBRATION_SCHEMA = "opportunity_scanner_calibration_seed_v1"
 PEAK_SEED_SCHEMA = "opportunity_scanner_peak_seed_v1"
 FIXED_FORECAST_METHOD = "common_models_fixed_24h_lead_bias_corrected_live_anchor_v1"
+
+
+def previous_run_hourly_d1(
+    airport: Mapping[str, Any],
+    model: str,
+    target: date,
+    *,
+    attempts: int = 5,
+    timeout: float | None = None,
+) -> list[dict[str, Any]]:
+    """Return the per-valid-hour forecast issued exactly 24 hours earlier."""
+    base_variables = (
+        "temperature_2m",
+        "dew_point_2m",
+        "cloud_cover",
+        "wind_speed_10m",
+        "wind_direction_10m",
+        "shortwave_radiation",
+    )
+    variables = [f"{name}_previous_day1" for name in base_variables]
+    payload = _get(
+        PREVIOUS_RUNS_URL,
+        {
+            "latitude": airport["latitude"],
+            "longitude": airport["longitude"],
+            "start_date": (target - timedelta(days=1)).isoformat(),
+            "end_date": (target + timedelta(days=1)).isoformat(),
+            "hourly": ",".join(variables),
+            "timezone": "UTC",
+            "models": model,
+        },
+        attempts=attempts,
+        timeout=timeout,
+    )
+    hourly = payload.get("hourly", {}) if isinstance(payload, dict) else {}
+    fetched_at = datetime.now(timezone.utc)
+
+    def value(name: str, index: int) -> float | None:
+        values = hourly.get(f"{name}_previous_day1")
+        item = values[index] if values and index < len(values) else None
+        return float(item) if item is not None else None
+
+    rows: list[dict[str, Any]] = []
+    for index, timestamp in enumerate(hourly.get("time", [])):
+        temperature = value("temperature_2m", index)
+        if temperature is None:
+            continue
+        valid_at = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+        if valid_at.tzinfo is None:
+            valid_at = valid_at.replace(tzinfo=timezone.utc)
+        rows.append(
+            {
+                "model": model,
+                "run_at": valid_at.astimezone(timezone.utc) - timedelta(hours=24),
+                "valid_at": valid_at.astimezone(timezone.utc),
+                "temp_c": temperature,
+                "dewpoint_c": value("dew_point_2m", index),
+                "cloud_cover": value("cloud_cover", index),
+                "wind_kph": value("wind_speed_10m", index),
+                "wind_direction": value("wind_direction_10m", index),
+                "radiation_wm2": value("shortwave_radiation", index),
+                "fetched_at": fetched_at,
+                "source": "open-meteo-previous-runs",
+                "lead_hours": 24,
+            }
+        )
+    return rows
 
 
 def _resource(name: str) -> dict[str, Any]:
