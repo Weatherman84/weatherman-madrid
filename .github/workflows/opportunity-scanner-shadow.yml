@@ -23,17 +23,15 @@ jobs:
       - run: pip install -e .
       - name: Require separate scanner endpoints
         env:
-          FEED_URL: ${{ vars.OPPORTUNITY_SCANNER_FEED_URL }}
           PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
           ACTIVATION_DATE: ${{ vars.OPPORTUNITY_SCANNER_ACTIVATION_DATE }}
         run: |
-          test -n "$FEED_URL"
           test -n "$PUBLIC_BASE_URL"
           test -n "$ACTIVATION_DATE"
       - name: Fetch compact causal feed
         env:
-          FEED_URL: ${{ vars.OPPORTUNITY_SCANNER_FEED_URL }}
-        run: curl --fail --silent --show-error "$FEED_URL" --output scanner-feed.json
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+        run: curl --fail --silent --show-error "${PUBLIC_BASE_URL%/}/opportunity-scanner-feed.json" --output scanner-feed.json
       - name: Build append-only shadow journal
         env:
           PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}

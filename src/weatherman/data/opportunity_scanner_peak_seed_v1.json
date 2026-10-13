@@ -1,0 +1,1821 @@
+{
+  "airports": {
+    "EDDM": [
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-10"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-11"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-12"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-13"
+      },
+      {
+        "actual_first_peak_minute": 1010.0,
+        "eligible": true,
+        "target_date": "2026-08-14"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-15"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-08-16"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-08-17"
+      },
+      {
+        "actual_first_peak_minute": 1010.0,
+        "eligible": true,
+        "target_date": "2026-08-18"
+      },
+      {
+        "actual_first_peak_minute": 1040.0,
+        "eligible": true,
+        "target_date": "2026-08-19"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-08-20"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-08-21"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-08-22"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-23"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-08-24"
+      },
+      {
+        "actual_first_peak_minute": 1040.0,
+        "eligible": true,
+        "target_date": "2026-08-25"
+      },
+      {
+        "actual_first_peak_minute": 1010.0,
+        "eligible": true,
+        "target_date": "2026-08-26"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-27"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-08-28"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-08-29"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-30"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-31"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-01"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-02"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-03"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-04"
+      },
+      {
+        "actual_first_peak_minute": 1040.0,
+        "eligible": true,
+        "target_date": "2026-09-05"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-06"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-07"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-08"
+      },
+      {
+        "actual_first_peak_minute": 20.0,
+        "eligible": true,
+        "target_date": "2026-09-09"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-09-10"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-11"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-12"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-13"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-14"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-09-15"
+      },
+      {
+        "actual_first_peak_minute": 770.0,
+        "eligible": true,
+        "target_date": "2026-09-16"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-17"
+      },
+      {
+        "actual_first_peak_minute": 1040.0,
+        "eligible": true,
+        "target_date": "2026-09-18"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-19"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-20"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-21"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-22"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-23"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-24"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-25"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-26"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-27"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-28"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-29"
+      },
+      {
+        "actual_first_peak_minute": 1010.0,
+        "eligible": true,
+        "target_date": "2026-09-30"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-10-01"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-10-02"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-10-03"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-10-04"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-10-05"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-10-06"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-10-07"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-10-08"
+      }
+    ],
+    "EHAM": [
+      {
+        "actual_first_peak_minute": 865.0,
+        "eligible": true,
+        "target_date": "2026-08-02"
+      },
+      {
+        "actual_first_peak_minute": 925.0,
+        "eligible": true,
+        "target_date": "2026-08-03"
+      },
+      {
+        "actual_first_peak_minute": 925.0,
+        "eligible": true,
+        "target_date": "2026-08-04"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-08-05"
+      },
+      {
+        "actual_first_peak_minute": 715.0,
+        "eligible": true,
+        "target_date": "2026-08-06"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-08-07"
+      },
+      {
+        "actual_first_peak_minute": 985.0,
+        "eligible": true,
+        "target_date": "2026-08-08"
+      },
+      {
+        "actual_first_peak_minute": 955.0,
+        "eligible": true,
+        "target_date": "2026-08-09"
+      },
+      {
+        "actual_first_peak_minute": 625.0,
+        "eligible": true,
+        "target_date": "2026-08-10"
+      },
+      {
+        "actual_first_peak_minute": 925.0,
+        "eligible": true,
+        "target_date": "2026-08-11"
+      },
+      {
+        "actual_first_peak_minute": 985.0,
+        "eligible": true,
+        "target_date": "2026-08-12"
+      },
+      {
+        "actual_first_peak_minute": 1015.0,
+        "eligible": true,
+        "target_date": "2026-08-13"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-08-14"
+      },
+      {
+        "actual_first_peak_minute": 685.0,
+        "eligible": true,
+        "target_date": "2026-08-15"
+      },
+      {
+        "actual_first_peak_minute": 715.0,
+        "eligible": true,
+        "target_date": "2026-08-16"
+      },
+      {
+        "actual_first_peak_minute": 1015.0,
+        "eligible": true,
+        "target_date": "2026-08-17"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-08-18"
+      },
+      {
+        "actual_first_peak_minute": 985.0,
+        "eligible": true,
+        "target_date": "2026-08-19"
+      },
+      {
+        "actual_first_peak_minute": 985.0,
+        "eligible": true,
+        "target_date": "2026-08-20"
+      },
+      {
+        "actual_first_peak_minute": 745.0,
+        "eligible": true,
+        "target_date": "2026-08-21"
+      },
+      {
+        "actual_first_peak_minute": 775.0,
+        "eligible": true,
+        "target_date": "2026-08-22"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-08-23"
+      },
+      {
+        "actual_first_peak_minute": 895.0,
+        "eligible": true,
+        "target_date": "2026-08-24"
+      },
+      {
+        "actual_first_peak_minute": 925.0,
+        "eligible": true,
+        "target_date": "2026-08-25"
+      },
+      {
+        "actual_first_peak_minute": 1015.0,
+        "eligible": true,
+        "target_date": "2026-08-26"
+      },
+      {
+        "actual_first_peak_minute": 955.0,
+        "eligible": true,
+        "target_date": "2026-08-27"
+      },
+      {
+        "actual_first_peak_minute": 865.0,
+        "eligible": true,
+        "target_date": "2026-08-28"
+      },
+      {
+        "actual_first_peak_minute": 745.0,
+        "eligible": true,
+        "target_date": "2026-08-29"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-08-30"
+      },
+      {
+        "actual_first_peak_minute": 865.0,
+        "eligible": true,
+        "target_date": "2026-08-31"
+      },
+      {
+        "actual_first_peak_minute": 775.0,
+        "eligible": true,
+        "target_date": "2026-09-01"
+      },
+      {
+        "actual_first_peak_minute": 775.0,
+        "eligible": true,
+        "target_date": "2026-09-02"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-09-03"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-09-05"
+      },
+      {
+        "actual_first_peak_minute": 1015.0,
+        "eligible": true,
+        "target_date": "2026-09-06"
+      },
+      {
+        "actual_first_peak_minute": 775.0,
+        "eligible": true,
+        "target_date": "2026-09-07"
+      },
+      {
+        "actual_first_peak_minute": 25.0,
+        "eligible": true,
+        "target_date": "2026-09-08"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-09-12"
+      },
+      {
+        "actual_first_peak_minute": 985.0,
+        "eligible": true,
+        "target_date": "2026-09-14"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-09-15"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-09-16"
+      },
+      {
+        "actual_first_peak_minute": 685.0,
+        "eligible": true,
+        "target_date": "2026-09-18"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-09-19"
+      },
+      {
+        "actual_first_peak_minute": 25.0,
+        "eligible": true,
+        "target_date": "2026-09-20"
+      },
+      {
+        "actual_first_peak_minute": 865.0,
+        "eligible": true,
+        "target_date": "2026-09-22"
+      },
+      {
+        "actual_first_peak_minute": 775.0,
+        "eligible": true,
+        "target_date": "2026-09-24"
+      },
+      {
+        "actual_first_peak_minute": 955.0,
+        "eligible": true,
+        "target_date": "2026-09-25"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-09-26"
+      },
+      {
+        "actual_first_peak_minute": 1015.0,
+        "eligible": true,
+        "target_date": "2026-09-27"
+      },
+      {
+        "actual_first_peak_minute": 715.0,
+        "eligible": true,
+        "target_date": "2026-09-28"
+      },
+      {
+        "actual_first_peak_minute": 955.0,
+        "eligible": true,
+        "target_date": "2026-09-29"
+      },
+      {
+        "actual_first_peak_minute": 745.0,
+        "eligible": true,
+        "target_date": "2026-09-30"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-10-01"
+      },
+      {
+        "actual_first_peak_minute": 805.0,
+        "eligible": true,
+        "target_date": "2026-10-02"
+      },
+      {
+        "actual_first_peak_minute": 865.0,
+        "eligible": true,
+        "target_date": "2026-10-03"
+      },
+      {
+        "actual_first_peak_minute": 925.0,
+        "eligible": true,
+        "target_date": "2026-10-04"
+      },
+      {
+        "actual_first_peak_minute": 775.0,
+        "eligible": true,
+        "target_date": "2026-10-05"
+      },
+      {
+        "actual_first_peak_minute": 865.0,
+        "eligible": true,
+        "target_date": "2026-10-06"
+      },
+      {
+        "actual_first_peak_minute": 835.0,
+        "eligible": true,
+        "target_date": "2026-10-07"
+      },
+      {
+        "actual_first_peak_minute": 745.0,
+        "eligible": true,
+        "target_date": "2026-10-08"
+      }
+    ],
+    "EPWA": [
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-08-08"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-08-09"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-10"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-11"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-08-12"
+      },
+      {
+        "actual_first_peak_minute": 750.0,
+        "eligible": true,
+        "target_date": "2026-08-13"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-14"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-08-15"
+      },
+      {
+        "actual_first_peak_minute": 780.0,
+        "eligible": true,
+        "target_date": "2026-08-16"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-08-17"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-08-18"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-19"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-20"
+      },
+      {
+        "actual_first_peak_minute": 810.0,
+        "eligible": true,
+        "target_date": "2026-08-21"
+      },
+      {
+        "actual_first_peak_minute": 240.0,
+        "eligible": true,
+        "target_date": "2026-08-22"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-08-23"
+      },
+      {
+        "actual_first_peak_minute": 690.0,
+        "eligible": true,
+        "target_date": "2026-08-24"
+      },
+      {
+        "actual_first_peak_minute": 810.0,
+        "eligible": true,
+        "target_date": "2026-08-25"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-26"
+      },
+      {
+        "actual_first_peak_minute": 810.0,
+        "eligible": true,
+        "target_date": "2026-08-27"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-08-28"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-08-29"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-08-30"
+      },
+      {
+        "actual_first_peak_minute": 780.0,
+        "eligible": true,
+        "target_date": "2026-08-31"
+      },
+      {
+        "actual_first_peak_minute": 690.0,
+        "eligible": true,
+        "target_date": "2026-09-01"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-09-02"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-09-03"
+      },
+      {
+        "actual_first_peak_minute": 780.0,
+        "eligible": true,
+        "target_date": "2026-09-04"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-09-05"
+      },
+      {
+        "actual_first_peak_minute": 750.0,
+        "eligible": true,
+        "target_date": "2026-09-06"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-09-07"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-09-08"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-09-09"
+      },
+      {
+        "actual_first_peak_minute": 0.0,
+        "eligible": true,
+        "target_date": "2026-09-10"
+      },
+      {
+        "actual_first_peak_minute": 750.0,
+        "eligible": true,
+        "target_date": "2026-09-11"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-09-12"
+      },
+      {
+        "actual_first_peak_minute": 720.0,
+        "eligible": true,
+        "target_date": "2026-09-13"
+      },
+      {
+        "actual_first_peak_minute": 810.0,
+        "eligible": true,
+        "target_date": "2026-09-14"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-09-15"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-09-16"
+      },
+      {
+        "actual_first_peak_minute": 30.0,
+        "eligible": true,
+        "target_date": "2026-09-17"
+      },
+      {
+        "actual_first_peak_minute": 780.0,
+        "eligible": true,
+        "target_date": "2026-09-18"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-09-19"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-09-20"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-09-21"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-09-22"
+      },
+      {
+        "actual_first_peak_minute": 750.0,
+        "eligible": true,
+        "target_date": "2026-09-24"
+      },
+      {
+        "actual_first_peak_minute": 720.0,
+        "eligible": true,
+        "target_date": "2026-09-25"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-09-26"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-09-27"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-09-28"
+      },
+      {
+        "actual_first_peak_minute": 780.0,
+        "eligible": true,
+        "target_date": "2026-09-29"
+      },
+      {
+        "actual_first_peak_minute": 810.0,
+        "eligible": true,
+        "target_date": "2026-09-30"
+      },
+      {
+        "actual_first_peak_minute": 870.0,
+        "eligible": true,
+        "target_date": "2026-10-01"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-10-02"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-10-03"
+      },
+      {
+        "actual_first_peak_minute": 690.0,
+        "eligible": true,
+        "target_date": "2026-10-04"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-10-05"
+      },
+      {
+        "actual_first_peak_minute": 780.0,
+        "eligible": true,
+        "target_date": "2026-10-06"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-10-08"
+      }
+    ],
+    "LEMD": [
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-08"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-08-09"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-10"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-11"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-08-12"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-08-13"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-08-14"
+      },
+      {
+        "actual_first_peak_minute": 1140.0,
+        "eligible": true,
+        "target_date": "2026-08-15"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-08-16"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-08-17"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-18"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-19"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-08-20"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-08-21"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-22"
+      },
+      {
+        "actual_first_peak_minute": 1110.0,
+        "eligible": true,
+        "target_date": "2026-08-23"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-08-24"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-08-25"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-08-26"
+      },
+      {
+        "actual_first_peak_minute": 0.0,
+        "eligible": true,
+        "target_date": "2026-08-27"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-08-28"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-08-29"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-08-30"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-08-31"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-01"
+      },
+      {
+        "actual_first_peak_minute": 1110.0,
+        "eligible": true,
+        "target_date": "2026-09-02"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-09-03"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-09-04"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-09-05"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-09-06"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-09-07"
+      },
+      {
+        "actual_first_peak_minute": 930.0,
+        "eligible": true,
+        "target_date": "2026-09-08"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-09-09"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-09-10"
+      },
+      {
+        "actual_first_peak_minute": 1110.0,
+        "eligible": true,
+        "target_date": "2026-09-11"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-09-12"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-09-13"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-09-14"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-15"
+      },
+      {
+        "actual_first_peak_minute": 900.0,
+        "eligible": true,
+        "target_date": "2026-09-16"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-17"
+      },
+      {
+        "actual_first_peak_minute": 1050.0,
+        "eligible": true,
+        "target_date": "2026-09-18"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-19"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-20"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-09-21"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-09-22"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-24"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-25"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-09-26"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-09-27"
+      },
+      {
+        "actual_first_peak_minute": 0.0,
+        "eligible": true,
+        "target_date": "2026-09-28"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-29"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-09-30"
+      },
+      {
+        "actual_first_peak_minute": 990.0,
+        "eligible": true,
+        "target_date": "2026-10-01"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-10-02"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-10-03"
+      },
+      {
+        "actual_first_peak_minute": 1020.0,
+        "eligible": true,
+        "target_date": "2026-10-04"
+      },
+      {
+        "actual_first_peak_minute": 1080.0,
+        "eligible": true,
+        "target_date": "2026-10-05"
+      },
+      {
+        "actual_first_peak_minute": 960.0,
+        "eligible": true,
+        "target_date": "2026-10-06"
+      },
+      {
+        "actual_first_peak_minute": 840.0,
+        "eligible": true,
+        "target_date": "2026-10-08"
+      }
+    ],
+    "LTAC": [
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-08"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-09"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-08-10"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-11"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-12"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-13"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-14"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-08-15"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-16"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-08-17"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-18"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-19"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-08-20"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-21"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-22"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-08-23"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-24"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-25"
+      },
+      {
+        "actual_first_peak_minute": 1010.0,
+        "eligible": true,
+        "target_date": "2026-08-26"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-27"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-08-28"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-08-29"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-30"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-08-31"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-01"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-02"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-09-03"
+      },
+      {
+        "actual_first_peak_minute": 1010.0,
+        "eligible": true,
+        "target_date": "2026-09-04"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-05"
+      },
+      {
+        "actual_first_peak_minute": 1040.0,
+        "eligible": true,
+        "target_date": "2026-09-06"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-09-07"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-08"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-09"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-10"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-11"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-12"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-13"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-14"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-15"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-16"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-09-17"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-18"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-09-19"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-09-20"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-09-21"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-22"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-24"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-09-25"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-09-26"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-27"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-09-28"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-09-29"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-09-30"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-10-01"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-10-02"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-10-03"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-10-04"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-10-05"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-10-06"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-10-08"
+      }
+    ],
+    "LTFM": [
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-08-10"
+      },
+      {
+        "actual_first_peak_minute": 950.0,
+        "eligible": true,
+        "target_date": "2026-08-11"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-08-12"
+      },
+      {
+        "actual_first_peak_minute": 530.0,
+        "eligible": true,
+        "target_date": "2026-08-13"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-08-14"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-08-15"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-08-16"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-08-17"
+      },
+      {
+        "actual_first_peak_minute": 980.0,
+        "eligible": true,
+        "target_date": "2026-08-18"
+      },
+      {
+        "actual_first_peak_minute": 620.0,
+        "eligible": true,
+        "target_date": "2026-08-19"
+      },
+      {
+        "actual_first_peak_minute": 770.0,
+        "eligible": true,
+        "target_date": "2026-08-20"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-08-21"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-08-22"
+      },
+      {
+        "actual_first_peak_minute": 620.0,
+        "eligible": true,
+        "target_date": "2026-08-23"
+      },
+      {
+        "actual_first_peak_minute": 890.0,
+        "eligible": true,
+        "target_date": "2026-08-24"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-08-25"
+      },
+      {
+        "actual_first_peak_minute": 800.0,
+        "eligible": true,
+        "target_date": "2026-08-26"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-08-27"
+      },
+      {
+        "actual_first_peak_minute": 20.0,
+        "eligible": true,
+        "target_date": "2026-08-28"
+      },
+      {
+        "actual_first_peak_minute": 860.0,
+        "eligible": true,
+        "target_date": "2026-08-29"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-08-30"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-08-31"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-09-01"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-09-02"
+      },
+      {
+        "actual_first_peak_minute": 590.0,
+        "eligible": true,
+        "target_date": "2026-09-03"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-09-04"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-09-05"
+      },
+      {
+        "actual_first_peak_minute": 620.0,
+        "eligible": true,
+        "target_date": "2026-09-06"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-09-07"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-09-08"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-09-09"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-09-10"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-09-11"
+      },
+      {
+        "actual_first_peak_minute": 770.0,
+        "eligible": true,
+        "target_date": "2026-09-12"
+      },
+      {
+        "actual_first_peak_minute": 20.0,
+        "eligible": true,
+        "target_date": "2026-09-13"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-09-14"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-09-15"
+      },
+      {
+        "actual_first_peak_minute": 620.0,
+        "eligible": true,
+        "target_date": "2026-09-16"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-09-17"
+      },
+      {
+        "actual_first_peak_minute": 770.0,
+        "eligible": true,
+        "target_date": "2026-09-18"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-19"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-09-20"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-21"
+      },
+      {
+        "actual_first_peak_minute": 170.0,
+        "eligible": true,
+        "target_date": "2026-09-22"
+      },
+      {
+        "actual_first_peak_minute": 770.0,
+        "eligible": true,
+        "target_date": "2026-09-23"
+      },
+      {
+        "actual_first_peak_minute": 710.0,
+        "eligible": true,
+        "target_date": "2026-09-24"
+      },
+      {
+        "actual_first_peak_minute": 920.0,
+        "eligible": true,
+        "target_date": "2026-09-25"
+      },
+      {
+        "actual_first_peak_minute": 740.0,
+        "eligible": true,
+        "target_date": "2026-09-26"
+      },
+      {
+        "actual_first_peak_minute": 500.0,
+        "eligible": true,
+        "target_date": "2026-09-27"
+      },
+      {
+        "actual_first_peak_minute": 20.0,
+        "eligible": true,
+        "target_date": "2026-09-28"
+      },
+      {
+        "actual_first_peak_minute": 290.0,
+        "eligible": true,
+        "target_date": "2026-09-29"
+      },
+      {
+        "actual_first_peak_minute": 620.0,
+        "eligible": true,
+        "target_date": "2026-09-30"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-10-01"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-10-02"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-10-03"
+      },
+      {
+        "actual_first_peak_minute": 620.0,
+        "eligible": true,
+        "target_date": "2026-10-04"
+      },
+      {
+        "actual_first_peak_minute": 650.0,
+        "eligible": true,
+        "target_date": "2026-10-05"
+      },
+      {
+        "actual_first_peak_minute": 680.0,
+        "eligible": true,
+        "target_date": "2026-10-06"
+      },
+      {
+        "actual_first_peak_minute": 770.0,
+        "eligible": true,
+        "target_date": "2026-10-07"
+      },
+      {
+        "actual_first_peak_minute": 830.0,
+        "eligible": true,
+        "target_date": "2026-10-08"
+      }
+    ]
+  },
+  "automatic_backfill": false,
+  "frozen_at": "2026-10-08",
+  "method": "last 60 prior eligible uncorrected-METAR first-peak times from causal benchmark",
+  "research_only": true,
+  "schema_version": "opportunity_scanner_peak_seed_v1"
+}

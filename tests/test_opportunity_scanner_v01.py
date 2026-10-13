@@ -161,6 +161,19 @@ def test_operational_failure_is_not_reported_as_no_signal(tmp_path: Path) -> Non
     assert state["opportunity_status"] == "DATA UNAVAILABLE"
 
 
+def test_missed_checkpoint_never_persists_forward_oos_signal(tmp_path: Path) -> None:
+    forecast = lemd_forecast()
+    forecast["generated_at"] = "2026-10-12T18:00:00+00:00"
+    store = OpportunityStore(tmp_path / "scanner.db")
+    state = run_scanner_cycle(
+        forecasts=[forecast], peak_history={"LEMD": history(date(2026, 10, 12))},
+        markets=[market()], store=store,
+    )[0]
+    assert state["opportunity_status"] == "DATA UNAVAILABLE"
+    assert "checkpoint_missed" in state["opportunity_reason_codes"]
+    assert store.journal()["opportunity_signals"] == []
+
+
 def test_portfolio_and_funnel_keep_forward_evidence_separate(tmp_path: Path) -> None:
     store = OpportunityStore(tmp_path / "scanner.db")
     run_scanner_cycle(forecasts=[lemd_forecast()], peak_history={"LEMD": history(date(2026, 10, 12))},

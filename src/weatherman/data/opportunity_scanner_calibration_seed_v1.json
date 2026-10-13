@@ -1,0 +1,508 @@
+{
+  "airports": {
+    "EDDM": {
+      "bias_c": {
+        "ecmwf_ifs025": -2.0,
+        "gfs_global": -1.6500000000000004,
+        "icon_global": -1.1000000000000014
+      },
+      "calibration_cutoff_date": "2026-10-08",
+      "calibration_days": 90,
+      "model_mae_c": {
+        "ecmwf_ifs025": 0.9455555555555554,
+        "gfs_global": 1.12,
+        "icon_global": 0.842222222222222
+      },
+      "model_weights": {
+        "ecmwf_ifs025": 0.3370479017878806,
+        "gfs_global": 0.2845513535927443,
+        "icon_global": 0.3784007446193751
+      },
+      "recent_actual_maxima_c": [
+        {
+          "max_temp_c": 17.0,
+          "target_date": "2026-09-24"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-09-25"
+        },
+        {
+          "max_temp_c": 24.0,
+          "target_date": "2026-09-26"
+        },
+        {
+          "max_temp_c": 24.0,
+          "target_date": "2026-09-27"
+        },
+        {
+          "max_temp_c": 26.0,
+          "target_date": "2026-09-28"
+        },
+        {
+          "max_temp_c": 24.0,
+          "target_date": "2026-09-29"
+        },
+        {
+          "max_temp_c": 25.0,
+          "target_date": "2026-09-30"
+        },
+        {
+          "max_temp_c": 24.0,
+          "target_date": "2026-10-01"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-10-02"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-03"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-04"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-05"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-06"
+        },
+        {
+          "max_temp_c": 24.0,
+          "target_date": "2026-10-07"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-08"
+        }
+      ],
+      "sigma_c": 0.8317861557025001,
+      "source_sha256": "4feb4db9b8372682bed45057f0b59f135715e45ca37c6b080b9d713ac7519b17"
+    },
+    "EHAM": {
+      "bias_c": {
+        "ecmwf_ifs025": -1.25,
+        "gfs_global": 0.10000000000000142,
+        "icon_global": -0.5500000000000007
+      },
+      "calibration_cutoff_date": "2026-10-08",
+      "calibration_days": 90,
+      "model_mae_c": {
+        "ecmwf_ifs025": 0.7744444444444444,
+        "gfs_global": 1.181111111111111,
+        "icon_global": 0.9522222222222224
+      },
+      "model_weights": {
+        "ecmwf_ifs025": 0.40502331685807286,
+        "gfs_global": 0.26557032158991234,
+        "icon_global": 0.32940636155201486
+      },
+      "recent_actual_maxima_c": [
+        {
+          "max_temp_c": 18.0,
+          "target_date": "2026-09-24"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-09-25"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-09-26"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-27"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-28"
+        },
+        {
+          "max_temp_c": 25.0,
+          "target_date": "2026-09-29"
+        },
+        {
+          "max_temp_c": 23.0,
+          "target_date": "2026-09-30"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-10-01"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-02"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-03"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-04"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-05"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-10-06"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-07"
+        },
+        {
+          "max_temp_c": 15.0,
+          "target_date": "2026-10-08"
+        }
+      ],
+      "sigma_c": 0.8615150608616253,
+      "source_sha256": "30367a98c8c7fdca4f5ebef04612433a4dcf27cf33d96014a82763af486c9618"
+    },
+    "EPWA": {
+      "bias_c": {
+        "ecmwf_ifs025": -0.5500000000000007,
+        "gfs_global": 1.0500000000000007,
+        "icon_global": -0.05000000000000071
+      },
+      "calibration_cutoff_date": "2026-10-08",
+      "calibration_days": 90,
+      "model_mae_c": {
+        "ecmwf_ifs025": 0.9222222222222226,
+        "gfs_global": 0.9055555555555557,
+        "icon_global": 0.7300000000000002
+      },
+      "model_weights": {
+        "ecmwf_ifs025": 0.3047179770261464,
+        "gfs_global": 0.3103262833517811,
+        "icon_global": 0.3849557396220724
+      },
+      "recent_actual_maxima_c": [
+        {
+          "max_temp_c": 17.0,
+          "target_date": "2026-09-22"
+        },
+        {
+          "max_temp_c": 14.0,
+          "target_date": "2026-09-24"
+        },
+        {
+          "max_temp_c": 16.0,
+          "target_date": "2026-09-25"
+        },
+        {
+          "max_temp_c": 16.0,
+          "target_date": "2026-09-26"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-09-27"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-28"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-29"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-30"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-10-01"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-10-02"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-03"
+        },
+        {
+          "max_temp_c": 18.0,
+          "target_date": "2026-10-04"
+        },
+        {
+          "max_temp_c": 18.0,
+          "target_date": "2026-10-05"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-10-06"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-08"
+        }
+      ],
+      "sigma_c": 0.708341490150529,
+      "source_sha256": "4263917cf7a9f0ae59266048e7d152bba2728a007b864bbb0a9817b149a5d973"
+    },
+    "LEMD": {
+      "bias_c": {
+        "ecmwf_ifs025": -0.5,
+        "gfs_global": -0.6000000000000014,
+        "icon_global": -0.8999999999999986
+      },
+      "calibration_cutoff_date": "2026-10-08",
+      "calibration_days": 90,
+      "model_mae_c": {
+        "ecmwf_ifs025": 0.5644444444444444,
+        "gfs_global": 0.7166666666666667,
+        "icon_global": 0.6866666666666669
+      },
+      "model_weights": {
+        "ecmwf_ifs025": 0.383199995385565,
+        "gfs_global": 0.301807128148631,
+        "icon_global": 0.3149928764658041
+      },
+      "recent_actual_maxima_c": [
+        {
+          "max_temp_c": 34.0,
+          "target_date": "2026-09-22"
+        },
+        {
+          "max_temp_c": 35.0,
+          "target_date": "2026-09-24"
+        },
+        {
+          "max_temp_c": 35.0,
+          "target_date": "2026-09-25"
+        },
+        {
+          "max_temp_c": 34.0,
+          "target_date": "2026-09-26"
+        },
+        {
+          "max_temp_c": 31.0,
+          "target_date": "2026-09-27"
+        },
+        {
+          "max_temp_c": 26.0,
+          "target_date": "2026-09-28"
+        },
+        {
+          "max_temp_c": 26.0,
+          "target_date": "2026-09-29"
+        },
+        {
+          "max_temp_c": 29.0,
+          "target_date": "2026-09-30"
+        },
+        {
+          "max_temp_c": 29.0,
+          "target_date": "2026-10-01"
+        },
+        {
+          "max_temp_c": 25.0,
+          "target_date": "2026-10-02"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-03"
+        },
+        {
+          "max_temp_c": 24.0,
+          "target_date": "2026-10-04"
+        },
+        {
+          "max_temp_c": 26.0,
+          "target_date": "2026-10-05"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-06"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-08"
+        }
+      ],
+      "sigma_c": 0.66405156142339,
+      "source_sha256": "10191cd22364ea2140691ad84e22e3bc0ddb73b7772b520c91822c74b9d73af8"
+    },
+    "LTAC": {
+      "bias_c": {
+        "ecmwf_ifs025": -0.6999999999999993,
+        "gfs_global": -0.8999999999999986,
+        "icon_global": -1.0
+      },
+      "calibration_cutoff_date": "2026-10-08",
+      "calibration_days": 90,
+      "model_mae_c": {
+        "ecmwf_ifs025": 0.8388888888888889,
+        "gfs_global": 0.66,
+        "icon_global": 0.6188888888888889
+      },
+      "model_weights": {
+        "ecmwf_ifs025": 0.2757464810565873,
+        "gfs_global": 0.3504858471342145,
+        "icon_global": 0.3737676718091982
+      },
+      "recent_actual_maxima_c": [
+        {
+          "max_temp_c": 26.0,
+          "target_date": "2026-09-22"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-09-24"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-09-25"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-26"
+        },
+        {
+          "max_temp_c": 23.0,
+          "target_date": "2026-09-27"
+        },
+        {
+          "max_temp_c": 16.0,
+          "target_date": "2026-09-28"
+        },
+        {
+          "max_temp_c": 16.0,
+          "target_date": "2026-09-29"
+        },
+        {
+          "max_temp_c": 16.0,
+          "target_date": "2026-09-30"
+        },
+        {
+          "max_temp_c": 17.0,
+          "target_date": "2026-10-01"
+        },
+        {
+          "max_temp_c": 18.0,
+          "target_date": "2026-10-02"
+        },
+        {
+          "max_temp_c": 17.0,
+          "target_date": "2026-10-03"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-10-04"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-05"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-10-06"
+        },
+        {
+          "max_temp_c": 23.0,
+          "target_date": "2026-10-08"
+        }
+      ],
+      "sigma_c": 0.65,
+      "source_sha256": "73269326c664d67e4889549f138f232cc242652d46872394eeb32cfa4b0ccbaf"
+    },
+    "LTFM": {
+      "bias_c": {
+        "ecmwf_ifs025": -0.3999999999999986,
+        "gfs_global": 1.3000000000000007,
+        "icon_global": -0.3999999999999986
+      },
+      "calibration_cutoff_date": "2026-10-08",
+      "calibration_days": 90,
+      "model_mae_c": {
+        "ecmwf_ifs025": 0.587777777777778,
+        "gfs_global": 0.9044444444444444,
+        "icon_global": 0.51
+      },
+      "model_weights": {
+        "ecmwf_ifs025": 0.35683921290720627,
+        "gfs_global": 0.23190165064854076,
+        "icon_global": 0.41125913644425305
+      },
+      "recent_actual_maxima_c": [
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-09-24"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-25"
+        },
+        {
+          "max_temp_c": 23.0,
+          "target_date": "2026-09-26"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-27"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-09-28"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-09-29"
+        },
+        {
+          "max_temp_c": 21.0,
+          "target_date": "2026-09-30"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-01"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-02"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-10-03"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-10-04"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-10-05"
+        },
+        {
+          "max_temp_c": 19.0,
+          "target_date": "2026-10-06"
+        },
+        {
+          "max_temp_c": 20.0,
+          "target_date": "2026-10-07"
+        },
+        {
+          "max_temp_c": 22.0,
+          "target_date": "2026-10-08"
+        }
+      ],
+      "sigma_c": 0.7146249987852993,
+      "source_sha256": "00d9cca36b156f1be059e89f4b0d07096ab9d4c8004874535c61c6a591ce53ce"
+    }
+  },
+  "automatic_execution": false,
+  "automatic_promotion": false,
+  "frozen_at": "2026-10-08",
+  "method": "fixed sequential-OOS seed from final causal pre-peak benchmark rows; no Production DB",
+  "research_only": true,
+  "schema_version": "opportunity_scanner_calibration_seed_v1"
+}
