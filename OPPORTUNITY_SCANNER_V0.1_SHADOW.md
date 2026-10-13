@@ -21,9 +21,12 @@ Sie verändert weder die Madrid Forecast Engine noch Madrid-Daten oder Productio
 | `opportunity_scanner.py` | Rule-Hash, kausale Peak-Zeit, Frozen Rule Matching, Status/Edge/P&L |
 | `opportunity_portfolio.py` | Scanner-Zyklus, Portfolio, Funnel, Forward-Metriken |
 | `opportunity_store.py` | separate append-only SQLite-Shadow-Persistenz |
-| `scripts/run_opportunity_scanner.py` | feed-basierter, Production-isolierter Collector |
-| `opportunity-scanner-worker/` | eigener KV-Publisher mit Append-only-Prüfung |
-| `.github/workflows/opportunity-scanner-shadow.yml` | 10-Minuten-Shadow-Lauf |
+| `opportunity_feed.py` | kausaler Live-Feed aus Common Models, METAR und Market Quotes |
+| `scripts/build_opportunity_scanner_feed.py` | sechs Airports erfassen, ohne Datenbankzugriff |
+| `scripts/run_opportunity_scanner.py` | Feed auswerten und separates Shadow-Journal bauen |
+| `opportunity-scanner-worker/` | KV-Publisher für Feed und append-only Journal |
+| `.github/workflows/opportunity-scanner-feed.yml` | manueller Feed-Aufbau vor Aktivierung |
+| `.github/workflows/opportunity-scanner-shadow.yml` | manueller Shadow-Lauf vor Aktivierung |
 
 ## Frozen Inputs
 
@@ -40,6 +43,13 @@ Der Scanner liest keine Forecast-Historie aus Production. Ein separater Publishe
 liefert nur aktuelle kausale Snapshots, maximal 60 valide frühere Peak-Zeiten je Airport
 und aktuelle Marktquotes. `schema_version` ist `opportunity_scanner_feed_v1` und
 `contains_outcomes` muss `false` sein.
+
+Die Forecast-Seite verwendet exakt die drei Common Models bei festem 24-Stunden-Lead
+aus Open-Meteo Previous Runs. Bias, inverse-MAE-Gewichte und Sigma stammen aus dem
+abgeschlossenen kausalen Benchmark und sind mit Cutoff 8. Oktober 2026 eingefroren.
+Die erwartete Peak-Zeit verwendet ausschließlich frühere Tage. Ein verpasstes
+Checkpoint-Fenster oder eine unvollständige Common-Model-Menge darf kein unveränderliches
+Forward-OOS-Signal erzeugen.
 
 Outcome-Felder werden im Live-Feed abgewiesen. Resolutionen kommen ausschließlich über
 ein separates `opportunity_scanner_resolution_feed_v1` und müssen eine offizielle
@@ -61,8 +71,8 @@ Trigger lautet der Status NO SIGNAL. `DATA UNAVAILABLE` wird in der App separat 
 Vor dem ersten Forward-Lauf müssen gesetzt und fachlich geprüft sein:
 
 1. separater Cloudflare-KV-Namespace und Worker-Secret `PUBLISH_TOKEN`;
-2. GitHub-Variablen `OPPORTUNITY_SCANNER_FEED_URL`,
-   `OPPORTUNITY_SCANNER_PUBLIC_BASE_URL`, `OPPORTUNITY_SCANNER_ACTIVATION_DATE`;
+2. GitHub-Variablen `OPPORTUNITY_SCANNER_PUBLIC_BASE_URL` und
+   `OPPORTUNITY_SCANNER_ACTIVATION_DATE`;
 3. Secret `OPPORTUNITY_SCANNER_PUBLISH_TOKEN`;
 4. Streamlit-Variable `OPPORTUNITY_SCANNER_JOURNAL_URL`;
 5. Market Mapping und Bid/Ask-Semantik jedes Airports;
@@ -70,3 +80,15 @@ Vor dem ersten Forward-Lauf müssen gesetzt und fachlich geprüft sein:
 
 Ohne diese Aktivierungswerte scheitert der Workflow geschlossen; er erzeugt weder
 NO SIGNAL noch rückwirkende Shadow Evidence.
+
+## Kontrollierter erster Lauf
+
+1. Worker aus `opportunity-scanner-worker/` erneut deployen, damit Feed-Route und
+   Journal-Route denselben dedizierten KV verwenden.
+2. GitHub Action **13 - Build opportunity scanner causal feed** manuell starten.
+3. `.../opportunity-scanner-feed.json` auf sechs Forecasts,
+   `contains_outcomes=false` und `writes_production_database=false` prüfen.
+4. Erst danach ein fachlich gewähltes `OPPORTUNITY_SCANNER_ACTIVATION_DATE` setzen.
+5. GitHub Action **14 - Cross-airport Opportunity Scanner shadow** manuell starten.
+6. Journal und App prüfen. Eine Zeitplanung wird erst nach diesem Test ausdrücklich
+   aktiviert; beide Workflows bleiben bis dahin `workflow_dispatch`-only.

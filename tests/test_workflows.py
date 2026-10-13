@@ -130,3 +130,26 @@ def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials
     assert "AEMET PHYSICAL OBSERVATIONS — NOT MARKET RESOLUTION" in worker
     assert "DATABASE_URL" not in worker
     assert "METEOBLUE_API_KEY" not in worker
+
+
+def test_opportunity_feed_is_manual_separate_and_never_reads_production_neon() -> None:
+    source = workflow("opportunity-scanner-feed.yml")
+    script = (ROOT / "scripts" / "build_opportunity_scanner_feed.py").read_text(
+        encoding="utf-8"
+    )
+    assert "workflow_dispatch" in source
+    assert "schedule:" not in source
+    assert "build_opportunity_scanner_feed.py" in source
+    assert "/internal/publish-feed" in source
+    assert "OPPORTUNITY_SCANNER_PUBLISH_TOKEN" in source
+    assert "DATABASE_URL" not in source + script
+    assert "secrets.DATABASE_URL" not in source
+
+
+def test_opportunity_shadow_consumes_its_worker_feed_and_stays_manual() -> None:
+    source = workflow("opportunity-scanner-shadow.yml")
+    assert "workflow_dispatch" in source
+    assert "schedule:" not in source
+    assert 'opportunity-scanner-feed.json" --output scanner-feed.json' in source
+    assert "OPPORTUNITY_SCANNER_ACTIVATION_DATE" in source
+    assert "secrets.DATABASE_URL" not in source

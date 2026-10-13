@@ -59,6 +59,14 @@ def run_scanner_cycle(
         peak = expected_peak_time(peak_history.get(airport, []), target, airports[airport]["timezone"])
         forecast["expected_peak"] = peak
         forecast["data_quality_warnings"] = _causal_warnings(forecast, peak)
+        # A frozen rule is defined at one causal checkpoint.  Persisting a rule
+        # match from a different time (or from an incomplete three-model set)
+        # would create irreparable false forward-OOS evidence.
+        selector_blockers = {"checkpoint_missed", "missing_model", "insufficient_calibration_history"}
+        if selector_blockers.intersection(forecast["data_quality_warnings"]):
+            states.append({**no_signal_record(forecast), "forecast": forecast,
+                           "next_checkpoint": _next_checkpoint(peak)})
+            continue
         rules = matching_rules(forecast)
         if not rules:
             states.append({**no_signal_record(forecast), "forecast": forecast,

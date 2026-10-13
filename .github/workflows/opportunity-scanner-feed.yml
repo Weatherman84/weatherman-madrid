@@ -1,0 +1,59 @@
+name: 13 - Build opportunity scanner causal feed
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opportunity-scanner-feed-v1
+  cancel-in-progress: false
+
+jobs:
+  build-feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Require separate scanner Worker
+        env:
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+          PUBLISH_TOKEN: ${{ secrets.OPPORTUNITY_SCANNER_PUBLISH_TOKEN }}
+        run: |
+          test -n "$PUBLIC_BASE_URL"
+          test -n "$PUBLISH_TOKEN"
+      - name: Build causal six-airport feed
+        env:
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+        run: |
+          python scripts/build_opportunity_scanner_feed.py \
+            --existing-url "${PUBLIC_BASE_URL%/}/opportunity-scanner-feed.json" \
+            --output opportunity-scanner-feed.json
+      - name: Validate and publish separate feed
+        env:
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+          PUBLISH_TOKEN: ${{ secrets.OPPORTUNITY_SCANNER_PUBLISH_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json
+          from weatherman.opportunity_feed import validate_live_feed
+          payload=json.load(open("opportunity-scanner-feed.json", encoding="utf-8"))
+          validate_live_feed(payload)
+          assert len(payload["forecasts"]) == 6
+          PY
+          curl --fail --silent --show-error -X POST "${PUBLIC_BASE_URL%/}/internal/publish-feed" \
+            -H "Authorization: Bearer ${PUBLISH_TOKEN}" -H "Content-Type: application/json" \
+            --data-binary @opportunity-scanner-feed.json --output feed-publication.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opportunity-scanner-feed-${{ github.run_id }}
+          path: |
+            opportunity-scanner-feed.json
+            feed-publication.json
+          retention-days: 14
