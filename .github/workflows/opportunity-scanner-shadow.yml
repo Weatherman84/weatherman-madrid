@@ -2,6 +2,9 @@ name: 14 - Cross-airport Opportunity Scanner shadow
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["13 - Build opportunity scanner causal feed"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -12,6 +15,7 @@ concurrency:
 
 jobs:
   scan:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
