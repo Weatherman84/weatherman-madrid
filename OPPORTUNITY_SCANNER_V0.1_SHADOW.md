@@ -25,8 +25,8 @@ Sie verändert weder die Madrid Forecast Engine noch Madrid-Daten oder Productio
 | `scripts/build_opportunity_scanner_feed.py` | sechs Airports erfassen, ohne Datenbankzugriff |
 | `scripts/run_opportunity_scanner.py` | Feed auswerten und separates Shadow-Journal bauen |
 | `opportunity-scanner-worker/` | KV-Publisher für Feed und append-only Journal |
-| `.github/workflows/opportunity-scanner-feed.yml` | manueller Feed-Aufbau vor Aktivierung |
-| `.github/workflows/opportunity-scanner-shadow.yml` | manueller Shadow-Lauf vor Aktivierung |
+| `.github/workflows/opportunity-scanner-feed.yml` | kausaler Feed-Aufbau manuell oder im kontrollierten Forward-Clock |
+| `.github/workflows/opportunity-scanner-shadow.yml` | Shadow-Lauf manuell oder nach erfolgreichem Feed-Lauf |
 
 ## Frozen Inputs
 
@@ -90,5 +90,14 @@ NO SIGNAL noch rückwirkende Shadow Evidence.
    `contains_outcomes=false` und `writes_production_database=false` prüfen.
 4. Erst danach ein fachlich gewähltes `OPPORTUNITY_SCANNER_ACTIVATION_DATE` setzen.
 5. GitHub Action **14 - Cross-airport Opportunity Scanner shadow** manuell starten.
-6. Journal und App prüfen. Eine Zeitplanung wird erst nach diesem Test ausdrücklich
-   aktiviert; beide Workflows bleiben bis dahin `workflow_dispatch`-only.
+6. Journal und App prüfen.
+
+## Aktivierter Forward-Clock
+
+Der kontrollierte Erstlauf wurde am 14. Oktober 2026 erfolgreich abgeschlossen. Workflow 13
+läuft täglich von 06:07 bis 15:52 UTC im 15-Minuten-Raster
+(`7,22,37,52 6-15 * * *`). Das Fenster deckt die eingefrorenen W60-Checkpoints der sechs
+Airports einschließlich Sommer-/Winterzeit ab. Workflow 14 startet nur nach einem
+erfolgreich abgeschlossenen Workflow 13; fehlgeschlagene Feed-Läufe werden nicht
+weiterverarbeitet. Beide Workflows behalten zusätzlich `workflow_dispatch` für
+kontrollierte manuelle Prüfungen.
