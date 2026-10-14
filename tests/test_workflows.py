@@ -132,13 +132,13 @@ def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials
     assert "METEOBLUE_API_KEY" not in worker
 
 
-def test_opportunity_feed_is_manual_separate_and_never_reads_production_neon() -> None:
+def test_opportunity_feed_is_scheduled_separate_and_never_reads_production_neon() -> None:
     source = workflow("opportunity-scanner-feed.yml")
     script = (ROOT / "scripts" / "build_opportunity_scanner_feed.py").read_text(
         encoding="utf-8"
     )
     assert "workflow_dispatch" in source
-    assert "schedule:" not in source
+    assert 'cron: "7,22,37,52 6-15 * * *"' in source
     assert "build_opportunity_scanner_feed.py" in source
     assert "/internal/publish-feed" in source
     assert "OPPORTUNITY_SCANNER_PUBLISH_TOKEN" in source
@@ -146,9 +146,12 @@ def test_opportunity_feed_is_manual_separate_and_never_reads_production_neon() -
     assert "secrets.DATABASE_URL" not in source
 
 
-def test_opportunity_shadow_consumes_its_worker_feed_and_stays_manual() -> None:
+def test_opportunity_shadow_only_follows_a_successful_worker_feed() -> None:
     source = workflow("opportunity-scanner-shadow.yml")
     assert "workflow_dispatch" in source
+    assert "workflow_run:" in source
+    assert 'workflows: ["13 - Build opportunity scanner causal feed"]' in source
+    assert "github.event.workflow_run.conclusion == 'success'" in source
     assert "schedule:" not in source
     assert 'opportunity-scanner-feed.json" --output scanner-feed.json' in source
     assert "OPPORTUNITY_SCANNER_ACTIVATION_DATE" in source
