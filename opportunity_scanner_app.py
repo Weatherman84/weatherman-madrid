@@ -166,7 +166,11 @@ elif page == "Frozen Rules":
     c2.write("Forward Shadow Evidence")
     c2.json({**forward, "trigger_count": len(triggers), "market_match_count": sum(row["signal_id"] in market_ids for row in triggers)})
     with st.expander("12 HC-C research-display rules"):
-        st.dataframe(pd.DataFrame(load_display_rules()), hide_index=True, width="stretch")
+        display_rules = pd.DataFrame(load_display_rules())
+        display_rules["selector_conditions"] = display_rules["selector_conditions"].map(
+            lambda value: __import__("json").dumps(value, ensure_ascii=False, sort_keys=True)
+        )
+        st.dataframe(display_rules, hide_index=True, width="stretch")
 
 else:
     st.subheader("Scanner Health")
