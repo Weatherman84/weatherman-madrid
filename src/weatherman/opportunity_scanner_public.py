@@ -1,10 +1,37 @@
 """Bounded reader for a published Opportunity Scanner shadow journal."""
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Mapping
+from zoneinfo import ZoneInfo
 
 import httpx
 import streamlit as st
+
+
+def is_current_target_state(
+    state: Mapping[str, Any], zone_name: str, *, now: datetime | None = None,
+) -> bool:
+    """Return whether a state belongs to the airport's current local target date."""
+    forecast = state.get("forecast") or {}
+    target_date = state.get("target_date") or forecast.get("target_date")
+    if not target_date:
+        return False
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    local_date = current.astimezone(ZoneInfo(zone_name)).date().isoformat()
+    return str(target_date)[:10] == local_date
+
+
+def is_relevant_display_state(
+    state: Mapping[str, Any], zone_name: str, *, now: datetime | None = None,
+) -> bool:
+    """Hide forecast evidence when the current-day state is operationally unavailable."""
+    return (
+        is_current_target_state(state, zone_name, now=now)
+        and state.get("opportunity_status") != "DATA UNAVAILABLE"
+    )
 
 
 @st.cache_data(ttl=180, max_entries=2, show_spinner=False)
