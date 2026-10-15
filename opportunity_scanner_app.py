@@ -18,9 +18,7 @@ import streamlit as st
 from weatherman.opportunity_scanner import (
     APP_NAME, APP_VERSION, load_airport_config, load_display_rules, load_rule_pack,
 )
-from weatherman.opportunity_scanner_public import (
-    fetch_opportunity_scanner_journal, is_current_target_state, is_relevant_display_state,
-)
+from weatherman.opportunity_scanner_public import fetch_opportunity_scanner_journal
 
 
 st.set_page_config(page_title=f"{APP_NAME} · {APP_VERSION}", page_icon="🔭", layout="wide")
@@ -40,6 +38,22 @@ def _status_icon(status: str) -> str:
     return {"HIGH INTEREST": "🟢", "WATCH": "🟡", "NO TRADE": "🔴", "NO SIGNAL": "⚪"}.get(status, "⚠️")
 
 
+def __is_current_target_state(state: dict, zone_name: str, *, now: datetime) -> bool:
+    forecast = state.get("forecast") or {}
+    target_date = state.get("target_date") or forecast.get("target_date")
+    if not target_date:
+        return False
+    local_date = now.astimezone(ZoneInfo(zone_name)).date().isoformat()
+    return str(target_date)[:10] == local_date
+
+
+def __is_relevant_display_state(state: dict, zone_name: str, *, now: datetime) -> bool:
+    return (
+        __is_current_target_state(state, zone_name, now=now)
+        and state.get("opportunity_status") != "DATA UNAVAILABLE"
+    )
+
+
 @st.cache_data(show_spinner=False)
 def _local_payload(path: str) -> dict:
     try:
@@ -57,11 +71,11 @@ states = {row["airport"]: row for row in payload.get("airport_states", [])}
 now = datetime.now(timezone.utc)
 today_states = {
     code: state for code, state in states.items()
-    if code in airports and is_current_target_state(state, airports[code]["timezone"], now=now)
+    if code in airports and _is_current_target_state(state, airports[code]["timezone"], now=now)
 }
 display_states = {
     code: state for code, state in today_states.items()
-    if is_relevant_display_state(state, airports[code]["timezone"], now=now)
+    if _is_relevant_display_state(state, airports[code]["timezone"], now=now)
 }
 page = st.sidebar.radio("View", ["Today's Opportunities", "Shadow Evidence", "Frozen Rules", "Health"])
 
