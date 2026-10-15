@@ -7,8 +7,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 SRC = Path(__file__).resolve().parent / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+src_path = str(SRC)
+if src_path in sys.path:
+    sys.path.remove(src_path)
+sys.path.insert(0, src_path)
 
 import pandas as pd
 import streamlit as st
