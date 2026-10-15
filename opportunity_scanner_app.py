@@ -16,7 +16,9 @@ import streamlit as st
 from weatherman.opportunity_scanner import (
     APP_NAME, APP_VERSION, load_airport_config, load_display_rules, load_rule_pack,
 )
-from weatherman.opportunity_scanner_public import fetch_opportunity_scanner_journal
+from weatherman.opportunity_scanner_public import (
+    fetch_opportunity_scanner_journal, is_current_target_state, is_relevant_display_state,
+)
 
 
 st.set_page_config(page_title=f"{APP_NAME} · {APP_VERSION}", page_icon="🔭", layout="wide")
@@ -50,13 +52,22 @@ payload = fetch_opportunity_scanner_journal(url) if url else (_local_payload(loc
 airports = load_airport_config()["airports"]
 rule_pack = load_rule_pack()
 states = {row["airport"]: row for row in payload.get("airport_states", [])}
+now = datetime.now(timezone.utc)
+today_states = {
+    code: state for code, state in states.items()
+    if code in airports and is_current_target_state(state, airports[code]["timezone"], now=now)
+}
+display_states = {
+    code: state for code, state in today_states.items()
+    if is_relevant_display_state(state, airports[code]["timezone"], now=now)
+}
 page = st.sidebar.radio("View", ["Today's Opportunities", "Shadow Evidence", "Frozen Rules", "Health"])
 
 if not payload:
     st.warning("No validated scanner journal is available. This is operationally distinct from NO SIGNAL.")
 
 if page == "Today's Opportunities":
-    active = [row for row in states.values() if row.get("rule_triggered")]
+    active = [row for row in display_states.values() if row.get("rule_triggered")]
     high = [row for row in active if row.get("opportunity_status") == "HIGH INTEREST"]
     watch = [row for row in active if row.get("opportunity_status") == "WATCH"]
     best = sorted(active, key=lambda row: ({"HIGH INTEREST": 3, "WATCH": 2, "NO TRADE": 1}.get(row.get("opportunity_status"), 0),
@@ -66,31 +77,31 @@ if page == "Today's Opportunities":
     cols[0].metric("Active Opportunities", len(active))
     cols[1].metric("HIGH INTEREST", len(high))
     cols[2].metric("WATCH", len(watch))
-    cols[3].metric("Next Signal Window", min((row.get("next_checkpoint") for row in states.values() if row.get("next_checkpoint")), default="—"))
+    cols[3].metric("Next Signal Window", min((row.get("next_checkpoint") for row in today_states.values() if row.get("next_checkpoint")), default="—"))
     cols[4].metric("Best Opportunity Today", best[0]["airport"] if best else "—")
     st.subheader("Six-Airport Scanner")
     rows = []
-    now = datetime.now(timezone.utc)
     for code, config in airports.items():
-        state = states.get(code, {})
-        forecast = state.get("forecast", {})
+        state = today_states.get(code, {})
+        display_state = display_states.get(code, {})
+        forecast = display_state.get("forecast", {})
         peak = forecast.get("expected_peak") or {}
-        forward = forward_by_rule.get(state.get("rule_id"), {})
-        status = state.get("opportunity_status", "DATA UNAVAILABLE" if not state else "NO SIGNAL")
+        forward = forward_by_rule.get(display_state.get("rule_id"), {})
+        status = state.get("opportunity_status", "DATA UNAVAILABLE")
         rows.append({
             "Airport": code, "Local time": now.astimezone(ZoneInfo(config["timezone"])).strftime("%d.%m. %H:%M"),
-            "Status": f"{_status_icon(status)} {status}", "Rule": state.get("rule_id") or "—",
-            "Checkpoint": state.get("checkpoint") or "—", "Current": _temp(forecast.get("current_temperature_c")),
+            "Status": f"{_status_icon(status)} {status}", "Rule": display_state.get("rule_id") or "—",
+            "Checkpoint": display_state.get("checkpoint") or "—", "Current": _temp(forecast.get("current_temperature_c")),
             "Center": _temp(forecast.get("forecast_center_c")), "Bucket": forecast.get("modal_bucket", "—"),
             "Top1": _pct(forecast.get("top1_probability")), "Gap": _pct(forecast.get("top1_top2_gap")),
             "Top2": f"{forecast.get('top2_bucket', '—')} · {_pct(forecast.get('top2_probability'))}",
-            "Spread": _temp(forecast.get("model_spread_c")), "Market": _pct(state.get("best_ask")),
-            "Edge": _pct(state.get("conservative_rule_edge")),
+            "Spread": _temp(forecast.get("model_spread_c")), "Market": _pct(display_state.get("best_ask")),
+            "Edge": _pct(display_state.get("conservative_rule_edge")),
             "Expected peak": peak.get("expected_peak_local") or "—",
             "Regimes": ", ".join(forecast.get("regimes", [])) or "—",
-            "HC": state.get("hc_class") or "—",
-            "Historical N / Acc": (f"{state['historical_rule_evidence']['validation_n']} / {_pct(state['historical_rule_evidence']['validation_accuracy'])}" if state.get("historical_rule_evidence") else "—"),
-            "Forward N / Acc": (f"{forward.get('forward_n', 0)} / {_pct(forward.get('accuracy'))}" if state.get("rule_id") else "—"),
+            "HC": display_state.get("hc_class") or "—",
+            "Historical N / Acc": (f"{display_state['historical_rule_evidence']['validation_n']} / {_pct(display_state['historical_rule_evidence']['validation_accuracy'])}" if display_state.get("historical_rule_evidence") else "—"),
+            "Forward N / Acc": (f"{forward.get('forward_n', 0)} / {_pct(forward.get('accuracy'))}" if display_state.get("rule_id") else "—"),
         })
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
     st.subheader("Active Opportunities")
