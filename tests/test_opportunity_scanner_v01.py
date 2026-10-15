@@ -11,6 +11,9 @@ from weatherman.opportunity_scanner import (
     validate_causal_forecast,
 )
 from weatherman.opportunity_store import OpportunityStore
+from weatherman.opportunity_scanner_public import (
+    is_current_target_state, is_relevant_display_state,
+)
 
 
 def history(target: date, count: int = 20, minute: int = 15 * 60) -> list[dict]:
@@ -184,6 +187,24 @@ def test_portfolio_and_funnel_keep_forward_evidence_separate(tmp_path: Path) -> 
     assert evidence_funnel(journal)["shadow_trades"] == 1
     assert "historical_rule_evidence" in journal["opportunity_signals"][0]
     assert journal["opportunity_signals"][0]["evidence_class"] == "sequential_oos_shadow"
+
+
+def test_scanner_ui_hides_unavailable_and_prior_day_forecast_values() -> None:
+    now = datetime(2026, 10, 15, 8, 45, tzinfo=timezone.utc)
+    unavailable = {
+        "target_date": "2026-10-15", "opportunity_status": "DATA UNAVAILABLE",
+        "forecast": {"target_date": "2026-10-15", "modal_bucket": 20},
+    }
+    assert is_current_target_state(unavailable, "Europe/Vienna", now=now) is True
+    assert is_relevant_display_state(unavailable, "Europe/Vienna", now=now) is False
+
+    available = {**unavailable, "opportunity_status": "NO SIGNAL"}
+    assert is_relevant_display_state(available, "Europe/Vienna", now=now) is True
+
+    prior_day = {**available, "target_date": "2026-10-14",
+                 "forecast": {**available["forecast"], "target_date": "2026-10-14"}}
+    assert is_current_target_state(prior_day, "Europe/Vienna", now=now) is False
+    assert is_relevant_display_state(prior_day, "Europe/Vienna", now=now) is False
 
 
 def test_scanner_isolation_from_madrid_database() -> None:
