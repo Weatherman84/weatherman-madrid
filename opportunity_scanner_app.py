@@ -38,7 +38,7 @@ def _status_icon(status: str) -> str:
     return {"HIGH INTEREST": "🟢", "WATCH": "🟡", "NO TRADE": "🔴", "NO SIGNAL": "⚪"}.get(status, "⚠️")
 
 
-def __is_current_target_state(state: dict, zone_name: str, *, now: datetime) -> bool:
+def _is_current_target_state(state: dict, zone_name: str, *, now: datetime) -> bool:
     forecast = state.get("forecast") or {}
     target_date = state.get("target_date") or forecast.get("target_date")
     if not target_date:
@@ -47,9 +47,9 @@ def __is_current_target_state(state: dict, zone_name: str, *, now: datetime) -> 
     return str(target_date)[:10] == local_date
 
 
-def __is_relevant_display_state(state: dict, zone_name: str, *, now: datetime) -> bool:
+def _is_relevant_display_state(state: dict, zone_name: str, *, now: datetime) -> bool:
     return (
-        __is_current_target_state(state, zone_name, now=now)
+        _is_current_target_state(state, zone_name, now=now)
         and state.get("opportunity_status") != "DATA UNAVAILABLE"
     )
 
