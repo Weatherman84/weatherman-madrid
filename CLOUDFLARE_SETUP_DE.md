@@ -104,22 +104,24 @@ Die vorhandenen Werte bleiben unverändert:
 Der Worker gibt weder AEMET- noch GitHub-Key aus. Öffentlich sind nur die bereinigten
 Stationsbeobachtungen.
 
-## 7. Vier Cron Trigger einstellen
+## 7. Drei Cron Trigger einstellen
 
-Unter **Settings → Triggers → Cron Triggers** müssen exakt diese vier Trigger stehen:
+Unter **Settings → Triggers → Cron Triggers** müssen exakt diese drei Trigger stehen:
 
 | Zweck | Cron (UTC) |
 |---|---|
 | AEMET Station 3129 | `50 * * * *` |
-| Opportunity Scanner | `2,17,32,47 6-15 * * *` |
-| Madrid Aviation/Fixpunkte | `7,37 5-20 * * *` |
+| Madrid und Opportunity Scanner | `7,22,37,52 5-20 * * *` |
 | DST-sicherer Closeout | `15 19,20 * * *` |
 
 Den vorübergehend eingestellten stündlichen Collector-Trigger `7 5-20 * * *` löschen.
 Einen alten 15-Minuten-Trigger `7,22,37,52 5-20 * * *` ebenfalls löschen.
 
-Der AEMET-Cron läuft unabhängig von GitHub. Der Closeout-Cron wird zweimal in UTC
-ausgelöst; der Worker verwendet nur den Lauf, der tatsächlich 21:15 Madrid-Zeit ist.
+Der gemeinsame Cron startet den Scanner nur zwischen 06:00 und 15:59 UTC. Madrid wird
+weiterhin nur zu `:07` und `:37` dispatcht; die zusätzlichen Minuten erhöhen daher weder
+Madrid-Neon-Schreibvorgänge noch Madrid-Providerabrufe. Der AEMET-Cron läuft unabhängig
+von GitHub. Der Closeout-Cron wird zweimal in UTC ausgelöst; der Worker verwendet nur den
+Lauf, der tatsächlich 21:15 Madrid-Zeit ist.
 
 ## 8. Öffentliche Worker-Adresse prüfen
 

@@ -170,8 +170,7 @@ test("configured hourly cron runs AEMET only; collector and closeout still dispa
   const config = JSON.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
   assert.deepEqual(config.triggers.crons, [
     "50 * * * *",
-    "2,17,32,47 6-15 * * *",
-    "7,37 5-20 * * *",
+    "7,22,37,52 5-20 * * *",
     "15 19,20 * * *",
   ]);
   let calls = [];
@@ -192,8 +191,7 @@ test("configured hourly cron runs AEMET only; collector and closeout still dispa
   await Promise.all(pending);
   assert.equal(calls.filter((url) => url.includes("github.com")).length, 0);
   calls = []; pending.length = 0;
-  for (const [cron, time] of [["2,17,32,47 6-15 * * *", "2026-09-06T07:17:00Z"],
-                             ["7,37 5-20 * * *", "2026-09-06T07:07:00Z"],
+  for (const [cron, time] of [["7,22,37,52 5-20 * * *", "2026-09-06T07:07:00Z"],
                              ["15 19,20 * * *", "2026-09-06T19:15:00Z"]]) {
     await worker.scheduled({ cron, scheduledTime: Date.parse(time) }, env,
                            { waitUntil(p) { pending.push(p); } });
@@ -204,7 +202,7 @@ test("configured hourly cron runs AEMET only; collector and closeout still dispa
   assert.ok(calls.some((url) => url.includes("madrid-closeout.yml")));
 });
 
-test("opportunity scanner cron dispatches the research feed with auditable inputs", async (t) => {
+test("shared cron dispatches only the research feed at scanner-only minutes", async (t) => {
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     requests.push({ url: String(url), body: JSON.parse(options.body) });
@@ -212,7 +210,7 @@ test("opportunity scanner cron dispatches the research feed with auditable input
   });
   const pending = [];
   await worker.scheduled(
-    { cron: "2,17,32,47 6-15 * * *", scheduledTime: Date.parse("2026-10-19T11:47:00Z") },
+    { cron: "7,22,37,52 5-20 * * *", scheduledTime: Date.parse("2026-10-19T11:22:00Z") },
     { GITHUB_TOKEN: "test" },
     { waitUntil(promise) { pending.push(promise); } },
   );
@@ -222,7 +220,7 @@ test("opportunity scanner cron dispatches the research feed with auditable input
   assert.deepEqual(requests[0].body, {
     ref: "main",
     inputs: {
-      scheduled_slot: "2026-10-19T11:47:00.000Z",
+      scheduled_slot: "2026-10-19T11:22:00.000Z",
       source: "cloudflare",
     },
   });

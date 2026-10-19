@@ -95,10 +95,12 @@ NO SIGNAL noch rückwirkende Shadow Evidence.
 ## Aktivierter Forward-Clock
 
 Der kontrollierte Erstlauf wurde am 14. Oktober 2026 erfolgreich abgeschlossen. Workflow 13
-läuft primär über den Cloudflare-Scheduler täglich von 06:02 bis 15:47 UTC im
-15-Minuten-Raster (`2,17,32,47 6-15 * * *`). Das Fenster deckt die eingefrorenen
+läuft primär über den Cloudflare-Scheduler täglich von 06:07 bis 15:52 UTC im
+15-Minuten-Raster (`7,22,37,52 6-15 * * *`). Der Scanner teilt sich dafür einen
+Cloudflare-Cron mit dem Madrid-Collector; Madrid wird weiterhin ausschließlich zu
+`:07` und `:37` gestartet. Das Fenster deckt die eingefrorenen
 W60-Checkpoints der sechs Airports einschließlich Sommer-/Winterzeit ab. Ein stündlicher
-GitHub-Cron (`7 6-15 * * *`) bleibt als Fallback bestehen und überspringt die teuren
+GitHub-Cron (`12 6-15 * * *`) bleibt als Fallback bestehen und überspringt die teuren
 Providerabrufe, wenn der veröffentlichte Feed höchstens zwölf Minuten alt und sicher
 validiert ist. Workflow 14 startet nur nach einem erfolgreich abgeschlossenen Workflow 13;
 fehlgeschlagene Feed-Läufe werden nicht weiterverarbeitet. Beide Workflows behalten
