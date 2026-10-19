@@ -11,7 +11,7 @@ AEMET-Cron ersetzen. Unbekannte Trigger werden vom neuen Worker ignoriert.
 
 ## Zielarchitektur
 
-Der bestehende Cloudflare Worker erfüllt ab v1.0.8 zwei voneinander unabhängige Aufgaben:
+Der bestehende Cloudflare Worker erfüllt drei voneinander unabhängige Aufgaben:
 
 1. Er dispatcht den leichten Madrid-Collector alle 30 Minuten, die vier vollständigen
    Fixpunkte und den 21:15-LT-Tagesabschluss nach GitHub Actions.
@@ -20,6 +20,9 @@ Der bestehende Cloudflare Worker erfüllt ab v1.0.8 zwei voneinander unabhängig
    - `aemet-live.json`: letzter Status, wird überschrieben;
    - `aemet-today.json`: heutige deduplizierte Dezimalkurve, wird nur bei einer neuen
      Messung aktualisiert.
+3. Er startet den separaten Research-only Opportunity-Scanner-Feed alle 15 Minuten im
+   UTC-Tagesfenster der sechs eingefrorenen W60-Checkpoints. Workflow 14 verarbeitet
+   anschließend ausschließlich erfolgreich veröffentlichte Feed-Läufe.
 
 Beim Datumswechsel wird der abgeschlossene Tag unter
 `archive/aemet/YYYY/MM/DD.json.gz` komprimiert archiviert. AEMET schreibt nicht nach
@@ -108,14 +111,17 @@ Unter **Settings → Triggers → Cron Triggers** müssen exakt diese drei Trigg
 | Zweck | Cron (UTC) |
 |---|---|
 | AEMET Station 3129 | `50 * * * *` |
-| Madrid Aviation/Fixpunkte | `7,37 5-20 * * *` |
+| Madrid und Opportunity Scanner | `7,22,37,52 5-20 * * *` |
 | DST-sicherer Closeout | `15 19,20 * * *` |
 
 Den vorübergehend eingestellten stündlichen Collector-Trigger `7 5-20 * * *` löschen.
 Einen alten 15-Minuten-Trigger `7,22,37,52 5-20 * * *` ebenfalls löschen.
 
-Der AEMET-Cron läuft unabhängig von GitHub. Der Closeout-Cron wird zweimal in UTC
-ausgelöst; der Worker verwendet nur den Lauf, der tatsächlich 21:15 Madrid-Zeit ist.
+Der gemeinsame Cron startet den Scanner nur zwischen 06:00 und 15:59 UTC. Madrid wird
+weiterhin nur zu `:07` und `:37` dispatcht; die zusätzlichen Minuten erhöhen daher weder
+Madrid-Neon-Schreibvorgänge noch Madrid-Providerabrufe. Der AEMET-Cron läuft unabhängig
+von GitHub. Der Closeout-Cron wird zweimal in UTC ausgelöst; der Worker verwendet nur den
+Lauf, der tatsächlich 21:15 Madrid-Zeit ist.
 
 ## 8. Öffentliche Worker-Adresse prüfen
 

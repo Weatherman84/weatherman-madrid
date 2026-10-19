@@ -1,7 +1,9 @@
 const COLLECTOR_WORKFLOW = "madrid-collector.yml";
 const CLOSEOUT_WORKFLOW = "madrid-closeout.yml";
-const COLLECTOR_CRON = "7,37 5-20 * * *";
+const OPPORTUNITY_SCANNER_WORKFLOW = "opportunity-scanner-feed.yml";
+const COLLECTOR_SCANNER_CRON = "7,22,37,52 5-20 * * *";
 const CLOSEOUT_CRON = "15 19,20 * * *";
+const OPPORTUNITY_SCANNER_CRON = "7,22,37,52 6-15 * * *";
 const AEMET_CRON = "50 * * * *";
 const AEMET_STATION_ID = "3129";
 const AEMET_STATION_NAME = "Madrid Aeropuerto";
@@ -663,14 +665,35 @@ export default {
       return;
     }
 
-    if (controller.cron !== COLLECTOR_CRON) {
+    if (controller.cron !== COLLECTOR_SCANNER_CRON) {
       console.warn(JSON.stringify({ status: "unknown-cron-skipped", cron: controller.cron }));
+      return;
+    }
+    const tasks = [];
+    const utcHour = scheduled.getUTCHours();
+    if (utcHour >= 6 && utcHour <= 15) {
+      tasks.push(
+        dispatchWorkflow(env, OPPORTUNITY_SCANNER_WORKFLOW, scheduledSlot).then(() =>
+          console.log(
+            JSON.stringify({
+              status: "dispatched",
+              workflow: OPPORTUNITY_SCANNER_WORKFLOW,
+              scheduled_slot: scheduledSlot,
+              research_only: true,
+            }),
+          ),
+        ),
+      );
+    }
+    if (![7, 37].includes(scheduled.getUTCMinutes())) {
+      if (tasks.length) ctx.waitUntil(Promise.all(tasks));
+      else console.log(JSON.stringify({ status: "shared-cron-outside-scanner-window-skipped" }));
       return;
     }
     const fixedHours = new Set(["09", "12", "16", "20"]);
     const collectionMode =
       clock.minute === "07" && fixedHours.has(clock.hour) ? "fixed" : "aviation";
-    ctx.waitUntil(
+    tasks.push(
       dispatchWorkflow(env, COLLECTOR_WORKFLOW, scheduledSlot, collectionMode).then(() =>
         console.log(
           JSON.stringify({
@@ -682,6 +705,7 @@ export default {
         ),
       ),
     );
+    ctx.waitUntil(Promise.all(tasks));
   },
 
   async fetch(request, env) {
@@ -738,8 +762,9 @@ export default {
         service: "Weatherman Madrid scheduler and AEMET observation cache",
         status: "ready",
         dispatches_data: false,
-        collector_cron_utc: COLLECTOR_CRON,
+        collector_cron_utc: COLLECTOR_SCANNER_CRON,
         closeout_cron_utc: CLOSEOUT_CRON,
+        opportunity_scanner_cron_utc: OPPORTUNITY_SCANNER_CRON,
         aemet_cron_utc: AEMET_CRON,
         aemet_station: AEMET_STATION_ID,
         aemet_hot_store_configured: Boolean(env.AEMET_HOT),

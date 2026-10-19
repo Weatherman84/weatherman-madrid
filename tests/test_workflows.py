@@ -117,7 +117,8 @@ def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials
     assert "madrid-collector.yml" in worker
     assert "madrid-closeout.yml" in worker
     assert "Europe/Madrid" in worker
-    assert '"7,37 5-20 * * *"' in config
+    assert '"7,22,37,52 5-20 * * *"' in config
+    assert "![7, 37].includes(scheduled.getUTCMinutes())" in worker
     assert "collection_mode: collectionMode" in worker
     assert '"fixed" : "aviation"' in worker
     assert '"15 19,20 * * *"' in config
@@ -137,8 +138,17 @@ def test_opportunity_feed_is_scheduled_separate_and_never_reads_production_neon(
     script = (ROOT / "scripts" / "build_opportunity_scanner_feed.py").read_text(
         encoding="utf-8"
     )
+    worker = (ROOT / "cloudflare-scheduler" / "src" / "index.js").read_text(
+        encoding="utf-8"
+    )
+    config = (ROOT / "cloudflare-scheduler" / "wrangler.jsonc").read_text(
+        encoding="utf-8"
+    )
     assert "workflow_dispatch" in source
-    assert 'cron: "7,22,37,52 6-15 * * *"' in source
+    assert 'cron: "12 6-15 * * *"' in source
+    assert '"7,22,37,52 5-20 * * *"' in config
+    assert '"opportunity-scanner-feed.yml"' in worker
+    assert "Skip fresh GitHub fallback duplicates" in source
     assert "build_opportunity_scanner_feed.py" in source
     assert "/internal/publish-feed" in source
     assert "OPPORTUNITY_SCANNER_PUBLISH_TOKEN" in source
