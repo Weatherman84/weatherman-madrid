@@ -1,7 +1,9 @@
 const COLLECTOR_WORKFLOW = "madrid-collector.yml";
 const CLOSEOUT_WORKFLOW = "madrid-closeout.yml";
+const OPPORTUNITY_SCANNER_WORKFLOW = "opportunity-scanner-feed.yml";
 const COLLECTOR_CRON = "7,37 5-20 * * *";
 const CLOSEOUT_CRON = "15 19,20 * * *";
+const OPPORTUNITY_SCANNER_CRON = "2,17,32,47 6-15 * * *";
 const AEMET_CRON = "50 * * * *";
 const AEMET_STATION_ID = "3129";
 const AEMET_STATION_NAME = "Madrid Aeropuerto";
@@ -663,6 +665,22 @@ export default {
       return;
     }
 
+    if (controller.cron === OPPORTUNITY_SCANNER_CRON) {
+      ctx.waitUntil(
+        dispatchWorkflow(env, OPPORTUNITY_SCANNER_WORKFLOW, scheduledSlot).then(() =>
+          console.log(
+            JSON.stringify({
+              status: "dispatched",
+              workflow: OPPORTUNITY_SCANNER_WORKFLOW,
+              scheduled_slot: scheduledSlot,
+              research_only: true,
+            }),
+          ),
+        ),
+      );
+      return;
+    }
+
     if (controller.cron !== COLLECTOR_CRON) {
       console.warn(JSON.stringify({ status: "unknown-cron-skipped", cron: controller.cron }));
       return;
@@ -740,6 +758,7 @@ export default {
         dispatches_data: false,
         collector_cron_utc: COLLECTOR_CRON,
         closeout_cron_utc: CLOSEOUT_CRON,
+        opportunity_scanner_cron_utc: OPPORTUNITY_SCANNER_CRON,
         aemet_cron_utc: AEMET_CRON,
         aemet_station: AEMET_STATION_ID,
         aemet_hot_store_configured: Boolean(env.AEMET_HOT),

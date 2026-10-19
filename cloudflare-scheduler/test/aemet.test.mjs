@@ -168,7 +168,12 @@ test("unknown and removed ten-minute cron never dispatch the collector", async (
 test("configured hourly cron runs AEMET only; collector and closeout still dispatch", async (t) => {
   fixedClock(t, "2026-09-06T18:50:00Z");
   const config = JSON.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"));
-  assert.deepEqual(config.triggers.crons, ["50 * * * *", "7,37 5-20 * * *", "15 19,20 * * *"]);
+  assert.deepEqual(config.triggers.crons, [
+    "50 * * * *",
+    "2,17,32,47 6-15 * * *",
+    "7,37 5-20 * * *",
+    "15 19,20 * * *",
+  ]);
   let calls = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     calls.push(String(url));
@@ -187,14 +192,40 @@ test("configured hourly cron runs AEMET only; collector and closeout still dispa
   await Promise.all(pending);
   assert.equal(calls.filter((url) => url.includes("github.com")).length, 0);
   calls = []; pending.length = 0;
-  for (const [cron, time] of [["7,37 5-20 * * *", "2026-09-06T07:07:00Z"],
+  for (const [cron, time] of [["2,17,32,47 6-15 * * *", "2026-09-06T07:17:00Z"],
+                             ["7,37 5-20 * * *", "2026-09-06T07:07:00Z"],
                              ["15 19,20 * * *", "2026-09-06T19:15:00Z"]]) {
     await worker.scheduled({ cron, scheduledTime: Date.parse(time) }, env,
                            { waitUntil(p) { pending.push(p); } });
   }
   await Promise.all(pending);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
+  assert.ok(calls.some((url) => url.includes("opportunity-scanner-feed.yml")));
   assert.ok(calls.some((url) => url.includes("madrid-closeout.yml")));
+});
+
+test("opportunity scanner cron dispatches the research feed with auditable inputs", async (t) => {
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    requests.push({ url: String(url), body: JSON.parse(options.body) });
+    return new Response(null, { status: 204 });
+  });
+  const pending = [];
+  await worker.scheduled(
+    { cron: "2,17,32,47 6-15 * * *", scheduledTime: Date.parse("2026-10-19T11:47:00Z") },
+    { GITHUB_TOKEN: "test" },
+    { waitUntil(promise) { pending.push(promise); } },
+  );
+  await Promise.all(pending);
+  assert.equal(requests.length, 1);
+  assert.match(requests[0].url, /opportunity-scanner-feed\.yml\/dispatches$/);
+  assert.deepEqual(requests[0].body, {
+    ref: "main",
+    inputs: {
+      scheduled_slot: "2026-10-19T11:47:00.000Z",
+      source: "cloudflare",
+    },
+  });
 });
 
 test("archive write failure does not hide a successful provider fetch", async (t) => {

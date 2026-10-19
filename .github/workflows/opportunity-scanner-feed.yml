@@ -2,10 +2,18 @@ name: 13 - Build opportunity scanner causal feed
 
 on:
   workflow_dispatch:
+    inputs:
+      scheduled_slot:
+        description: Intended UTC scanner slot in ISO-8601 format
+        required: false
+        type: string
+      source:
+        description: Dispatch source, for example cloudflare
+        required: false
+        type: string
   schedule:
-    # 06:00-16:00 UTC covers the frozen six-airport W60 checkpoint envelope year-round.
-    # Off-peak minutes reduce GitHub scheduler congestion; 15-minute cadence stays inside tolerance.
-    - cron: "7,22,37,52 6-15 * * *"
+    # Hourly GitHub fallback. Cloudflare is the 15-minute primary scheduler.
+    - cron: "7 6-15 * * *"
 
 permissions:
   contents: read
@@ -19,13 +27,62 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Skip fresh GitHub fallback duplicates
+        id: gate
+        shell: bash
+        env:
+          PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" != "schedule" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+          from datetime import datetime, timezone
+          from urllib.request import Request, urlopen
+
+          base = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+          should_run = True
+          if base:
+              try:
+                  request = Request(
+                      f"{base}/opportunity-scanner-feed.json",
+                      headers={"Cache-Control": "no-cache", "User-Agent": "Opportunity-Scanner-Fallback/1.0"},
+                  )
+                  with urlopen(request, timeout=10) as response:
+                      payload = json.load(response)
+                  safe = (
+                      payload.get("schema_version") == "opportunity_scanner_feed_v1"
+                      and payload.get("classification")
+                      == "CROSS-AIRPORT CAUSAL RESEARCH-ONLY SHADOW FEED"
+                      and payload.get("research_only") is True
+                      and payload.get("automatic_promotion") is False
+                      and payload.get("automatic_execution") is False
+                      and payload.get("writes_production_database") is False
+                  )
+                  if not safe:
+                      raise ValueError("unsafe scanner feed")
+                  generated = datetime.fromisoformat(str(payload["generated_at"]).replace("Z", "+00:00"))
+                  age_minutes = (datetime.now(timezone.utc) - generated.astimezone(timezone.utc)).total_seconds() / 60
+                  should_run = age_minutes > 12
+                  print(f"feed_age_minutes={max(0.0, age_minutes):.1f}")
+              except Exception as exc:
+                  print(f"fallback_check={type(exc).__name__}")
+          print(f"should_run={'true' if should_run else 'false'}")
+          PY
       - uses: actions/checkout@v6
+        if: steps.gate.outputs.should_run == 'true'
       - uses: actions/setup-python@v6
+        if: steps.gate.outputs.should_run == 'true'
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -e .
+      - if: steps.gate.outputs.should_run == 'true'
+        run: pip install -e .
       - name: Require separate scanner Worker
+        if: steps.gate.outputs.should_run == 'true'
         env:
           PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
           PUBLISH_TOKEN: ${{ secrets.OPPORTUNITY_SCANNER_PUBLISH_TOKEN }}
@@ -33,6 +90,7 @@ jobs:
           test -n "$PUBLIC_BASE_URL"
           test -n "$PUBLISH_TOKEN"
       - name: Build causal six-airport feed
+        if: steps.gate.outputs.should_run == 'true'
         env:
           PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
         run: |
@@ -40,6 +98,7 @@ jobs:
             --existing-url "${PUBLIC_BASE_URL%/}/opportunity-scanner-feed.json" \
             --output opportunity-scanner-feed.json
       - name: Validate and publish separate feed
+        if: steps.gate.outputs.should_run == 'true'
         env:
           PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
           PUBLISH_TOKEN: ${{ secrets.OPPORTUNITY_SCANNER_PUBLISH_TOKEN }}
@@ -55,6 +114,7 @@ jobs:
             -H "Authorization: Bearer ${PUBLISH_TOKEN}" -H "Content-Type: application/json" \
             --data-binary @opportunity-scanner-feed.json --output feed-publication.json
       - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.should_run == 'true'
         with:
           name: opportunity-scanner-feed-${{ github.run_id }}
           path: |

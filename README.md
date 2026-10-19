@@ -75,6 +75,9 @@ aktualisiert werden.
 ## Betrieb
 
 - Leichter Aviation-Collector: alle 30 Minuten im relevanten UTC-Fenster.
+- Opportunity Scanner: Cloudflare startet den kausalen Feed von 06:00 bis 15:59 UTC
+  alle 15 Minuten; ein stündlicher GitHub-Lauf bleibt als ressourcenschonender
+  Freshness-Fallback bestehen.
 - Vollständige Modell-, Champion- und Regimeberechnung: an den vier Fix-Checkpoints,
   zum Tagesabschluss und bei manuellem Refresh.
 - Sicherheitsabdeckung: stündlich außerhalb dieses Fensters.

@@ -137,8 +137,17 @@ def test_opportunity_feed_is_scheduled_separate_and_never_reads_production_neon(
     script = (ROOT / "scripts" / "build_opportunity_scanner_feed.py").read_text(
         encoding="utf-8"
     )
+    worker = (ROOT / "cloudflare-scheduler" / "src" / "index.js").read_text(
+        encoding="utf-8"
+    )
+    config = (ROOT / "cloudflare-scheduler" / "wrangler.jsonc").read_text(
+        encoding="utf-8"
+    )
     assert "workflow_dispatch" in source
-    assert 'cron: "7,22,37,52 6-15 * * *"' in source
+    assert 'cron: "7 6-15 * * *"' in source
+    assert '"2,17,32,47 6-15 * * *"' in config
+    assert '"opportunity-scanner-feed.yml"' in worker
+    assert "Skip fresh GitHub fallback duplicates" in source
     assert "build_opportunity_scanner_feed.py" in source
     assert "/internal/publish-feed" in source
     assert "OPPORTUNITY_SCANNER_PUBLISH_TOKEN" in source

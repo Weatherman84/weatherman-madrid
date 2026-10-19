@@ -11,7 +11,7 @@ AEMET-Cron ersetzen. Unbekannte Trigger werden vom neuen Worker ignoriert.
 
 ## Zielarchitektur
 
-Der bestehende Cloudflare Worker erfüllt ab v1.0.8 zwei voneinander unabhängige Aufgaben:
+Der bestehende Cloudflare Worker erfüllt drei voneinander unabhängige Aufgaben:
 
 1. Er dispatcht den leichten Madrid-Collector alle 30 Minuten, die vier vollständigen
    Fixpunkte und den 21:15-LT-Tagesabschluss nach GitHub Actions.
@@ -20,6 +20,9 @@ Der bestehende Cloudflare Worker erfüllt ab v1.0.8 zwei voneinander unabhängig
    - `aemet-live.json`: letzter Status, wird überschrieben;
    - `aemet-today.json`: heutige deduplizierte Dezimalkurve, wird nur bei einer neuen
      Messung aktualisiert.
+3. Er startet den separaten Research-only Opportunity-Scanner-Feed alle 15 Minuten im
+   UTC-Tagesfenster der sechs eingefrorenen W60-Checkpoints. Workflow 14 verarbeitet
+   anschließend ausschließlich erfolgreich veröffentlichte Feed-Läufe.
 
 Beim Datumswechsel wird der abgeschlossene Tag unter
 `archive/aemet/YYYY/MM/DD.json.gz` komprimiert archiviert. AEMET schreibt nicht nach
@@ -101,13 +104,14 @@ Die vorhandenen Werte bleiben unverändert:
 Der Worker gibt weder AEMET- noch GitHub-Key aus. Öffentlich sind nur die bereinigten
 Stationsbeobachtungen.
 
-## 7. Drei Cron Trigger einstellen
+## 7. Vier Cron Trigger einstellen
 
-Unter **Settings → Triggers → Cron Triggers** müssen exakt diese drei Trigger stehen:
+Unter **Settings → Triggers → Cron Triggers** müssen exakt diese vier Trigger stehen:
 
 | Zweck | Cron (UTC) |
 |---|---|
 | AEMET Station 3129 | `50 * * * *` |
+| Opportunity Scanner | `2,17,32,47 6-15 * * *` |
 | Madrid Aviation/Fixpunkte | `7,37 5-20 * * *` |
 | DST-sicherer Closeout | `15 19,20 * * *` |
 
