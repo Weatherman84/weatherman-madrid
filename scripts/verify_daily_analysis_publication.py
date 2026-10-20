@@ -55,9 +55,13 @@ def _verify_endpoint(base: str, *, sha256: str, size: int, target_date: str,
                 raw, sha256=sha256, size=size, target_date=target_date,
                 generated_at=generated_at,
             )
-            with urlopen(Request(dated_url, method="HEAD"), timeout=30) as response:
-                if response.status != 200:
-                    raise ValueError(f"dated endpoint returned HTTP {response.status}")
+            with urlopen(Request(dated_url, headers={"User-Agent": "Weatherman-Publish-Check/1.0"}),
+                         timeout=30) as response:
+                dated_raw = response.read()
+            _validate_bytes(
+                dated_raw, sha256=sha256, size=size, target_date=target_date,
+                generated_at=generated_at,
+            )
             return {
                 "status": "verified",
                 "latest_url": latest_url.split("?", 1)[0],

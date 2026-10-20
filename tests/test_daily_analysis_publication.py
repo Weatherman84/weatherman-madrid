@@ -64,3 +64,44 @@ def test_download_validation_requires_exact_bytes_and_safety_fields() -> None:
             raw, sha256="0" * 64, size=len(raw), target_date="2026-09-16",
             generated_at="2026-09-16T19:30:00+00:00",
         )
+
+
+def test_endpoint_verifies_dated_bytes_with_same_get_headers(monkeypatch) -> None:
+    from io import BytesIO
+    from scripts import verify_daily_analysis_publication as verifier
+
+    raw = json.dumps(payload()).encode()
+    requests = []
+
+    def open_response(request, timeout):
+        requests.append(request)
+        return BytesIO(raw)
+
+    monkeypatch.setattr(verifier, "urlopen", open_response)
+    result = verifier._verify_endpoint(
+        "https://example.test", sha256=hashlib.sha256(raw).hexdigest(),
+        size=len(raw), target_date="2026-09-16",
+        generated_at=payload()["generated_at"], attempts=1, wait_seconds=0,
+    )
+    assert result["status"] == "verified"
+    assert len(requests) == 2
+    assert all(request.get_method() == "GET" for request in requests)
+    assert requests[0].headers == requests[1].headers
+
+
+def test_endpoint_rejects_stale_dated_alias(monkeypatch) -> None:
+    from io import BytesIO
+    from scripts import verify_daily_analysis_publication as verifier
+
+    raw = json.dumps(payload()).encode()
+    responses = iter([raw, b"{}"])
+    monkeypatch.setattr(
+        verifier, "urlopen", lambda request, timeout: BytesIO(next(responses))
+    )
+    result = verifier._verify_endpoint(
+        "https://example.test", sha256=hashlib.sha256(raw).hexdigest(),
+        size=len(raw), target_date="2026-09-16",
+        generated_at=payload()["generated_at"], attempts=1, wait_seconds=0,
+    )
+    assert result["status"] == "failed"
+    assert "size mismatch" in result["error"]
