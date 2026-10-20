@@ -1,6 +1,11 @@
 name: 6 - Publish Madrid daily-analysis export
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-daily-analysis-export.yml"
+      - "scripts/verify_daily_analysis_publication.py"
   workflow_call:
   workflow_dispatch:
 
