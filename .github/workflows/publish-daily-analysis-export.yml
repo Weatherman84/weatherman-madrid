@@ -50,6 +50,15 @@ jobs:
           _site/daily-analysis-latest.json
           --site-root _site
           --github-output "$GITHUB_OUTPUT"
+      - name: Preserve validated export for connector fallback
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrid-daily-analysis-export
+          path: |
+            _site/daily-analysis-latest.json
+            _site/daily-analysis-publication.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Mirror the same validated bytes to Cloudflare KV
         id: mirror
         shell: bash
