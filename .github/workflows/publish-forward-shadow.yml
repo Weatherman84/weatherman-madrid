@@ -1,6 +1,11 @@
 name: 13 - Publish Madrid frozen forward shadow
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-forward-shadow.yml"
+      - "scripts/build_forward_shadow_journal.py"
   workflow_call:
   workflow_dispatch:
   schedule:
