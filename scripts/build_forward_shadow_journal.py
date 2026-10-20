@@ -109,7 +109,7 @@ def main() -> None:
     payload["log"]["aemet_outcomes_enriched_this_run"] = _enrich_aemet(
         payload, _public_base(args.existing_url), effective_end
     )
-    encoded = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(encoded)
     print(json.dumps({
