@@ -57,7 +57,7 @@ async function storePayload(env, key, bytes) {
 }
 
 function assertAppendOnly(previous, next) {
-  for (const [collection, key] of [["opportunity_signals", "signal_id"], ["market_snapshots", "market_snapshot_id"], ["shadow_trades", "shadow_trade_id"], ["shadow_resolutions", "shadow_resolution_id"]]) {
+  for (const [collection, key] of [["opportunity_signals", "signal_id"], ["market_snapshots", "market_snapshot_id"], ["shadow_trades", "shadow_trade_id"], ["shadow_resolutions", "shadow_resolution_id"], ["result_observations", "result_observation_id"]]) {
     const incoming = new Map((next[collection] || []).map(row => [row[key], stable(row)]));
     for (const row of previous?.[collection] || []) {
       if (incoming.get(row[key]) !== stable(row)) throw new Error(`immutable ${collection} changed or disappeared: ${row[key]}`);

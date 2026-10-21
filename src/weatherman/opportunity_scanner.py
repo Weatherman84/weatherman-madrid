@@ -234,7 +234,15 @@ def evaluate_trigger(
     assert generated is not None
     warnings = sorted(set(str(item) for item in forecast.get("data_quality_warnings", [])))
     market = dict(market or {})
-    matched = bool(market) and int(market.get("bucket", -9999)) == int(forecast["modal_bucket"])
+    modal_bucket = int(forecast["modal_bucket"])
+    matched = bool(market) and (
+        (market.get("bucket") is not None and int(market["bucket"]) == modal_bucket)
+        or (
+            market.get("bucket") is None
+            and (market.get("bucket_low_c") is None or modal_bucket >= float(market["bucket_low_c"]))
+            and (market.get("bucket_high_c") is None or modal_bucket <= float(market["bucket_high_c"]))
+        )
+    )
     freshness, age = market_freshness(market.get("snapshot_at"), generated)
     bid = market.get("best_bid")
     ask = market.get("best_ask")
@@ -308,12 +316,18 @@ def make_market_snapshot(signal: Mapping[str, Any], market: Mapping[str, Any]) -
     return {
         "market_snapshot_id": _event_id("market", identity), **identity,
         "airport": signal["airport"], "target_date": signal["target_date"],
+        "market_slug": market.get("market_slug"), "token_id": market.get("token_id"),
+        "condition_id": market.get("condition_id"),
+        "bucket_label": market.get("bucket_label"),
+        "bucket_low_c": market.get("bucket_low_c", market.get("bucket")),
+        "bucket_high_c": market.get("bucket_high_c", market.get("bucket")),
         "event": market.get("event"), "best_bid": market.get("best_bid"),
         "best_ask": market.get("best_ask"), "midpoint": market.get("midpoint"),
         "spread": signal.get("spread"), "last_price": market.get("last_price"),
         "series_price": market.get("series_price"), "liquidity": market.get("liquidity"),
         "price_age_minutes": signal.get("price_age_minutes"),
         "freshness": signal.get("market_freshness"), "market_status": market.get("market_status"),
+        "quote_source": market.get("quote_source"),
         "evidence_class": FORWARD_EVIDENCE_CLASS, "immutable": True,
     }
 

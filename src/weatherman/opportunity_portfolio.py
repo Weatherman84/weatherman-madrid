@@ -17,8 +17,22 @@ def _market_for(
 ) -> dict[str, Any] | None:
     candidates = [dict(row) for row in markets if row.get("airport") == airport
                   and str(row.get("target_date"))[:10] == target_date
-                  and row.get("bucket") is not None and int(row["bucket"]) == bucket]
-    return max(candidates, key=lambda row: str(row.get("snapshot_at") or ""), default=None)
+                  and (
+                      (row.get("bucket") is not None and int(row["bucket"]) == bucket)
+                      or (
+                          row.get("bucket") is None
+                          and (row.get("bucket_low_c") is None or bucket >= float(row["bucket_low_c"]))
+                          and (row.get("bucket_high_c") is None or bucket <= float(row["bucket_high_c"]))
+                      )
+                  )]
+    return max(
+        candidates,
+        key=lambda row: (
+            row.get("bucket") is not None,
+            str(row.get("snapshot_at") or ""),
+        ),
+        default=None,
+    )
 
 
 def _causal_warnings(forecast: dict[str, Any], peak: Mapping[str, Any]) -> list[str]:
