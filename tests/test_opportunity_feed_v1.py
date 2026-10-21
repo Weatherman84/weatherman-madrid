@@ -93,7 +93,7 @@ def test_forecast_snapshot_uses_fixed_common_models_and_never_outcome_fields() -
     assert snapshot["research_only"] is True
 
 
-def test_market_normalization_prefers_clob_bid_ask_and_exact_buckets() -> None:
+def test_market_normalization_prefers_clob_bid_ask_and_preserves_boundary_buckets() -> None:
     rows = [
         {
             "target_date": date(2026, 10, 13),
@@ -123,10 +123,13 @@ def test_market_normalization_prefers_clob_bid_ask_and_exact_buckets() -> None:
         }
     }
     result = normalize_markets("LEMD", rows, books)
-    assert len(result) == 1
+    assert len(result) == 2
     assert result[0]["best_bid"] == 0.42
     assert result[0]["best_ask"] == 0.47
     assert result[0]["quote_source"] == "polymarket_clob"
+    assert result[1]["bucket"] is None
+    assert result[1]["bucket_low_c"] is None
+    assert result[1]["bucket_high_c"] == 20
 
 
 def test_full_feed_builder_emits_all_airports_and_safety_flags() -> None:

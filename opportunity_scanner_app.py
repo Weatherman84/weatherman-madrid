@@ -58,6 +58,20 @@ WARNING_LABELS = {
     "market_quote_stale": "Marktquote ist veraltet",
     "market_quote_very_stale": "Marktquote ist stark veraltet",
     "market_quote_unavailable": "Alter der Marktquote nicht bestimmbar",
+    "no_accepted_metar_observations": "Keine akzeptierten METAR-Beobachtungen",
+    "local_day_coverage_incomplete": "METAR-Abdeckung des lokalen Tages unvollständig",
+    "assigned_market_not_found": "Gespeicherter Markt konnte nicht eindeutig zugeordnet werden",
+    "closed_or_prices_do_not_prove_official_resolution": "Offizielle Marktauflösung noch nicht bestätigt",
+}
+RESULT_STATUS_LABELS = {
+    "OPEN": "Offen",
+    "PROVISIONAL_METAR": "Vorläufig meteorologisch",
+    "METAR_COMPLETE": "Meteorologisch abgeschlossen",
+    "METAR_INCOMPLETE": "Wetterdaten unvollständig",
+    "AWAITING_OFFICIAL_RESOLUTION": "Offizielle Abrechnung ausstehend",
+    "OFFICIALLY_RESOLVED": "Offiziell abgerechnet",
+    "MAPPING_UNAVAILABLE": "Marktzuordnung fehlt",
+    "PROVIDER_ERROR": "Provider vorübergehend nicht erreichbar",
 }
 FIELD_LABELS = {
     "top1_probability": "Top1-Wahrscheinlichkeit",
@@ -84,6 +98,10 @@ def _status(status: str) -> str:
     return f"{STATUS_ICONS.get(status, '⚠️')} {STATUS_LABELS.get(status, status)}"
 
 
+def _result_status(status: object) -> str:
+    return RESULT_STATUS_LABELS.get(str(status), str(status or "Offen"))
+
+
 def _checkpoint(value: object) -> str:
     text = str(value or "")
     for minutes in (120, 90, 60, 30):
@@ -107,7 +125,16 @@ def _datetime(value: object, zone_name: str | None = None, *, include_date: bool
 
 
 def _reason_labels(values: list[object] | None) -> str:
-    return ", ".join(WARNING_LABELS.get(str(value), str(value)) for value in (values or [])) or "—"
+    labels = []
+    for value in values or []:
+        code = str(value)
+        if code.startswith("metar_"):
+            labels.append("METAR-Abruf vorübergehend fehlgeschlagen")
+        elif code.startswith("market_"):
+            labels.append("Markt-Abruf vorübergehend fehlgeschlagen")
+        else:
+            labels.append(WARNING_LABELS.get(code, code))
+    return ", ".join(labels) or "—"
 
 
 def _condition_value(condition: Mapping[str, Any]) -> str:
@@ -292,85 +319,239 @@ if page == "Heute":
 elif page == "Ergebnisse & Performance":
     st.subheader("Ergebnisse seit Aktivierung")
     st.write(
-        "Hier wird geprüft, ob angezeigte Gelegenheiten im echten Forward-Betrieb tatsächlich "
-        "den richtigen Markt-Bucket getroffen hätten. Historische Tests werden nicht zu diesen Zahlen addiert."
+        "Hier wird geprüft, ob echte Forward-Opportunities den richtigen Bucket getroffen haben "
+        "und welches Brutto-Shadow-Ergebnis daraus entstanden wäre. Historische Tests werden nicht addiert."
     )
-    metrics = payload.get("forward_rule_metrics", [])
-    if metrics:
-        metric_rows = []
-        for row in metrics:
-            metric_rows.append(
-                {
-                    "Regel": row.get("rule_id"),
-                    "Fälle": row.get("forward_n", 0),
-                    "Gewinne": row.get("wins", 0),
-                    "Verluste": row.get("losses", 0),
-                    "Trefferquote": _pct(row.get("accuracy")),
-                    "Ø Einstiegspreis": _pct(row.get("average_entry_price")),
-                    "Ø Edge": _pct(row.get("average_edge")),
-                    "P&L (Shadow)": _money(row.get("pnl_usd")),
-                    "ROI": _pct(row.get("roi")),
-                    "Max. Drawdown": _money(-float(row["max_drawdown_usd"])) if row.get("max_drawdown_usd") is not None else "—",
+    st.info(
+        "High Interest bedeutet positiven geschätzten Preisvorteil bei erfüllten Filtern. "
+        "Es bedeutet nicht, dass ein einzelner Bucket mit hoher Sicherheit eintritt."
+    )
+    performance = payload.get("performance", {})
+    summary = performance.get("summary", {})
+    if not performance:
+        st.info(
+            "Die laufende Ergebnisrückführung ist in diesem Journal noch nicht enthalten. "
+            "Sie erscheint nach dem nächsten Scanner-Lauf."
+        )
+    else:
+        metric_cols = st.columns(6)
+        metric_cols[0].metric(
+            "Unterschiedliche High-Interest-Opportunities",
+            summary.get("unique_high_interest_opportunities", 0),
+        )
+        metar_n = summary.get("meteorologically_completed", 0)
+        metric_cols[1].metric(
+            "METAR abgeschlossen · Treffer",
+            f"{metar_n} · {_pct(summary.get('meteorological_accuracy'))}" if metar_n else "Noch keine",
+        )
+        settled_n = summary.get("officially_settled", 0)
+        metric_cols[2].metric(
+            "Offiziell abgerechnet · Gewinnquote",
+            f"{settled_n} · {_pct(summary.get('official_win_rate'))}" if settled_n else "Noch keine",
+        )
+        metric_cols[3].metric("Abgerechneter Einsatz", _money(summary.get("settled_stake_usd")))
+        metric_cols[4].metric(
+            "Brutto-P&L / ROI",
+            (
+                f"{_money(summary.get('gross_pnl_usd'))} · {_pct(summary.get('gross_roi'))}"
+                if settled_n else "Noch keine abgeschlossenen Fälle"
+            ),
+        )
+        metric_cols[5].metric("Offener Einsatz", _money(summary.get("open_stake_usd")))
+        st.caption(
+            "Endgültiger ROI enthält ausschließlich offiziell abgerechnete, deduplizierte Positionen. "
+            "Gebühren und tatsächliche Ausführung sind nicht bestätigt; angezeigt wird ein Brutto-Shadow-Ergebnis."
+        )
+        if metar_n:
+            st.write(
+                "**Separates METAR-Was-wäre-wenn:** "
+                f"{_money(summary.get('meteorological_what_if_gross_pnl_usd'))} auf "
+                f"{_money(summary.get('meteorological_what_if_stake_usd'))} Einsatz · "
+                f"ROI {_pct(summary.get('meteorological_what_if_gross_roi'))}. "
+                "Diese Rechnung ist keine offizielle Marktperformance."
+            )
+
+        details = pd.DataFrame(performance.get("opportunities", []))
+        st.subheader("Opportunity-Details")
+        if details.empty:
+            st.info("Seit der Aktivierung wurde noch keine Opportunity gespeichert.")
+        else:
+            status_options = ["HIGH INTEREST", "WATCH", "NO TRADE"]
+            filters_top = st.columns(4)
+            period = filters_top[0].selectbox("Zeitraum", ["Gesamt", "7 Tage", "30 Tage"])
+            airport = filters_top[1].selectbox("Flughafen", ["Alle", *sorted(details.airport.unique())])
+            all_rules = sorted({rule for values in details.rule_ids for rule in values})
+            rule = filters_top[2].selectbox("Regel", ["Alle", *all_rules])
+            all_hc = sorted({value for values in details.hc_classes for value in values})
+            hc = filters_top[3].selectbox("HC-Klasse", ["Alle", *all_hc])
+            filters_bottom = st.columns(4)
+            checkpoint = filters_bottom[0].selectbox("Checkpoint", ["Alle", *sorted(details.checkpoint.unique())])
+            opportunity_status = filters_bottom[1].selectbox("Opportunity-Status", status_options, index=0)
+            result_state = filters_bottom[2].selectbox(
+                "Ergebnisstand", ["Alle", "Offen", "Vorläufig meteorologisch", "METAR abgeschlossen", "Offiziell abgerechnet"]
+            )
+            result_filter = filters_bottom[3].selectbox(
+                "Treffer/Fehler", ["Alle", "Treffer", "Fehler", "Offen"]
+            )
+            shown = details.copy()
+            if period != "Gesamt":
+                days = 7 if period == "7 Tage" else 30
+                cutoff = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=days - 1)).date().isoformat()
+                shown = shown[shown.target_date >= cutoff]
+            if airport != "Alle":
+                shown = shown[shown.airport == airport]
+            if rule != "Alle":
+                shown = shown[shown.rule_ids.map(lambda values: rule in values)]
+            if hc != "Alle":
+                shown = shown[shown.hc_classes.map(lambda values: hc in values)]
+            if checkpoint != "Alle":
+                shown = shown[shown.checkpoint == checkpoint]
+            shown = shown[shown.opportunity_status == opportunity_status]
+            if result_state == "Offen":
+                shown = shown[
+                    ~shown.meteorological_status.isin(["PROVISIONAL_METAR", "METAR_COMPLETE"])
+                    & (shown.official_status != "OFFICIALLY_RESOLVED")
+                ]
+            elif result_state == "Vorläufig meteorologisch":
+                shown = shown[shown.meteorological_status == "PROVISIONAL_METAR"]
+            elif result_state == "METAR abgeschlossen":
+                shown = shown[shown.meteorological_status == "METAR_COMPLETE"]
+            elif result_state == "Offiziell abgerechnet":
+                shown = shown[shown.official_status == "OFFICIALLY_RESOLVED"]
+            final_hit = shown.official_win.where(
+                shown.official_status == "OFFICIALLY_RESOLVED", shown.metar_hit
+            )
+            if result_filter == "Treffer":
+                shown = shown[final_hit == True]  # noqa: E712
+            elif result_filter == "Fehler":
+                shown = shown[final_hit == False]  # noqa: E712
+            elif result_filter == "Offen":
+                shown = shown[final_hit.isna()]
+
+            def result_label(row: pd.Series) -> str:
+                if row.get("official_status") == "OFFICIALLY_RESOLVED":
+                    return "Offiziell gewonnen" if row.get("official_win") is True else "Offiziell verloren"
+                if row.get("meteorological_status") == "METAR_COMPLETE":
+                    return "METAR-Treffer" if row.get("metar_hit") is True else "METAR-Fehler"
+                if row.get("meteorological_status") == "PROVISIONAL_METAR":
+                    return "Vorläufiger METAR-Treffer" if row.get("metar_hit") is True else "Vorläufiger METAR-Fehler"
+                return "Offen"
+
+            table_rows = []
+            for _, row in shown.iterrows():
+                zone_name = airports[row["airport"]]["timezone"]
+                table_rows.append(
+                    {
+                        "Zieltag": row["target_date"],
+                        "Flughafen": row["airport"],
+                        "Signalzeit lokal": _datetime(row.get("triggered_at"), zone_name),
+                        "Checkpoint": _checkpoint(row["checkpoint"]),
+                        "Bucket": row.get("bucket_label") or row.get("predicted_bucket"),
+                        "Modell-P": _pct(row.get("model_probability")),
+                        "Ask damals": _pct(row.get("entry_price")),
+                        "Edge": _pct(row.get("estimated_edge")),
+                        "Regeln": ", ".join(row.get("rule_ids") or []),
+                        "Überlappung": row.get("overlapping_rule_count", 1),
+                        "METAR-Max.": _temp(row.get("metar_maximum_c")),
+                        "METAR-Status": _result_status(row.get("meteorological_status")),
+                        "Offizieller Gewinner": row.get("official_winner_bucket") or "—",
+                        "Offizieller Status": _result_status(row.get("official_status")),
+                        "Ergebnis": result_label(row),
+                        "Einsatz": _money(row.get("position_stake_usd")),
+                        "Auszahlung": _money(row.get("position_payout_usd")),
+                        "Brutto-P&L": _money(row.get("position_gross_pnl_usd")),
+                        "Hinweise": _reason_labels(
+                            [*(row.get("metar_quality_notes") or []), *(row.get("official_quality_notes") or [])]
+                        ),
+                    }
+                )
+            st.dataframe(pd.DataFrame(table_rows), hide_index=True, width="stretch")
+
+        curve = pd.DataFrame(performance.get("pnl_curve", []))
+        st.subheader("Offizieller Shadow-P&L-Verlauf")
+        if curve.empty:
+            st.info("Noch keine offiziell abgerechneten Fälle – daher noch kein P&L-Verlauf.")
+        else:
+            curve["Reihenfolge"] = range(1, len(curve) + 1)
+            st.line_chart(curve.set_index("Reihenfolge")[["cumulative_gross_pnl_usd"]])
+            st.caption(
+                f"Sortierung: Zieltag, Signalzeitpunkt, Opportunity-ID. Maximaler Drawdown: "
+                f"{_money(-float(summary['maximum_drawdown_usd']))}."
+            )
+
+        st.subheader("Tages-/Airport-Portfolio")
+        daily = pd.DataFrame(performance.get("daily_airport_portfolio", []))
+        if daily.empty:
+            st.info("Noch keine High-Interest-Portfolios vorhanden.")
+        else:
+            daily = daily.rename(
+                columns={
+                    "target_date": "Zieltag", "airport": "Flughafen", "positions": "Positionen",
+                    "checkpoints": "Checkpoints", "buckets": "Gekaufte Buckets",
+                    "total_stake_usd": "Gesamteinsatz", "settled_stake_usd": "Abgerechnet",
+                    "payout_usd": "Auszahlung", "gross_pnl_usd": "Brutto-P&L",
+                    "open_positions": "Offen",
                 }
             )
-        st.dataframe(pd.DataFrame(metric_rows), hide_index=True, width="stretch")
-    else:
-        st.info(
-            "Noch keine offiziell aufgelösten Shadow Trades. Ergebnisse erscheinen erst nach "
-            "offizieller Marktauflösung und Import des Settlement-Buckets."
-        )
+            for column in ("Gesamteinsatz", "Abgerechnet", "Auszahlung", "Brutto-P&L"):
+                daily[column] = daily[column].map(_money)
+            daily["Checkpoints"] = daily["Checkpoints"].map(lambda values: ", ".join(_checkpoint(value) for value in values))
+            daily["Gekaufte Buckets"] = daily["Gekaufte Buckets"].map(lambda values: ", ".join(str(value) for value in values))
+            st.dataframe(daily, hide_index=True, width="stretch")
 
-    st.subheader("Signalhistorie")
-    history = pd.DataFrame(payload.get("opportunity_signals", []))
-    if history.empty:
-        st.info("Seit der Aktivierung wurde noch kein unveränderliches Forward-Signal gespeichert.")
-    else:
-        trade_by_signal = {row["signal_id"]: row for row in payload.get("shadow_trades", [])}
-        resolution_by_trade = {row["shadow_trade_id"]: row for row in payload.get("shadow_resolutions", [])}
-        history["Ergebnis"] = history.signal_id.map(
-            lambda signal_id: (
-                "Gewonnen"
-                if resolution_by_trade.get((trade_by_signal.get(signal_id) or {}).get("shadow_trade_id"), {}).get("win") is True
-                else "Verloren"
-                if resolution_by_trade.get((trade_by_signal.get(signal_id) or {}).get("shadow_trade_id"), {}).get("win") is False
-                else "Offen"
+        st.subheader("Regeldiagnose · nicht als Portfolio summieren")
+        diagnostic = pd.DataFrame(performance.get("rule_diagnostics", []))
+        if diagnostic.empty:
+            st.info("Noch keine auswertbaren Regelauslösungen.")
+        else:
+            diagnostic = diagnostic.rename(
+                columns={
+                    "rule_id": "Regel", "signals": "Auslösungen",
+                    "meteorologically_completed": "METAR abgeschlossen", "metar_hits": "METAR-Treffer",
+                    "metar_accuracy": "Trefferquote", "overlapping_signals": "Davon überlappend",
+                }
+            )
+            diagnostic["Trefferquote"] = diagnostic["Trefferquote"].map(_pct)
+            st.dataframe(diagnostic, hide_index=True, width="stretch")
+            st.caption(
+                "Mehrere Regeln können dieselbe handelbare Opportunity auslösen. Diese Zeilen dienen der "
+                "Regeldiagnose und werden nicht als unabhängige Portfolio-Trades addiert."
+            )
+
+        st.subheader("Deskriptive Vergleiche")
+        breakdown_labels = {
+            "Flughafen": "airport", "Checkpoint": "checkpoint", "HC-Klasse": "hc_class",
+            "Einstiegspreis": "entry_price", "Geschätzter Edge": "estimated_edge",
+            "Modellwahrscheinlichkeit": "model_probability",
+        }
+        breakdown_choice = st.selectbox("Auswertung nach", list(breakdown_labels))
+        breakdown = pd.DataFrame(
+            (performance.get("descriptive_breakdowns") or {}).get(
+                breakdown_labels[breakdown_choice], []
             )
         )
-        filters = st.columns(6)
-        airport = filters[0].selectbox("Flughafen", ["Alle", *sorted(history.airport.unique())])
-        rule = filters[1].selectbox("Regel", ["Alle", *sorted(history.rule_id.unique())])
-        hc = filters[2].selectbox("Klasse", ["Alle", *sorted(history.hc_class.unique())])
-        season = filters[3].selectbox("Saison", ["Alle", *sorted(history.season.unique())])
-        checkpoint = filters[4].selectbox("Checkpoint", ["Alle", *sorted(history.checkpoint.unique())])
-        outcome = filters[5].selectbox("Ergebnis", ["Alle", *sorted(history["Ergebnis"].unique())])
-        shown = history
-        for column, value in (
-            ("airport", airport),
-            ("rule_id", rule),
-            ("hc_class", hc),
-            ("season", season),
-            ("checkpoint", checkpoint),
-            ("Ergebnis", outcome),
-        ):
-            if value != "Alle":
-                shown = shown[shown[column] == value]
-        shown = shown[
-            ["target_date", "airport", "checkpoint", "rule_id", "hc_class", "opportunity_status", "Ergebnis", "triggered_at"]
-        ].rename(
-            columns={
-                "target_date": "Zieltag",
-                "airport": "Flughafen",
-                "checkpoint": "Checkpoint",
-                "rule_id": "Regel",
-                "hc_class": "Klasse",
-                "opportunity_status": "Status",
-                "triggered_at": "Ausgelöst am",
-            }
+        if breakdown.empty:
+            st.info("Für diesen Vergleich liegen noch keine Forward-Fälle vor.")
+        else:
+            breakdown = breakdown.rename(
+                columns={
+                    "group": breakdown_choice, "opportunities": "Opportunities",
+                    "metar_completed": "METAR abgeschlossen", "metar_hits": "METAR-Treffer",
+                    "metar_accuracy": "METAR-Trefferquote", "officially_settled": "Offiziell abgerechnet",
+                    "official_wins": "Offizielle Gewinne", "official_win_rate": "Offizielle Gewinnquote",
+                    "gross_pnl_usd": "Brutto-P&L", "gross_roi": "Brutto-ROI",
+                }
+            )
+            for column in ("METAR-Trefferquote", "Offizielle Gewinnquote", "Brutto-ROI"):
+                breakdown[column] = breakdown[column].map(_pct)
+            breakdown["Brutto-P&L"] = breakdown["Brutto-P&L"].map(_money)
+            st.dataframe(breakdown, hide_index=True, width="stretch")
+        comparison = performance.get("metar_official_comparison", {})
+        st.caption(
+            f"METAR und offizielle Auflösung beide final: {comparison.get('both_final', 0)} · "
+            f"Abweichende Trefferbewertung: {comparison.get('different_outcomes', 0)}. "
+            "Fallzahlen und überlappende Regeln sind bei jeder Interpretation zu berücksichtigen."
         )
-        shown["Checkpoint"] = shown["Checkpoint"].map(_checkpoint)
-        shown["Status"] = shown["Status"].map(_status)
-        shown["Ausgelöst am"] = shown["Ausgelöst am"].map(_datetime)
-        st.dataframe(shown, hide_index=True, width="stretch")
 
     portfolio = payload.get("portfolio_metrics", {})
     st.subheader("Portfolio-Überblick")

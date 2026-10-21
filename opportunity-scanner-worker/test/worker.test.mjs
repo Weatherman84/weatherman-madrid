@@ -14,6 +14,7 @@ const base = {
   contains_credentials: false, automatic_backfill: false, active_rule_count: 24,
   rule_set_sha256: "b08f9e5be300a46dc82eebd8b5f09d35ae480799ea2ccbd6d5e816b65cbd4420",
   opportunity_signals: [], market_snapshots: [], shadow_trades: [], shadow_resolutions: [],
+  result_observations: [],
 };
 
 const feed = {
@@ -41,6 +42,16 @@ test("rejects mutation of an immutable signal", async () => {
   const env = {SCANNER_KV: kv, PUBLISH_TOKEN: "secret"};
   const first = {...base, opportunity_signals: [{signal_id: "one", value: 1}]};
   const second = {...base, opportunity_signals: [{signal_id: "one", value: 2}]};
+  const request = body => new Request("https://x/internal/publish", {method: "POST", headers: {authorization: "Bearer secret"}, body: JSON.stringify(body)});
+  assert.equal((await worker.fetch(request(first), env)).status, 200);
+  assert.equal((await worker.fetch(request(second), env)).status, 409);
+});
+
+test("preserves append-only result correction history", async () => {
+  const kv = new KV();
+  const env = {SCANNER_KV: kv, PUBLISH_TOKEN: "secret"};
+  const first = {...base, result_observations: [{result_observation_id: "result-one", status: "provisional"}]};
+  const second = {...base, result_observations: [{result_observation_id: "result-one", status: "final"}]};
   const request = body => new Request("https://x/internal/publish", {method: "POST", headers: {authorization: "Bearer secret"}, body: JSON.stringify(body)});
   assert.equal((await worker.fetch(request(first), env)).status, 200);
   assert.equal((await worker.fetch(request(second), env)).status, 409);

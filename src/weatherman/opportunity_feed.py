@@ -522,7 +522,11 @@ def normalize_markets(
     output = []
     for raw in rows:
         low, high = raw.get("bucket_low_c"), raw.get("bucket_high_c")
-        if low is None or high is None or float(low) != float(high) or not float(low).is_integer():
+        if low is None and high is None:
+            continue
+        if low is not None and not float(low).is_integer():
+            continue
+        if high is not None and not float(high).is_integer():
             continue
         row = dict(raw)
         token_id = str(row.get("token_id") or "")
@@ -544,9 +548,16 @@ def normalize_markets(
             {
                 "airport": airport,
                 "target_date": str(row["target_date"])[:10],
-                "bucket": int(float(low)),
+                "bucket": (
+                    int(float(low))
+                    if low is not None and high is not None and float(low) == float(high)
+                    else None
+                ),
+                "bucket_low_c": int(float(low)) if low is not None else None,
+                "bucket_high_c": int(float(high)) if high is not None else None,
                 "event": row.get("event_slug"),
                 "market_id": row.get("market_id"),
+                "condition_id": row.get("condition_id"),
                 "market_slug": row.get("market_slug"),
                 "token_id": token_id or None,
                 "bucket_label": row.get("bucket_label"),

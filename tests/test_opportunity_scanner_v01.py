@@ -209,8 +209,10 @@ def test_scanner_ui_hides_unavailable_and_prior_day_forecast_values() -> None:
 
 def test_scanner_isolation_from_madrid_database() -> None:
     source = Path("src/weatherman/opportunity_store.py").read_text(encoding="utf-8")
+    results = Path("src/weatherman/opportunity_results.py").read_text(encoding="utf-8")
     runner = Path("scripts/run_opportunity_scanner.py").read_text(encoding="utf-8")
     assert "from .db" not in source
-    assert "DATABASE_URL" not in source + runner
+    assert "from .db" not in results
+    assert "DATABASE_URL" not in source + results + runner
     assert "weatherman.db" in runner
     assert set(load_airport_config()["airports"]) == {"LEMD", "EHAM", "EDDM", "EPWA", "LTAC", "LTFM"}

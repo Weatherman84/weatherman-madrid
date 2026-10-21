@@ -39,8 +39,15 @@ CREATE TABLE IF NOT EXISTS revision_record (
   recorded_at TEXT NOT NULL, code_version TEXT NOT NULL, reason TEXT NOT NULL,
   revision_json TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS opportunity_result_observation (
+  result_observation_id TEXT PRIMARY KEY, opportunity_id TEXT NOT NULL,
+  airport TEXT NOT NULL, target_date TEXT NOT NULL, recorded_at TEXT NOT NULL,
+  evaluation_version TEXT NOT NULL, payload_json TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS ix_signal_date ON opportunity_signal(target_date, airport);
 CREATE INDEX IF NOT EXISTS ix_trade_date ON shadow_trade(target_date, airport);
+CREATE INDEX IF NOT EXISTS ix_result_opportunity
+  ON opportunity_result_observation(opportunity_id, recorded_at);
 """
 
 
@@ -128,6 +135,8 @@ class OpportunityStore:
             self.append_trade(row)
         for row in journal.get("shadow_resolutions", []):
             self.append_resolution(row)
+        for row in journal.get("result_observations", []):
+            self.append_result_observation(row)
 
     def append_market_snapshot(self, snapshot: Mapping[str, Any]) -> bool:
         with self.connect() as connection:
@@ -170,8 +179,30 @@ class OpportunityStore:
                  code_version, reason, _encoded(revision)),
             )
 
+    def append_result_observation(self, result: Mapping[str, Any]) -> bool:
+        """Append one immutable result state; changed states form the audit history."""
+        with self.connect() as connection:
+            return self._append(
+                connection,
+                "opportunity_result_observation",
+                "result_observation_id",
+                result["result_observation_id"],
+                {
+                    "result_observation_id": result["result_observation_id"],
+                    "opportunity_id": result["opportunity_id"],
+                    "airport": result["airport"],
+                    "target_date": result["target_date"],
+                    "recorded_at": result["recorded_at"],
+                    "evaluation_version": result["evaluation_version"],
+                    "payload_json": _encoded(result),
+                },
+            )
+
     def records(self, table: str) -> list[dict[str, Any]]:
-        allowed = {"opportunity_signal", "market_snapshot", "shadow_trade", "shadow_resolution", "revision_record"}
+        allowed = {
+            "opportunity_signal", "market_snapshot", "shadow_trade", "shadow_resolution",
+            "revision_record", "opportunity_result_observation",
+        }
         if table not in allowed:
             raise ValueError("Unknown scanner table")
         with self.connect() as connection:
@@ -184,8 +215,9 @@ class OpportunityStore:
         markets = self.records("market_snapshot")
         trades = self.records("shadow_trade")
         resolutions = self.records("shadow_resolution")
+        results = self.records("opportunity_result_observation")
         return {
-            "schema_version": "opportunity_scanner_journal_v1",
+            "schema_version": "opportunity_scanner_journal_v2",
             "app_version": "0.1-shadow", "rule_set_version": "frozen_opportunity_rule_set_v1",
             "classification": "CROSS-AIRPORT RESEARCH-ONLY SHADOW JOURNAL",
             "generated_at": generated.isoformat(), "research_only": True,
@@ -193,4 +225,5 @@ class OpportunityStore:
             "writes_production_database": False, "contains_credentials": False,
             "opportunity_signals": signals, "market_snapshots": markets,
             "shadow_trades": trades, "shadow_resolutions": resolutions,
+            "result_observations": results,
         }

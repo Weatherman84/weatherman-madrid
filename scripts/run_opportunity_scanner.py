@@ -12,6 +12,10 @@ from weatherman.opportunity_portfolio import (
     evidence_funnel, forward_rule_metrics, portfolio_metrics, run_scanner_cycle,
 )
 from weatherman.opportunity_scanner import load_display_rules, load_rule_pack, resolve_shadow_trade
+from weatherman.opportunity_results import (
+    build_performance_views,
+    collect_result_observations,
+)
 from weatherman.opportunity_store import OpportunityStore
 
 
@@ -62,7 +66,12 @@ def main() -> None:
             )
             store.append_resolution(resolution)
     journal = store.journal()
+    result_updates = collect_result_observations(journal)
+    for result in result_updates:
+        store.append_result_observation(result)
+    journal = store.journal()
     rule_pack = load_rule_pack()
+    performance = build_performance_views(journal)
     journal.update({
         "airport_states": states,
         "rule_set_sha256": rule_pack["canonical_rules_sha256"],
@@ -71,6 +80,12 @@ def main() -> None:
         "forward_rule_metrics": forward_rule_metrics(journal),
         "portfolio_metrics": portfolio_metrics(journal),
         "evidence_funnel": evidence_funnel(journal),
+        "performance": performance,
+        "result_collection": {
+            "evaluation_version": "opportunity_result_evaluation_v1",
+            "new_result_observations": len(result_updates),
+            "automatic_retry": True,
+        },
         "automatic_backfill": False,
     })
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -78,6 +93,7 @@ def main() -> None:
     print(json.dumps({"status": "built", "output": str(args.output),
                       "signals": len(journal["opportunity_signals"]),
                       "shadow_trades": len(journal["shadow_trades"]),
+                      "result_observations": len(journal["result_observations"]),
                       "writes_production_database": False}, separators=(",", ":")))
 
 
