@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from pathlib import Path
 
 import httpx
@@ -17,6 +18,39 @@ from weatherman.opportunity_results import (
     collect_result_observations,
 )
 from weatherman.opportunity_store import OpportunityStore
+
+
+def _fetch_existing_journal(
+    url: str,
+    *,
+    attempts: int = 3,
+    timeout_seconds: float = 20,
+) -> dict:
+    """Fetch the immutable journal with bounded retries for transient read errors."""
+    last_error: httpx.HTTPError | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            response = httpx.get(
+                url,
+                timeout=timeout_seconds,
+                follow_redirects=True,
+            )
+            if response.status_code == 404:
+                return {}
+            response.raise_for_status()
+            return response.json()
+        except (httpx.TimeoutException, httpx.NetworkError) as exc:
+            last_error = exc
+        except httpx.HTTPStatusError as exc:
+            last_error = exc
+            if exc.response.status_code < 500:
+                raise
+        if attempt < attempts:
+            time.sleep(2 ** (attempt - 1))
+    raise RuntimeError(
+        f"Existing Opportunity Scanner journal remained unavailable after "
+        f"{attempts} attempts"
+    ) from last_error
 
 
 def main() -> None:
@@ -43,10 +77,9 @@ def main() -> None:
             raise SystemExit("Automatic backfill is forbidden before the activation date")
     store = OpportunityStore(args.database)
     if args.existing_url:
-        response = httpx.get(args.existing_url, timeout=15, follow_redirects=True)
-        if response.status_code != 404:
-            response.raise_for_status()
-            store.import_journal(response.json())
+        existing = _fetch_existing_journal(args.existing_url)
+        if existing:
+            store.import_journal(existing)
     states = run_scanner_cycle(
         forecasts=feed.get("forecasts", []), peak_history=feed.get("peak_history", {}),
         markets=feed.get("markets", []), store=store,

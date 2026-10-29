@@ -68,7 +68,7 @@ jobs:
           from pathlib import Path
           path = Path("forward-shadow-journal.json")
           payload = json.loads(path.read_text(encoding="utf-8"))
-          assert path.stat().st_size <= 1_048_576
+          assert path.stat().st_size <= 5_000_000
           assert payload["airport"] == "LEMD"
           assert payload["classification"] == "READ-ONLY FROZEN FORWARD SHADOW JOURNAL"
           assert payload["research_only"] is True

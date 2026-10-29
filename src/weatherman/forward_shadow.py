@@ -51,6 +51,7 @@ MAX_MODEL_ROWS_PER_TARGET = 180
 MAX_MARKET_ROWS_PER_CHECKPOINT = 50
 OPERATIONAL_LOOKBACK_DAYS = 2
 MAX_OPERATIONAL_SNAPSHOT_ROWS = (OPERATIONAL_LOOKBACK_DAYS + 1) * 4
+ACTIVE_FORWARD_RECORD_DAYS = OPERATIONAL_LOOKBACK_DAYS + 1
 DECISION_EVIDENCE = "live_shadow"
 OUTCOME_EVIDENCE = "sequential_oos"
 FROZEN_STATUS = "FROZEN SHADOW"
@@ -943,6 +944,18 @@ def build_forward_shadow_journal(
         shadow_decision_map.values(),
         key=lambda item: (item["target_date"], item["checkpoint_label"]),
     )
+    # The immutable decisions and their outcomes are the durable research record.
+    # Once an outcome has been copied into those decisions, the much larger source
+    # checkpoint row is redundant. Keep only the operational window plus any still
+    # unresolved rows so the public journal remains bounded without deleting a
+    # decision or changing a stored decision hash.
+    active_record_cutoff = end - timedelta(days=ACTIVE_FORWARD_RECORD_DAYS)
+    active_forward_records = [
+        row for row in forward_records
+        if row.get("actual_bucket") is None
+        or date.fromisoformat(row["target_date"]) >= active_record_cutoff
+    ]
+    compacted_record_count = len(forward_records) - len(active_forward_records)
     return _safe({
         "schema_version": SCHEMA_VERSION,
         "journal_version": JOURNAL_VERSION,
@@ -971,7 +984,7 @@ def build_forward_shadow_journal(
             "reconstructed_research_in_scorecard": False,
         },
         "calibration_seed": seed,
-        "forward_records": forward_records,
+        "forward_records": active_forward_records,
         "decisions": decisions,
         "shadow_engine_version": SHADOW_VERSION,
         "shadow_engine_decisions": shadow_engine_decisions,
@@ -981,7 +994,9 @@ def build_forward_shadow_journal(
         "sequential_oos_scorecard": _scorecard(decisions),
         "log": {
             "calibration_seed_rows": len(seed),
-            "forward_checkpoint_rows": len(forward_records),
+            "forward_checkpoint_rows": len(active_forward_records),
+            "compacted_resolved_forward_checkpoint_rows": compacted_record_count,
+            "forward_record_retention_days": ACTIVE_FORWARD_RECORD_DAYS,
             "decision_rows": len(decisions),
             "shadow_engine_decision_rows": len(shadow_engine_decisions),
             "resolved_decision_rows": sum(row.get("outcome") is not None for row in decisions),

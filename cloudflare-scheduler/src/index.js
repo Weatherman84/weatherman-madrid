@@ -17,7 +17,9 @@ const DAILY_ANALYSIS_MAX_BYTES = 5 * 1024 * 1024;
 const DAILY_ANALYSIS_ARCHIVE_TTL_SECONDS = 90 * 24 * 60 * 60;
 const FORWARD_SHADOW_JOURNAL_KEY = "forward-shadow-journal.json";
 const FORWARD_SHADOW_META_KEY = "forward-shadow-publication.json";
-const FORWARD_SHADOW_MAX_BYTES = 1024 * 1024;
+// The journal is query-bounded to 120 days and compacts resolved source rows.
+// Five MB leaves room for the immutable decisions for that full frozen horizon.
+const FORWARD_SHADOW_MAX_BYTES = 5_000_000;
 
 function madridParts(date) {
   return Object.fromEntries(
