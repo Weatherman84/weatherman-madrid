@@ -175,3 +175,44 @@ def test_forward_outcomes_never_refit_the_frozen_calibration(monkeypatch):
         generated_at=datetime(2026, 9, 30, 20, tzinfo=timezone.utc),
     )
     assert history_sizes == [1, 1]
+
+
+def test_resolved_source_rows_are_compacted_but_unresolved_rows_are_retained(
+    monkeypatch,
+):
+    old_resolved = _record(actual=31.0)
+    old_unresolved = {
+        **_record(actual=None),
+        "target_date": "2026-10-02",
+        "checkpoint_label": "First Live @12:00",
+    }
+    recent_resolved = {
+        **_record(actual=30.0),
+        "target_date": "2026-10-28",
+        "checkpoint_label": "Late Live @16:00",
+    }
+    monkeypatch.setattr(shadow, "_forward_records", lambda *_args, **_kwargs: ([], {}))
+    monkeypatch.setattr(shadow, "_candidate_decisions", lambda *_args, **_kwargs: [])
+
+    journal = shadow.build_forward_shadow_journal(
+        object(),
+        existing={
+            "calibration_seed": [],
+            "forward_records": [old_resolved, old_unresolved, recent_resolved],
+            "decisions": [],
+            "shadow_engine_decisions": [],
+        },
+        start_date=date(2026, 9, 29),
+        end_date=date(2026, 10, 29),
+        generated_at=datetime(2026, 10, 29, 20, tzinfo=timezone.utc),
+    )
+
+    retained = {
+        (row["target_date"], row["checkpoint_label"])
+        for row in journal["forward_records"]
+    }
+    assert ("2026-09-29", "D0 Morning @09:00") not in retained
+    assert ("2026-10-02", "First Live @12:00") in retained
+    assert ("2026-10-28", "Late Live @16:00") in retained
+    assert journal["log"]["compacted_resolved_forward_checkpoint_rows"] == 1
+    assert journal["log"]["forward_record_retention_days"] == 3

@@ -376,3 +376,29 @@ test("forward shadow journal preserves immutable checkpoint decisions", async ()
   assert.equal(publicResponse.status, 200);
   assert.equal((await publicResponse.json()).decisions[0].decision_hash, "a".repeat(64));
 });
+
+test("forward shadow journal accepts the bounded five MB publication budget", async () => {
+  const kv = new KV();
+  const env = { AEMET_HOT: kv, DAILY_ANALYSIS_PUBLISH_TOKEN: "secret" };
+  const payload = {
+    airport: "LEMD",
+    classification: "READ-ONLY FROZEN FORWARD SHADOW JOURNAL",
+    contains_credentials: false,
+    writes_production_database: false,
+    research_only: true,
+    automatic_promotion: false,
+    generated_at: "2026-10-29T08:00:00Z",
+    decisions: [],
+    shadow_engine_decisions: [],
+    padding: "x".repeat(1_200_000),
+  };
+  const response = await worker.fetch(new Request(
+    "https://worker.test/internal/publish-forward-shadow",
+    {
+      method: "POST",
+      headers: { Authorization: "Bearer secret" },
+      body: JSON.stringify(payload),
+    },
+  ), env);
+  assert.equal(response.status, 200);
+});

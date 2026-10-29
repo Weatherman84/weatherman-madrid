@@ -16,6 +16,7 @@ def test_collector_writes_to_neon_without_committing_a_sqlite_file() -> None:
     assert "contents: read" in source
     assert "git push" not in source
     assert "weatherman.db" not in source
+    assert "publish-forward-shadow.yml" not in source
 
 
 def test_collector_uses_external_slots_with_hourly_github_safety() -> None:
@@ -103,6 +104,7 @@ def test_closeout_always_collects_then_calls_export() -> None:
     assert "run-collector --airports LEMD" in source
     assert "publish-daily-analysis-export.yml" in source
     assert "needs: closeout" in source
+    assert "publish-forward-shadow.yml" not in source
 
 
 def test_cloudflare_scheduler_dispatches_explicit_slots_without_data_credentials() -> None:
