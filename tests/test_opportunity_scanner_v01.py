@@ -4,7 +4,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import pytest
 
-from weatherman.opportunity_portfolio import evidence_funnel, portfolio_metrics, run_scanner_cycle
+from weatherman.opportunity_portfolio import (
+    airport_coverage, evidence_funnel, portfolio_metrics, run_scanner_cycle,
+)
 from weatherman.opportunity_scanner import (
     checkpoint_schedule, expected_peak_time, load_airport_config, load_display_rules,
     load_rule_pack, market_freshness, matching_rules, resolve_shadow_trade,
@@ -177,6 +179,25 @@ def test_missed_checkpoint_never_persists_forward_oos_signal(tmp_path: Path) -> 
     assert store.journal()["opportunity_signals"] == []
 
 
+def test_unavailable_forecast_placeholder_never_persists_signal(tmp_path: Path) -> None:
+    forecast = lemd_forecast()
+    forecast["models"] = []
+    forecast["data_quality_warnings"] = ["forecast_collection_failed", "missing_model"]
+    store = OpportunityStore(tmp_path / "scanner.db")
+
+    state = run_scanner_cycle(
+        forecasts=[forecast],
+        peak_history={"LEMD": history(date(2026, 10, 12))},
+        markets=[market()],
+        store=store,
+    )[0]
+
+    assert state["opportunity_status"] == "DATA UNAVAILABLE"
+    assert "forecast_collection_failed" in state["opportunity_reason_codes"]
+    assert store.journal()["opportunity_signals"] == []
+    assert store.journal()["shadow_trades"] == []
+
+
 def test_portfolio_and_funnel_keep_forward_evidence_separate(tmp_path: Path) -> None:
     store = OpportunityStore(tmp_path / "scanner.db")
     run_scanner_cycle(forecasts=[lemd_forecast()], peak_history={"LEMD": history(date(2026, 10, 12))},
@@ -187,6 +208,36 @@ def test_portfolio_and_funnel_keep_forward_evidence_separate(tmp_path: Path) -> 
     assert evidence_funnel(journal)["shadow_trades"] == 1
     assert "historical_rule_evidence" in journal["opportunity_signals"][0]
     assert journal["opportunity_signals"][0]["evidence_class"] == "sequential_oos_shadow"
+
+
+def test_airport_coverage_includes_airports_without_rule_matches(tmp_path: Path) -> None:
+    store = OpportunityStore(tmp_path / "scanner.db")
+    state = run_scanner_cycle(
+        forecasts=[lemd_forecast()],
+        peak_history={"LEMD": history(date(2026, 10, 12))},
+        markets=[market()],
+        store=store,
+    )[0]
+    states = [state]
+    for airport in load_airport_config()["airports"]:
+        if airport != "LEMD":
+            states.append(
+                {
+                    "airport": airport,
+                    "opportunity_status": "NO SIGNAL",
+                    "opportunity_reason_codes": [],
+                }
+            )
+
+    rows = {row["airport"]: row for row in airport_coverage(store.journal(), states)}
+
+    assert set(rows) == set(load_airport_config()["airports"])
+    assert rows["LEMD"]["signals"] == 1
+    assert rows["LEMD"]["high_interest"] == 1
+    assert rows["LEMD"]["coverage_status"] == "RULE TRIGGERED"
+    assert rows["EDDM"]["signals"] == 0
+    assert rows["EDDM"]["active_rules"] == 2
+    assert rows["EDDM"]["coverage_status"] == "NO FROZEN RULE MATCH YET"
 
 
 def test_scanner_ui_hides_unavailable_and_prior_day_forecast_values() -> None:
