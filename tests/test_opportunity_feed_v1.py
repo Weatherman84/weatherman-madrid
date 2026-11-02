@@ -174,6 +174,49 @@ def test_full_feed_builder_emits_all_airports_and_safety_flags() -> None:
     assert feed["writes_production_database"] is False
 
 
+def test_one_airport_forecast_failure_does_not_abort_healthy_airports() -> None:
+    as_of = datetime(2026, 10, 13, 12, tzinfo=timezone.utc)
+
+    def forecast_fetcher(airport, model, target):
+        if airport["station"] == "LEMD":
+            raise TimeoutError("simulated provider failure")
+        return [
+            {
+                "model": model,
+                "valid_at": datetime.combine(target, datetime.min.time(), tzinfo=timezone.utc)
+                + timedelta(hours=hour),
+                "temp_c": 15 + min(hour, 15) * 0.5,
+                "cloud_cover": 20,
+                "wind_kph": 10,
+            }
+            for hour in range(24)
+        ]
+
+    feed = build_live_feed(
+        as_of=as_of,
+        forecast_fetcher=forecast_fetcher,
+        metar_fetcher=lambda airport, hours=48: [],
+        market_fetcher=lambda airport, target: [],
+        book_fetcher=lambda tokens: {},
+    )
+
+    validate_live_feed(feed)
+    forecasts = {row["airport"]: row for row in feed["forecasts"]}
+    assert set(forecasts) == set(load_airport_config()["airports"])
+    assert forecasts["LEMD"]["collection_status"] == "unavailable"
+    assert "forecast_collection_failed" in forecasts["LEMD"]["data_quality_warnings"]
+    assert forecasts["LEMD"]["models"] == []
+    assert all(
+        row.get("collection_status") != "unavailable"
+        for airport, row in forecasts.items()
+        if airport != "LEMD"
+    )
+    assert any(
+        error["airport"] == "LEMD" and error["component"] == "forecast_build"
+        for error in feed["collection_errors"]
+    )
+
+
 def test_feed_validation_rejects_outcome_leakage() -> None:
     payload = {
         "schema_version": "opportunity_scanner_feed_v1",
