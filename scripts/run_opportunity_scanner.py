@@ -10,7 +10,8 @@ from pathlib import Path
 import httpx
 
 from weatherman.opportunity_portfolio import (
-    evidence_funnel, forward_rule_metrics, portfolio_metrics, run_scanner_cycle,
+    airport_coverage, evidence_funnel, forward_rule_metrics, portfolio_metrics,
+    run_scanner_cycle,
 )
 from weatherman.opportunity_scanner import load_display_rules, load_rule_pack, resolve_shadow_trade
 from weatherman.opportunity_results import (
@@ -110,6 +111,7 @@ def main() -> None:
         "rule_set_sha256": rule_pack["canonical_rules_sha256"],
         "active_rule_count": len(rule_pack["rules"]),
         "display_only_rules": load_display_rules(),
+        "airport_coverage": airport_coverage(journal, states),
         "forward_rule_metrics": forward_rule_metrics(journal),
         "portfolio_metrics": portfolio_metrics(journal),
         "evidence_funnel": evidence_funnel(journal),

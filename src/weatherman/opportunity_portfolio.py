@@ -7,7 +7,8 @@ from typing import Any, Iterable, Mapping
 
 from .opportunity_scanner import (
     checkpoint_schedule, evaluate_trigger, expected_peak_time, load_airport_config,
-    load_policy, make_market_snapshot, make_shadow_trade, matching_rules, no_signal_record,
+    load_policy, load_rule_pack, make_market_snapshot, make_shadow_trade, matching_rules,
+    no_signal_record,
 )
 from .opportunity_store import OpportunityStore
 
@@ -144,6 +145,54 @@ def forward_rule_metrics(journal: Mapping[str, Any]) -> list[dict[str, Any]]:
             "evidence_class": "sequential_oos_shadow",
         })
     return sorted(rows, key=lambda row: row["rule_id"])
+
+
+def airport_coverage(
+    journal: Mapping[str, Any], states: Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Explain signal coverage for every airport in the frozen scanner set."""
+    airports = load_airport_config()["airports"]
+    rules = load_rule_pack()["rules"]
+    rule_counts = Counter(str(rule["airport"]) for rule in rules)
+    signals_by_airport: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
+    for signal in journal.get("opportunity_signals", []):
+        signals_by_airport[str(signal.get("airport"))].append(signal)
+    states_by_airport = {str(state.get("airport")): state for state in states}
+
+    rows: list[dict[str, Any]] = []
+    for airport in airports:
+        signals = signals_by_airport.get(airport, [])
+        current = states_by_airport.get(airport, {})
+        current_status = str(current.get("opportunity_status") or "DATA UNAVAILABLE")
+        if current_status == "DATA UNAVAILABLE":
+            coverage_status = "CURRENT DATA UNAVAILABLE"
+        elif signals:
+            coverage_status = "RULE TRIGGERED"
+        else:
+            coverage_status = "NO FROZEN RULE MATCH YET"
+        latest = max(
+            signals,
+            key=lambda row: (str(row.get("triggered_at") or ""), str(row.get("signal_id") or "")),
+            default=None,
+        )
+        rows.append(
+            {
+                "airport": airport,
+                "active_rules": rule_counts[airport],
+                "signals": len(signals),
+                "high_interest": sum(
+                    row.get("opportunity_status") == "HIGH INTEREST" for row in signals
+                ),
+                "watch": sum(row.get("opportunity_status") == "WATCH" for row in signals),
+                "no_trade": sum(row.get("opportunity_status") == "NO TRADE" for row in signals),
+                "last_signal_at": latest.get("triggered_at") if latest else None,
+                "last_signal_target_date": latest.get("target_date") if latest else None,
+                "current_status": current_status,
+                "current_warnings": list(current.get("opportunity_reason_codes") or []),
+                "coverage_status": coverage_status,
+            }
+        )
+    return rows
 
 
 def portfolio_metrics(journal: Mapping[str, Any], *, as_of: datetime | None = None) -> dict[str, Any]:

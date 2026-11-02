@@ -46,6 +46,7 @@ STATUS_ICONS = {
     "DATA UNAVAILABLE": "⚠️",
 }
 WARNING_LABELS = {
+    "forecast_collection_failed": "Forecast für diesen Airport konnte nicht erstellt werden",
     "missing_model": "Mindestens ein Wettermodell fehlt",
     "insufficient_calibration_history": "Zu wenig frühere Peak-Zeiten",
     "stale_weather_data": "Wetterbeobachtung fehlt oder ist zu alt",
@@ -369,6 +370,42 @@ elif page == "Ergebnisse & Performance":
                 f"{_money(summary.get('meteorological_what_if_stake_usd'))} Einsatz · "
                 f"ROI {_pct(summary.get('meteorological_what_if_gross_roi'))}. "
                 "Diese Rechnung ist keine offizielle Marktperformance."
+            )
+
+        st.subheader("Abdeckung aller sechs Airports")
+        st.write(
+            "Diese Übersicht unterscheidet einen technischen Datenausfall von einem validen Lauf, "
+            "bei dem bislang keine eingefrorene Regel ausgelöst hat."
+        )
+        coverage = pd.DataFrame(payload.get("airport_coverage", []))
+        if coverage.empty:
+            st.info("Die Sechs-Airport-Abdeckung erscheint nach dem nächsten Scanner-Lauf.")
+        else:
+            coverage_labels = {
+                "CURRENT DATA UNAVAILABLE": "Aktuelle Daten fehlen",
+                "RULE TRIGGERED": "Regel wurde bereits ausgelöst",
+                "NO FROZEN RULE MATCH YET": "Noch kein Treffer der eingefrorenen Regeln",
+            }
+            coverage_rows = []
+            for _, row in coverage.iterrows():
+                coverage_rows.append(
+                    {
+                        "Flughafen": row["airport"],
+                        "Aktive Regeln": row["active_rules"],
+                        "Regelauslösungen": row["signals"],
+                        "High Interest": row["high_interest"],
+                        "Watch": row["watch"],
+                        "No Trade": row["no_trade"],
+                        "Letztes Signal": _datetime(row.get("last_signal_at"), airports[row["airport"]]["timezone"]),
+                        "Aktueller Lauf": _status(row["current_status"]),
+                        "Einordnung": coverage_labels.get(row["coverage_status"], row["coverage_status"]),
+                        "Hinweise": _reason_labels(row.get("current_warnings")),
+                    }
+                )
+            st.dataframe(pd.DataFrame(coverage_rows), hide_index=True, width="stretch")
+            st.caption(
+                "Keine Regelauslösung bedeutet nicht, dass der Airport technisch ausgefallen ist. "
+                "Es bedeutet, dass seit Aktivierung keine seiner unveränderten Regeln kausal gepasst hat."
             )
 
         details = pd.DataFrame(performance.get("opportunities", []))

@@ -262,6 +262,24 @@ def test_results_page_renders_deduplicated_performance(tmp_path: Path, monkeypat
             "contains_credentials": False,
             "generated_at": "2026-10-21T10:00:00+00:00",
             "airport_states": [],
+            "airport_coverage": [
+                {
+                    "airport": airport,
+                    "active_rules": 1,
+                    "signals": 1 if airport == "EPWA" else 0,
+                    "high_interest": 1 if airport == "EPWA" else 0,
+                    "watch": 0,
+                    "no_trade": 0,
+                    "last_signal_at": "2026-10-20T12:00:00+00:00" if airport == "EPWA" else None,
+                    "last_signal_target_date": "2026-10-20" if airport == "EPWA" else None,
+                    "current_status": "NO SIGNAL",
+                    "current_warnings": [],
+                    "coverage_status": (
+                        "RULE TRIGGERED" if airport == "EPWA" else "NO FROZEN RULE MATCH YET"
+                    ),
+                }
+                for airport in ("LEMD", "EHAM", "EDDM", "EPWA", "LTAC", "LTFM")
+            ],
             "forward_rule_metrics": [],
             "portfolio_metrics": {},
             "evidence_funnel": {},
@@ -295,3 +313,4 @@ def test_results_page_renders_deduplicated_performance(tmp_path: Path, monkeypat
     app.sidebar.radio[0].set_value("Ergebnisse & Performance").run(timeout=10)
     assert not app.exception
     assert any("Unterschiedliche High-Interest-Opportunities" in metric.label for metric in app.metric)
+    assert any("Abdeckung aller sechs Airports" in item.value for item in app.subheader)
