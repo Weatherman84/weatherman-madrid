@@ -608,6 +608,61 @@ def validate_live_feed(payload: Mapping[str, Any]) -> None:
             raise ValueError(f"Outcome leakage fields in scanner feed: {sorted(leaked)}")
 
 
+def unavailable_forecast_snapshot(
+    *,
+    airport: str,
+    airport_config: Mapping[str, Any],
+    target: date,
+    as_of: datetime,
+    peak_history: list[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Return a fail-closed row so one airport cannot abort the portfolio feed.
+
+    The row deliberately has no model distribution and carries blocking quality
+    warnings.  ``run_scanner_cycle`` can therefore expose the airport as
+    unavailable while still evaluating healthy airports, but it can never create
+    a frozen-rule signal or Shadow trade from this placeholder.
+    """
+    peak = expected_peak_time(
+        peak_history,
+        target,
+        str(airport_config["timezone"]),
+    )
+    schedule = checkpoint_schedule(peak.get("expected_peak_local"))
+    selected = (
+        min(
+            schedule,
+            key=lambda row: abs((_utc(row["checkpoint_utc"]) - as_of).total_seconds()),
+        )
+        if schedule
+        else None
+    )
+    return {
+        "airport": airport,
+        "target_date": target.isoformat(),
+        "checkpoint": selected["checkpoint"] if selected else "W60 Checkpoint unavailable",
+        "checkpoint_scheduled_at": selected["checkpoint_utc"] if selected else None,
+        "checkpoint_delta_minutes": (
+            abs((as_of - _utc(selected["checkpoint_utc"])).total_seconds()) / 60
+            if selected
+            else None
+        ),
+        "generated_at": as_of.isoformat(),
+        "weather_observed_at": None,
+        "weather_source_age_minutes": None,
+        "models": [],
+        "data_quality_warnings": [
+            "forecast_collection_failed",
+            "missing_model",
+            "stale_weather_data",
+        ],
+        "expected_peak": peak,
+        "forecast_method": FIXED_FORECAST_METHOD,
+        "collection_status": "unavailable",
+        "research_only": True,
+    }
+
+
 def build_live_feed(
     *,
     as_of: datetime | None = None,
@@ -670,7 +725,15 @@ def build_live_feed(
             errors.append(
                 {"airport": airport, "component": "forecast_build", "error": type(exc).__name__}
             )
-            raise RuntimeError(f"Could not build required scanner forecast for {airport}") from exc
+            forecasts.append(
+                unavailable_forecast_snapshot(
+                    airport=airport,
+                    airport_config=airport_config,
+                    target=target,
+                    as_of=now,
+                    peak_history=peak_history[airport],
+                )
+            )
         try:
             market_raw[airport] = market_fetcher(airport_config, target)
         except Exception as exc:
