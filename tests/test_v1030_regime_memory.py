@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -212,6 +213,107 @@ def test_promotion_gate_rolls_back_after_recent_deterioration():
     assert gate.mae_gain_c is not None and gate.mae_gain_c > 0
     assert not gate.eligible
     assert "rolled back automatically" in gate.explanation
+
+
+def test_promotion_gate_exports_conditions_and_separates_first_from_late():
+    variants = []
+    actuals = []
+    madrid = ZoneInfo("Europe/Madrid")
+    for index in range(40):
+        target = date(2026, 9, 1) + timedelta(days=index)
+        actuals.append(
+            {
+                "airport": "LEMD",
+                "target_date": target,
+                "max_temp_c": 30.0,
+                "source": "stored-metar-station",
+            }
+        )
+        for hour, champion_center, analog_center, champion_probs, analog_probs in (
+            (12, 30.0, 29.6, {30: 0.8, 29: 0.2}, {29: 0.8, 30: 0.2}),
+            (16, 29.6, 30.0, {29: 0.8, 30: 0.2}, {30: 0.8, 29: 0.2}),
+        ):
+            captured = (
+                datetime.combine(
+                    target,
+                    datetime.min.time(),
+                    tzinfo=madrid,
+                )
+                .replace(hour=hour)
+                .astimezone(timezone.utc)
+            )
+            common = {
+                "airport": "LEMD",
+                "target_date": target,
+                "captured_at": captured,
+                "timing": "D0 live",
+            }
+            variants.extend(
+                [
+                    {
+                        **common,
+                        "variant": "Champion",
+                        "factor": None,
+                        "forecast_c": champion_center,
+                        "probabilities_json": json.dumps(champion_probs),
+                    },
+                    {
+                        **common,
+                        "variant": "Analog Memory Challenger",
+                        "factor": "regime_memory_analog",
+                        "forecast_c": analog_center,
+                        "probabilities_json": json.dumps(analog_probs),
+                    },
+                ]
+            )
+
+    first = evaluate_promotion_gate(
+        pd.DataFrame(variants),
+        pd.DataFrame(actuals),
+        timing_group="D0 live",
+        checkpoint_local_time="12:00",
+        timezone_name="Europe/Madrid",
+        gate_scope="first_live_12_00",
+    )
+    late = evaluate_promotion_gate(
+        pd.DataFrame(variants),
+        pd.DataFrame(actuals),
+        timing_group="D0 live",
+        checkpoint_local_time="16:00",
+        timezone_name="Europe/Madrid",
+        gate_scope="late_live_16_00",
+    )
+    combined = evaluate_promotion_gate(
+        pd.DataFrame(variants),
+        pd.DataFrame(actuals),
+        timing_group="D0 live",
+        timezone_name="Europe/Madrid",
+    )
+
+    assert first.oos_days == late.oos_days == combined.oos_days == 40
+    assert not first.eligible
+    assert late.eligible
+    assert combined.eligible
+    assert len(late.details["conditions"]) == 7
+    assert all(item["status"] == "PASS" for item in late.details["conditions"])
+    assert late.details["blockers"] == []
+    assert late.details["recommendation"] == "READY_FOR_RELEASE_REVIEW"
+    assert late.details["research_only"] is True
+    assert late.details["automatic_promotion"] is False
+    assert late.details["advisory_only"] is True
+    assert combined.details["advisory_only"] is False
+    assert first.details["recommendation"] == "CONTINUE_SHADOW"
+    assert "mae_gain_c" in first.details["blockers"]
+    assert len(late.details["used_days"]) == 40
+    assert {item["selected_checkpoint"] for item in late.details["used_days"]} == {
+        "Late Live @16:00"
+    }
+    assert all(item["variant_pair_sha256"] for item in late.details["used_days"])
+    metrics = late.details["metrics"]
+    assert metrics["champion_rounded_center_bucket_hits"] == 40
+    assert metrics["challenger_rounded_center_bucket_hits"] == 40
+    assert metrics["champion_modal_bucket_hits"] == 0
+    assert metrics["challenger_modal_bucket_hits"] == 40
 
 
 @dataclass(frozen=True)

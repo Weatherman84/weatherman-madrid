@@ -490,6 +490,7 @@ def _regime_memory_payload(row: RegimeMemorySnapshot) -> dict[str, Any]:
         "promotion_status": row.promotion_status,
         "promotion_eligible": row.promotion_eligible,
         "oos_days": row.oos_days,
+        "promotion_gate": _json_value(row.promotion_gate_json, {}),
         "regimes": _json_value(row.regimes_json, []),
         "analogs": _json_value(row.analogs_json, []),
         "pro_signals": _json_value(row.pro_signals_json, []),
@@ -751,17 +752,27 @@ def build_daily_analysis_export(
         key = _captured_key(row.captured_at)
         if key is not None:
             variants_by_capture[key].append(_variant_payload(row))
-    regimes_by_capture: dict[str, dict[str, Any]] = {}
-    for row in session.scalars(
-        select(RegimeMemorySnapshot).where(
-            RegimeMemorySnapshot.airport == AIRPORT,
-            RegimeMemorySnapshot.target_date >= first_target,
-            RegimeMemorySnapshot.target_date <= last_target,
+    regime_memory_rows = list(
+        session.scalars(
+            select(RegimeMemorySnapshot)
+            .where(
+                RegimeMemorySnapshot.airport == AIRPORT,
+                RegimeMemorySnapshot.target_date >= first_target,
+                RegimeMemorySnapshot.target_date <= last_target,
+            )
+            .order_by(RegimeMemorySnapshot.captured_at)
         )
-    ):
+    )
+    regimes_by_capture: dict[str, dict[str, Any]] = {}
+    for row in regime_memory_rows:
         key = _captured_key(row.captured_at)
         if key is not None:
             regimes_by_capture[key] = _regime_memory_payload(row)
+    latest_gate_report = (
+        _json_value(regime_memory_rows[-1].promotion_gate_json, {})
+        if regime_memory_rows
+        else {}
+    )
 
     actuals = list(
         session.scalars(
@@ -966,6 +977,23 @@ def build_daily_analysis_export(
         "taf_revision_journal": [_taf_payload(row) for row in tafs],
         "checkpoints": checkpoints,
         "manual_live_checkpoints": manual_live_checkpoints,
+        "analog_promotion_gate": {
+            "research_only": True,
+            "automatic_promotion": False,
+            "changes_champion": False,
+            "source": "latest already-loaded regime-memory snapshot",
+            "source_target_date": (
+                regime_memory_rows[-1].target_date.isoformat()
+                if regime_memory_rows
+                else None
+            ),
+            "source_captured_at": (
+                _iso(regime_memory_rows[-1].captured_at)
+                if regime_memory_rows
+                else None
+            ),
+            "report": latest_gate_report,
+        },
         "provider_calls": [
             {
                 "local_date": row.local_date.isoformat(),

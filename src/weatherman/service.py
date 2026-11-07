@@ -6,6 +6,7 @@ import math
 import time
 from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, is_dataclass
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -1949,6 +1950,19 @@ def _record_regime_memory_snapshot(
     if nowcast is None or nowcast.regime_memory is None:
         return 0
     memory = nowcast.regime_memory
+
+    def gate_payload(gate) -> dict[str, object]:
+        if is_dataclass(gate):
+            return asdict(gate)
+        return {
+            key: value
+            for key, value in vars(gate).items()
+            if not key.startswith("_")
+        }
+
+    promotion_gates = getattr(memory, "promotion_gates", None) or {
+        "combined_live": memory.promotion
+    }
     row = {
         "airport": code,
         "target_date": target,
@@ -1968,6 +1982,18 @@ def _record_regime_memory_snapshot(
         "promotion_status": memory.promotion.status,
         "promotion_eligible": memory.promotion.eligible,
         "oos_days": memory.promotion.oos_days,
+        "promotion_gate_json": json.dumps(
+            {
+                "research_only": True,
+                "automatic_promotion": False,
+                "changes_champion": False,
+                "gates": {
+                    name: gate_payload(gate)
+                    for name, gate in promotion_gates.items()
+                },
+            },
+            separators=(",", ":"),
+        ),
         "regimes_json": json.dumps(
             [
                 {
