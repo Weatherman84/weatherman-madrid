@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from dataclasses import asdict, dataclass, replace
@@ -52,6 +53,7 @@ class PromotionGate:
     champion_bias: float | None
     challenger_bias: float | None
     explanation: str
+    details: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,7 @@ class RegimeMemoryAssessment:
     regimes: tuple[RegimeState, ...]
     analogs: tuple[AnalogDay, ...]
     promotion: PromotionGate
+    promotion_gates: dict[str, PromotionGate]
     pro_signals: tuple[str, ...]
     contra_signals: tuple[str, ...]
     explanation: str
@@ -362,6 +365,51 @@ def _brier(probabilities: dict[int, float], actual_bucket: int) -> float | None:
     )
 
 
+PROMOTION_GATE_EVALUATION_VERSION = "analog_promotion_gate_transparency_v1"
+
+
+def _modal_bucket(probabilities: object) -> int | None:
+    parsed = _normalised_probabilities(probabilities)
+    if not parsed:
+        return None
+    return sorted(parsed.items(), key=lambda item: (-item[1], item[0]))[0][0]
+
+
+def _checkpoint_label(captured_at: object, timezone_name: str | None) -> str:
+    parsed = pd.to_datetime(captured_at, utc=True, errors="coerce")
+    if pd.isna(parsed):
+        return "unknown"
+    local = parsed.tz_convert(timezone_name or "UTC")
+    clock = f"{local:%H:%M}"
+    if clock == "12:00":
+        return "First Live @12:00"
+    if clock == "16:00":
+        return "Late Live @16:00"
+    return f"D0 Live @{clock}"
+
+
+def _condition(
+    condition_id: str,
+    actual: float | int | None,
+    threshold: float | int,
+    *,
+    operator: str,
+    passed: bool,
+    unit: str,
+    basis: str,
+) -> dict[str, Any]:
+    return {
+        "condition": condition_id,
+        "actual": actual,
+        "threshold": threshold,
+        "operator": operator,
+        "passed": bool(passed),
+        "status": "PASS" if passed else "FAIL",
+        "unit": unit,
+        "basis": basis,
+    }
+
+
 def evaluate_promotion_gate(
     variants: pd.DataFrame,
     actuals: pd.DataFrame,
@@ -373,6 +421,9 @@ def evaluate_promotion_gate(
     minimum_mae_gain_c: float = 0.12,
     minimum_brier_gain: float = 0.003,
     oos_start_date: date | str | None = None,
+    checkpoint_local_time: str | None = None,
+    timezone_name: str | None = None,
+    gate_scope: str = "combined_live",
 ) -> PromotionGate:
     """Evaluate sequential challenger forecasts that were made before their outcomes."""
     empty = PromotionGate(
@@ -391,6 +442,23 @@ def evaluate_promotion_gate(
             f"0/{minimum_oos_days} settled out-of-sample airport-days. "
             "The learned pattern cannot affect the Champion."
         ),
+        details={
+            "evaluation_version": PROMOTION_GATE_EVALUATION_VERSION,
+            "gate_scope": gate_scope,
+            "checkpoint_policy": (
+                f"fixed local checkpoint {checkpoint_local_time}"
+                if checkpoint_local_time
+                else "existing combined timing gate; last paired snapshot per airport-day"
+            ),
+            "timezone": timezone_name,
+            "research_only": True,
+            "automatic_promotion": False,
+            "advisory_only": gate_scope != "combined_live",
+            "conditions": [],
+            "blockers": ["insufficient_evidence"],
+            "recommendation": "CONTINUE_SHADOW",
+            "used_days": [],
+        },
     )
     if variants.empty or actuals.empty:
         return empty
@@ -414,6 +482,19 @@ def evaluate_promotion_gate(
         if not pd.isna(start):
             frame = frame[frame.target_date >= start.date()]
     frame = frame[frame.timing.map(_timing_group) == timing_group]
+    if checkpoint_local_time:
+        try:
+            expected_hour, expected_minute = (
+                int(value) for value in checkpoint_local_time.split(":", 1)
+            )
+        except (TypeError, ValueError):
+            return empty
+        local_capture = frame.captured_at.dt.tz_convert(timezone_name or "UTC")
+        frame = frame[
+            (local_capture.dt.date == frame.target_date)
+            & (local_capture.dt.hour == expected_hour)
+            & (local_capture.dt.minute == expected_minute)
+        ]
     champion = frame[frame.variant == "Champion"]
     challenger = frame[frame.factor == factor]
     if champion.empty or challenger.empty:
@@ -459,6 +540,7 @@ def evaluate_promotion_gate(
     mae_gain = champion_mae - challenger_mae
     champion_briers: list[float] = []
     challenger_briers: list[float] = []
+    paired_brier_scores: dict[tuple[str, date], tuple[float | None, float | None]] = {}
     for row in paired.itertuples():
         actual_bucket = math.floor(float(row.max_temp_c) + 0.5)
         champion_score = _brier(
@@ -472,6 +554,10 @@ def evaluate_promotion_gate(
         if champion_score is not None and challenger_score is not None:
             champion_briers.append(champion_score)
             challenger_briers.append(challenger_score)
+        paired_brier_scores[(str(row.airport), row.target_date)] = (
+            champion_score,
+            challenger_score,
+        )
     brier_gain = (
         float(pd.Series(champion_briers).mean() - pd.Series(challenger_briers).mean())
         if champion_briers
@@ -481,8 +567,7 @@ def evaluate_promotion_gate(
     champion_bucket = champion_values.map(lambda value: math.floor(float(value) + 0.5))
     challenger_bucket = challenger_values.map(lambda value: math.floor(float(value) + 0.5))
     exact_gain = float(
-        (challenger_bucket == actual_bucket).mean()
-        - (champion_bucket == actual_bucket).mean()
+        (challenger_bucket == actual_bucket).mean() - (champion_bucket == actual_bucket).mean()
     )
     champion_bias = float(champion_error.mean())
     challenger_bias = float(challenger_error.mean())
@@ -498,6 +583,86 @@ def evaluate_promotion_gate(
         <= abs(float(recent_champion_error.mean())) + 0.15
     )
     enough_days = days >= minimum_oos_days
+    bias_guard_delta = abs(challenger_bias) - abs(champion_bias)
+    recent_champion_mae = float(recent_champion_error.abs().mean())
+    recent_challenger_mae = float(recent_challenger_error.abs().mean())
+    recent_champion_bias = float(recent_champion_error.mean())
+    recent_challenger_bias = float(recent_challenger_error.mean())
+    recent_bias_guard_delta = abs(recent_challenger_bias) - abs(recent_champion_bias)
+    champion_modal = paired.probabilities_json_champion.map(_modal_bucket)
+    challenger_modal = paired.probabilities_json_challenger.map(_modal_bucket)
+    champion_center_hits = int((champion_bucket == actual_bucket).sum())
+    challenger_center_hits = int((challenger_bucket == actual_bucket).sum())
+    champion_modal_hits = int((champion_modal == actual_bucket).sum())
+    challenger_modal_hits = int((challenger_modal == actual_bucket).sum())
+    modal_hit_gain = float(
+        (challenger_modal == actual_bucket).mean() - (champion_modal == actual_bucket).mean()
+    )
+    conditions = (
+        _condition(
+            "oos_days",
+            days,
+            minimum_oos_days,
+            operator=">=",
+            passed=enough_days,
+            unit="days",
+            basis="settled sequential OOS airport-days",
+        ),
+        _condition(
+            "mae_gain_c",
+            mae_gain,
+            minimum_mae_gain_c,
+            operator=">=",
+            passed=mae_gain >= minimum_mae_gain_c,
+            unit="degC",
+            basis="Champion MAE minus Challenger MAE",
+        ),
+        _condition(
+            "brier_gain",
+            brier_gain,
+            minimum_brier_gain,
+            operator=">=",
+            passed=brier_gain is not None and brier_gain >= minimum_brier_gain,
+            unit="score",
+            basis="Champion multiclass Brier minus Challenger multiclass Brier",
+        ),
+        _condition(
+            "rounded_center_bucket_hit_gain",
+            exact_gain,
+            -0.02,
+            operator=">=",
+            passed=exact_gain >= -0.02,
+            unit="rate",
+            basis="existing gate: rounded forecast center bucket, not distribution modal",
+        ),
+        _condition(
+            "absolute_bias_guard_delta_c",
+            bias_guard_delta,
+            0.15,
+            operator="<=",
+            passed=bias_guard_delta <= 0.15,
+            unit="degC",
+            basis="abs(Challenger bias) minus abs(Champion bias)",
+        ),
+        _condition(
+            "recent_10_mae_gain_c",
+            recent_mae_gain,
+            0.0,
+            operator=">=",
+            passed=recent_mae_gain >= 0.0,
+            unit="degC",
+            basis=f"last {recent_count} selected OOS days",
+        ),
+        _condition(
+            "recent_10_absolute_bias_guard_delta_c",
+            recent_bias_guard_delta,
+            0.15,
+            operator="<=",
+            passed=recent_bias_guard,
+            unit="degC",
+            basis=f"last {recent_count} selected OOS days",
+        ),
+    )
     quality_pass = bool(
         mae_gain >= minimum_mae_gain_c
         and brier_gain is not None
@@ -508,6 +673,7 @@ def evaluate_promotion_gate(
         and recent_bias_guard
     )
     eligible = enough_days and quality_pass
+    blockers = tuple(item["condition"] for item in conditions if not item["passed"])
     if eligible:
         status = "AUTO-PROMOTION ELIGIBLE"
         explanation = (
@@ -529,6 +695,128 @@ def evaluate_promotion_gate(
             f"The last {recent_count} days show {recent_mae_gain:+.2f} °C MAE gain. "
             "The learned pattern remains Challenger-only or is rolled back automatically."
         )
+    used_days: list[dict[str, Any]] = []
+    for position, row in enumerate(paired.itertuples()):
+        champion_center = float(champion_values.iloc[position])
+        challenger_center = float(challenger_values.iloc[position])
+        actual_c = float(actual_values.iloc[position])
+        actual_day_bucket = int(actual_bucket.iloc[position])
+        champion_day_modal = champion_modal.iloc[position]
+        challenger_day_modal = challenger_modal.iloc[position]
+        champion_probabilities = _normalised_probabilities(row.probabilities_json_champion)
+        challenger_probabilities = _normalised_probabilities(row.probabilities_json_challenger)
+        variant_pair = {
+            "champion_variant": "Champion",
+            "challenger_variant": str(getattr(row, "variant", challenger_label)),
+            "challenger_factor": str(getattr(row, "factor", factor)),
+            "champion_center_c": champion_center,
+            "challenger_center_c": challenger_center,
+            "champion_probabilities": champion_probabilities,
+            "challenger_probabilities": challenger_probabilities,
+        }
+        champion_day_brier, challenger_day_brier = paired_brier_scores.get(
+            (str(row.airport), row.target_date), (None, None)
+        )
+        used_days.append(
+            {
+                "airport": str(row.airport),
+                "target_date": row.target_date.isoformat(),
+                "captured_at": pd.Timestamp(row.captured_at).isoformat(),
+                "selected_checkpoint": _checkpoint_label(row.captured_at, timezone_name),
+                "checkpoint_scope": gate_scope,
+                "actual_c": actual_c,
+                "actual_bucket": actual_day_bucket,
+                "champion_center_c": champion_center,
+                "challenger_center_c": challenger_center,
+                "champion_rounded_center_bucket": int(math.floor(champion_center + 0.5)),
+                "challenger_rounded_center_bucket": int(math.floor(challenger_center + 0.5)),
+                "champion_modal_bucket": (
+                    int(champion_day_modal) if champion_day_modal is not None else None
+                ),
+                "challenger_modal_bucket": (
+                    int(challenger_day_modal) if challenger_day_modal is not None else None
+                ),
+                "champion_center_bucket_hit": bool(
+                    math.floor(champion_center + 0.5) == actual_day_bucket
+                ),
+                "challenger_center_bucket_hit": bool(
+                    math.floor(challenger_center + 0.5) == actual_day_bucket
+                ),
+                "champion_modal_hit": bool(champion_day_modal == actual_day_bucket),
+                "challenger_modal_hit": bool(challenger_day_modal == actual_day_bucket),
+                "champion_brier": champion_day_brier,
+                "challenger_brier": challenger_day_brier,
+                "champion_variant": "Champion",
+                "challenger_variant": str(getattr(row, "variant", challenger_label)),
+                "challenger_factor": str(getattr(row, "factor", factor)),
+                "variant_pair_sha256": hashlib.sha256(
+                    json.dumps(
+                        variant_pair,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+            }
+        )
+    details = {
+        "evaluation_version": PROMOTION_GATE_EVALUATION_VERSION,
+        "gate_scope": gate_scope,
+        "checkpoint_policy": (
+            f"fixed local checkpoint {checkpoint_local_time}"
+            if checkpoint_local_time
+            else "existing combined timing gate; last paired snapshot per airport-day"
+        ),
+        "timezone": timezone_name,
+        "timing_group": timing_group,
+        "factor": factor,
+        "challenger_label": challenger_label,
+        "research_only": True,
+        "automatic_promotion": False,
+        "advisory_only": gate_scope != "combined_live",
+        "conditions": list(conditions),
+        "blockers": list(blockers),
+        "recommendation": "READY_FOR_RELEASE_REVIEW" if eligible else "CONTINUE_SHADOW",
+        "recommendation_reason": (
+            "All unchanged gate conditions pass."
+            if eligible
+            else f"Failed unchanged gate conditions: {', '.join(blockers)}."
+        ),
+        "metrics": {
+            "oos_days": days,
+            "champion_mae_c": champion_mae,
+            "challenger_mae_c": challenger_mae,
+            "mae_gain_c": mae_gain,
+            "champion_brier": (
+                float(pd.Series(champion_briers).mean()) if champion_briers else None
+            ),
+            "challenger_brier": (
+                float(pd.Series(challenger_briers).mean()) if challenger_briers else None
+            ),
+            "brier_gain": brier_gain,
+            "champion_bias_c": champion_bias,
+            "challenger_bias_c": challenger_bias,
+            "absolute_bias_guard_delta_c": bias_guard_delta,
+            "champion_rounded_center_bucket_hits": champion_center_hits,
+            "challenger_rounded_center_bucket_hits": challenger_center_hits,
+            "rounded_center_bucket_hit_gain": exact_gain,
+            "champion_modal_bucket_hits": champion_modal_hits,
+            "challenger_modal_bucket_hits": challenger_modal_hits,
+            "modal_bucket_hit_gain": modal_hit_gain,
+            "recent_days": recent_count,
+            "recent_champion_mae_c": recent_champion_mae,
+            "recent_challenger_mae_c": recent_challenger_mae,
+            "recent_mae_gain_c": recent_mae_gain,
+            "recent_champion_bias_c": recent_champion_bias,
+            "recent_challenger_bias_c": recent_challenger_bias,
+            "recent_absolute_bias_guard_delta_c": recent_bias_guard_delta,
+        },
+        "variant_state": {
+            "source": "stored ForecastVariantSnapshot pairs",
+            "historical_generator_version": "not persisted per legacy row",
+            "reproducibility_key": "variant_pair_sha256",
+        },
+        "used_days": used_days,
+    }
     return PromotionGate(
         status=status,
         eligible=eligible,
@@ -542,6 +830,7 @@ def evaluate_promotion_gate(
         champion_bias=champion_bias,
         challenger_bias=challenger_bias,
         explanation=explanation,
+        details=details,
     )
 
 
@@ -1321,6 +1610,32 @@ def assess_regime_memory(
         minimum_mae_gain_c=float(configured.get("minimum_mae_gain_c", 0.12)),
         minimum_brier_gain=float(configured.get("minimum_brier_gain", 0.003)),
         oos_start_date=configured.get("oos_start_date"),
+        timezone_name=timezone_name,
+        gate_scope="combined_live",
+    )
+    first_live_promotion = evaluate_promotion_gate(
+        variants,
+        actuals,
+        timing_group="D0 live",
+        minimum_oos_days=int(configured.get("minimum_oos_days", 30)),
+        minimum_mae_gain_c=float(configured.get("minimum_mae_gain_c", 0.12)),
+        minimum_brier_gain=float(configured.get("minimum_brier_gain", 0.003)),
+        oos_start_date=configured.get("oos_start_date"),
+        checkpoint_local_time="12:00",
+        timezone_name=timezone_name,
+        gate_scope="first_live_12_00",
+    )
+    late_live_promotion = evaluate_promotion_gate(
+        variants,
+        actuals,
+        timing_group="D0 live",
+        minimum_oos_days=int(configured.get("minimum_oos_days", 30)),
+        minimum_mae_gain_c=float(configured.get("minimum_mae_gain_c", 0.12)),
+        minimum_brier_gain=float(configured.get("minimum_brier_gain", 0.003)),
+        oos_start_date=configured.get("oos_start_date"),
+        checkpoint_local_time="16:00",
+        timezone_name=timezone_name,
+        gate_scope="late_live_16_00",
     )
     states = list(
         _known_regime_states(
@@ -1416,6 +1731,11 @@ def assess_regime_memory(
         regimes=tuple(states),
         analogs=analogs,
         promotion=promotion,
+        promotion_gates={
+            "combined_live": promotion,
+            "first_live_12_00": first_live_promotion,
+            "late_live_16_00": late_live_promotion,
+        },
         pro_signals=pro_signals,
         contra_signals=contra_signals,
         explanation=explanation,
