@@ -366,7 +366,6 @@ class RegimeMemorySnapshot(Base):
     promotion_status: Mapped[str] = mapped_column(String(40), index=True)
     promotion_eligible: Mapped[bool] = mapped_column(Boolean, default=False)
     oos_days: Mapped[int] = mapped_column(Integer, default=0)
-    promotion_gate_json: Mapped[str] = mapped_column(Text, default="{}")
     regimes_json: Mapped[str] = mapped_column(Text, default="[]")
     analogs_json: Mapped[str] = mapped_column(Text, default="[]")
     pro_signals_json: Mapped[str] = mapped_column(Text, default="[]")
@@ -764,10 +763,6 @@ def init_db() -> None:
                     "CREATE INDEX IF NOT EXISTS ix_forecast_snapshots_taf_issue_time "
                     "ON forecast_snapshots (taf_issue_time)"
                 )
-            )
-            add_columns(
-                "regime_memory_snapshots",
-                {"promotion_gate_json": "TEXT DEFAULT '{}'"},
             )
             add_columns(
                 "collection_runs",

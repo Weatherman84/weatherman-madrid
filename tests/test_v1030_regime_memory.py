@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from weatherman.promotion_gate_transparency import build_analog_promotion_report
 from weatherman.regime_memory import (
     enrich_nowcast_with_regime_memory,
     evaluate_promotion_gate,
@@ -267,53 +268,38 @@ def test_promotion_gate_exports_conditions_and_separates_first_from_late():
                 ]
             )
 
-    first = evaluate_promotion_gate(
+    report = build_analog_promotion_report(
         pd.DataFrame(variants),
         pd.DataFrame(actuals),
-        timing_group="D0 live",
-        checkpoint_local_time="12:00",
-        timezone_name="Europe/Madrid",
-        gate_scope="first_live_12_00",
-    )
-    late = evaluate_promotion_gate(
-        pd.DataFrame(variants),
-        pd.DataFrame(actuals),
-        timing_group="D0 live",
-        checkpoint_local_time="16:00",
-        timezone_name="Europe/Madrid",
-        gate_scope="late_live_16_00",
-    )
-    combined = evaluate_promotion_gate(
-        pd.DataFrame(variants),
-        pd.DataFrame(actuals),
-        timing_group="D0 live",
         timezone_name="Europe/Madrid",
     )
+    first = report["gates"]["first_live_12_00"]
+    late = report["gates"]["late_live_16_00"]
+    combined = report["gates"]["combined_live"]
 
-    assert first.oos_days == late.oos_days == combined.oos_days == 40
-    assert not first.eligible
-    assert late.eligible
-    assert combined.eligible
-    assert len(late.details["conditions"]) == 7
-    assert all(item["status"] == "PASS" for item in late.details["conditions"])
-    assert late.details["blockers"] == []
-    assert late.details["recommendation"] == "READY_FOR_RELEASE_REVIEW"
-    assert late.details["research_only"] is True
-    assert late.details["automatic_promotion"] is False
-    assert late.details["advisory_only"] is True
-    assert combined.details["advisory_only"] is False
-    assert first.details["recommendation"] == "CONTINUE_SHADOW"
-    assert "mae_gain_c" in first.details["blockers"]
-    assert len(late.details["used_days"]) == 40
-    assert {item["selected_checkpoint"] for item in late.details["used_days"]} == {
-        "Late Live @16:00"
+    assert first["oos_days"] == late["oos_days"] == combined["oos_days"] == 40
+    assert not first["eligible"]
+    assert late["eligible"]
+    assert combined["eligible"]
+    assert len(late["conditions"]) == 7
+    assert all(item["status"] == "PASS" for item in late["conditions"])
+    assert late["blockers"] == []
+    assert late["recommendation"] == "READY_FOR_RELEASE_REVIEW"
+    assert report["research_only"] is True
+    assert report["automatic_promotion"] is False
+    assert report["existing_combined_gate_unchanged"] is True
+    assert first["recommendation"] == "CONTINUE_SHADOW"
+    assert "mae_gain_c" in first["blockers"]
+    assert len(late["used_days"]) == 40
+    assert {item["selected_checkpoint"] for item in late["used_days"]} == {
+        "16:00 Europe/Madrid"
     }
-    assert all(item["variant_pair_sha256"] for item in late.details["used_days"])
-    metrics = late.details["metrics"]
+    assert all(item["variant_pair_sha256"] for item in late["used_days"])
+    metrics = late["metrics"]
     assert metrics["champion_rounded_center_bucket_hits"] == 40
-    assert metrics["challenger_rounded_center_bucket_hits"] == 40
+    assert metrics["analog_rounded_center_bucket_hits"] == 40
     assert metrics["champion_modal_bucket_hits"] == 0
-    assert metrics["challenger_modal_bucket_hits"] == 40
+    assert metrics["analog_modal_bucket_hits"] == 40
 
 
 @dataclass(frozen=True)

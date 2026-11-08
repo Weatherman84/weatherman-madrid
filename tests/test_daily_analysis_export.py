@@ -108,23 +108,6 @@ def test_daily_analysis_export_is_read_only_scoped_and_explainable() -> None:
                 promotion_status="research-only",
                 explanation="No promotion.",
                 regimes_json='[{"name":"persistent_hot","status":"active"}]',
-                promotion_gate_json=json.dumps(
-                    {
-                        "research_only": True,
-                        "automatic_promotion": False,
-                        "changes_champion": False,
-                        "gates": {
-                            "combined_live": {
-                                "status": "NOT ELIGIBLE",
-                                "details": {"blockers": ["recent_10_mae_gain_c"]},
-                            },
-                            "late_live_16_00": {
-                                "status": "AUTO-PROMOTION ELIGIBLE",
-                                "details": {"blockers": []},
-                            },
-                        },
-                    }
-                ),
             )
         )
         session.add(
@@ -217,11 +200,11 @@ def test_daily_analysis_export_is_read_only_scoped_and_explainable() -> None:
     assert checkpoint["regime_flags"]["persistent_hot_active"] is True
     assert checkpoint["champion_and_challengers"][0]["bucket_probabilities"]["28"] == 0.6
     assert checkpoint["regime_memory"]["regimes"][0]["name"] == "persistent_hot"
-    assert checkpoint["regime_memory"]["promotion_gate"]["research_only"] is True
     assert payload["analog_promotion_gate"]["automatic_promotion"] is False
-    assert payload["analog_promotion_gate"]["report"]["gates"]["combined_live"][
-        "details"
-    ]["blockers"] == ["recent_10_mae_gain_c"]
+    assert payload["analog_promotion_gate"]["research_only"] is True
+    assert set(payload["analog_promotion_gate"]["gates"]) == {
+        "combined_live", "first_live_12_00", "late_live_16_00",
+    }
     assert checkpoint["oos"] == {
         "causal": True,
         "standardized": True,

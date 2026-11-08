@@ -1,4 +1,3 @@
-import json
 from contextlib import nullcontext
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -684,11 +683,6 @@ def test_collection_journals_explainable_regime_memory_snapshot():
         assert not row.applied_to_champion
         assert row.analog_count == 3
         assert "heating rate" in row.analogs_json
-        promotion_gate = json.loads(row.promotion_gate_json)
-        assert promotion_gate["research_only"] is True
-        assert promotion_gate["automatic_promotion"] is False
-        assert promotion_gate["changes_champion"] is False
-        assert promotion_gate["gates"]["combined_live"]["status"] == "SHADOW"
 
 
 def test_shadow_collection_stays_research_only_without_an_actionable_basket():

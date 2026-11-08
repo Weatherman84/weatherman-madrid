@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import httpx
+import pandas as pd
 from sqlalchemy import select, text
 
 from . import __version__
@@ -40,10 +41,12 @@ from .db import (
     TafReport,
 )
 from .settings import settings
+from .promotion_gate_transparency import build_analog_promotion_report
 
 
 AIRPORT = "LEMD"
 AIRPORT_TIMEZONE = "Europe/Madrid"
+ANALOG_GATE_START = date(2026, 8, 31)
 ENGINE_BASELINE = "v10.7.11"
 EXPORT_SCHEMA_VERSION = "1.3"
 FIXED_CHECKPOINT_LABELS = (
@@ -490,7 +493,6 @@ def _regime_memory_payload(row: RegimeMemorySnapshot) -> dict[str, Any]:
         "promotion_status": row.promotion_status,
         "promotion_eligible": row.promotion_eligible,
         "oos_days": row.oos_days,
-        "promotion_gate": _json_value(row.promotion_gate_json, {}),
         "regimes": _json_value(row.regimes_json, []),
         "analogs": _json_value(row.analogs_json, []),
         "pro_signals": _json_value(row.pro_signals_json, []),
@@ -711,6 +713,7 @@ def build_daily_analysis_export(
     safe_days = max(1, min(31, int(days)))
     first_target = local_today - timedelta(days=safe_days - 1)
     last_target = local_today + timedelta(days=1)
+    gate_query_start = min(first_target, ANALOG_GATE_START)
     first_observation = datetime.combine(
         first_target,
         time.min,
@@ -741,14 +744,17 @@ def build_daily_analysis_export(
             .order_by(ForecastSnapshot.captured_at)
         )
     )
-    variants_by_capture: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in session.scalars(
+    gate_variant_rows = list(session.scalars(
         select(ForecastVariantSnapshot).where(
             ForecastVariantSnapshot.airport == AIRPORT,
-            ForecastVariantSnapshot.target_date >= first_target,
+            ForecastVariantSnapshot.target_date >= gate_query_start,
             ForecastVariantSnapshot.target_date <= last_target,
         )
-    ):
+    ))
+    variants_by_capture: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in gate_variant_rows:
+        if row.target_date < first_target:
+            continue
         key = _captured_key(row.captured_at)
         if key is not None:
             variants_by_capture[key].append(_variant_payload(row))
@@ -768,22 +774,37 @@ def build_daily_analysis_export(
         key = _captured_key(row.captured_at)
         if key is not None:
             regimes_by_capture[key] = _regime_memory_payload(row)
-    latest_gate_report = (
-        _json_value(regime_memory_rows[-1].promotion_gate_json, {})
-        if regime_memory_rows
-        else {}
-    )
-
-    actuals = list(
+    gate_actual_rows = list(
         session.scalars(
             select(DailyActual)
             .where(
                 DailyActual.airport == AIRPORT,
-                DailyActual.target_date >= first_target,
+                DailyActual.target_date >= gate_query_start,
                 DailyActual.target_date <= local_today,
             )
             .order_by(DailyActual.target_date)
         )
+    )
+    actuals = [row for row in gate_actual_rows if row.target_date >= first_target]
+    gate_variants = pd.DataFrame([
+        {
+            "airport": row.airport, "target_date": row.target_date,
+            "captured_at": row.captured_at, "timing": row.timing,
+            "variant": row.variant, "factor": row.factor,
+            "forecast_c": row.forecast_c, "probabilities_json": row.probabilities_json,
+        }
+        for row in gate_variant_rows
+    ])
+    gate_actuals = pd.DataFrame([
+        {
+            "airport": row.airport, "target_date": row.target_date,
+            "max_temp_c": row.max_temp_c, "source": row.source,
+        }
+        for row in gate_actual_rows
+    ])
+    analog_promotion_gate = build_analog_promotion_report(
+        gate_variants, gate_actuals, timezone_name=AIRPORT_TIMEZONE,
+        oos_start_date=ANALOG_GATE_START,
     )
     observations = list(
         session.scalars(
@@ -977,23 +998,7 @@ def build_daily_analysis_export(
         "taf_revision_journal": [_taf_payload(row) for row in tafs],
         "checkpoints": checkpoints,
         "manual_live_checkpoints": manual_live_checkpoints,
-        "analog_promotion_gate": {
-            "research_only": True,
-            "automatic_promotion": False,
-            "changes_champion": False,
-            "source": "latest already-loaded regime-memory snapshot",
-            "source_target_date": (
-                regime_memory_rows[-1].target_date.isoformat()
-                if regime_memory_rows
-                else None
-            ),
-            "source_captured_at": (
-                _iso(regime_memory_rows[-1].captured_at)
-                if regime_memory_rows
-                else None
-            ),
-            "report": latest_gate_report,
-        },
+        "analog_promotion_gate": analog_promotion_gate,
         "provider_calls": [
             {
                 "local_date": row.local_date.isoformat(),
