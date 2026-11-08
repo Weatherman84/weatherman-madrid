@@ -48,6 +48,7 @@ from weatherman.service import (
 from weatherman.settings import settings
 from weatherman.research_ui import render_research_tracks
 from weatherman.forward_shadow_public import fetch_forward_shadow_journal
+from weatherman.promotion_gate_transparency import build_analog_promotion_report
 from weatherman.terminology import EVIDENCE_GLOSSARY, FRESHNESS_GLOSSARY
 
 
@@ -79,6 +80,65 @@ def temperature(value: object, *, digits: int = 1) -> str:
 def percentage(value: object, *, digits: int = 0) -> str:
     number = pd.to_numeric(value, errors="coerce")
     return f"{float(number):.{digits}%}" if pd.notna(number) else "—"
+
+
+def render_analog_promotion_gate(report: dict[str, object]) -> None:
+    """Render advisory gate evidence without changing the protected engine."""
+    gates = dict(report.get("gates") or {})
+    labels = {
+        "combined_live": "Combined live (unchanged)",
+        "first_live_12_00": "First Live 12:00",
+        "late_live_16_00": "Late Live 16:00",
+    }
+    rows = []
+    for key, label in labels.items():
+        gate = dict(gates.get(key) or {})
+        metrics = dict(gate.get("metrics") or {})
+        blockers = list(gate.get("blockers") or [])
+        rows.append({
+            "Gate": label,
+            "Status": gate.get("status", "—"),
+            "OOS days": gate.get("oos_days", 0),
+            "MAE gain": metrics.get("mae_gain_c"),
+            "Brier gain": metrics.get("brier_gain"),
+            "Champion modal hits": metrics.get("champion_modal_bucket_hits", 0),
+            "Analog modal hits": metrics.get("analog_modal_bucket_hits", 0),
+            "Blocker": ", ".join(blockers) if blockers else "none",
+            "Recommendation": gate.get("recommendation", "CONTINUE_SHADOW"),
+        })
+    with st.expander("Analog Memory promotion gate · transparent research view"):
+        st.caption(
+            "Diagnostic only: research_only=true, automatic_promotion=false. The "
+            "Champion, thresholds and betting logic are unchanged. Modal-bucket hits "
+            "and rounded-center hits are counted separately."
+        )
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+        scope = st.selectbox(
+            "Gate details", options=list(labels), format_func=labels.get,
+            key="analog-promotion-gate-scope",
+        )
+        selected = dict(gates.get(scope) or {})
+        conditions = pd.DataFrame(selected.get("conditions") or [])
+        if conditions.empty:
+            st.info("No settled paired evidence is available for this gate.")
+        else:
+            st.dataframe(
+                conditions[[
+                    "condition", "actual", "operator", "threshold", "status", "basis",
+                ]].rename(columns={
+                    "condition": "Condition", "actual": "Actual",
+                    "operator": "Operator", "threshold": "Configured threshold",
+                    "status": "Result", "basis": "Definition",
+                }),
+                hide_index=True, width="stretch",
+            )
+        used_days = pd.DataFrame(selected.get("used_days") or [])
+        if not used_days.empty:
+            st.caption(
+                f"Reproducible evidence: {len(used_days)} selected airport-days; "
+                f"evaluation version {report.get('evaluation_version', '—')}."
+            )
+            st.dataframe(used_days, hide_index=True, width="stretch")
 
 
 def latest_market_frame(markets: pd.DataFrame) -> pd.DataFrame:
@@ -558,6 +618,10 @@ if st.sidebar.button("Refresh Madrid now", type="primary", use_container_width=T
 current_data = load_madrid_data(target, airport_code, timezone_name)
 history_data = load_madrid_history(target, airport_code)
 data = combine_cockpit_data(current_data, history_data)
+analog_promotion_report = build_analog_promotion_report(
+    data["variants"], data["actuals"], timezone_name=timezone_name,
+    oos_start_date=settings.regime_memory_oos_start_date,
+)
 metar_curve_records = filter_metar_day(
     data["observations"][["observed_at", "temp_c"]].to_dict("records")
     if not data["observations"].empty else [], target, timezone_name,
@@ -615,6 +679,7 @@ if nowcast is None:
         hide_index=True,
         width="stretch",
     )
+    render_analog_promotion_gate(analog_promotion_report)
     render_aemet_station_panel(target, metar_curve_records, timezone_name)
     st.stop()
 
@@ -759,6 +824,8 @@ with right:
             "Champion probabilities stored at that checkpoint; it is never reconstructed "
             "from the numerical center."
         )
+
+render_analog_promotion_gate(analog_promotion_report)
 
 st.subheader("2 · Fixed decision checkpoints")
 st.dataframe(

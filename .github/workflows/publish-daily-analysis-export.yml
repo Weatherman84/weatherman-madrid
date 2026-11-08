@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/publish-daily-analysis-export.yml"
       - "scripts/verify_daily_analysis_publication.py"
+      - "src/weatherman/daily_analysis_export.py"
+      - "src/weatherman/promotion_gate_transparency.py"
   workflow_call:
   workflow_dispatch:
 
