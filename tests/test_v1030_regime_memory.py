@@ -295,6 +295,10 @@ def test_promotion_gate_exports_conditions_and_separates_first_from_late():
         "16:00 Europe/Madrid"
     }
     assert all(item["variant_pair_sha256"] for item in late["used_days"])
+    assert all("champion_top2_hit" in item for item in late["used_days"])
+    assert all("analog_top2_hit" in item for item in late["used_days"])
+    assert "champion_top2_bucket_hits" in late["metrics"]
+    assert "analog_top2_bucket_hits" in late["metrics"]
     metrics = late["metrics"]
     assert metrics["champion_rounded_center_bucket_hits"] == 40
     assert metrics["analog_rounded_center_bucket_hits"] == 40
