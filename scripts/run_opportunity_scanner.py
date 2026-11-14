@@ -61,6 +61,7 @@ def main() -> None:
     parser.add_argument("--database", type=Path, default=Path("data/opportunity_scanner.db"))
     parser.add_argument("--output", type=Path, default=Path("opportunity-scanner-journal.json"))
     parser.add_argument("--existing-url")
+    parser.add_argument("--existing-snapshot-output", type=Path)
     parser.add_argument("--activation-date")
     parser.add_argument("--resolution-input", type=Path)
     args = parser.parse_args()
@@ -77,10 +78,17 @@ def main() -> None:
         if before_activation:
             raise SystemExit("Automatic backfill is forbidden before the activation date")
     store = OpportunityStore(args.database)
+    existing: dict = {}
     if args.existing_url:
         existing = _fetch_existing_journal(args.existing_url)
         if existing:
             store.import_journal(existing)
+    if args.existing_snapshot_output:
+        args.existing_snapshot_output.parent.mkdir(parents=True, exist_ok=True)
+        args.existing_snapshot_output.write_text(
+            json.dumps(existing, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
     states = run_scanner_cycle(
         forecasts=feed.get("forecasts", []), peak_history=feed.get("peak_history", {}),
         markets=feed.get("markets", []), store=store,
