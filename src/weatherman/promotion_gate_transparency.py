@@ -47,6 +47,14 @@ def _modal_bucket(value: object) -> int | None:
     return min(parsed, key=lambda bucket: (-parsed[bucket], bucket)) if parsed else None
 
 
+def _top_buckets(value: object, limit: int = 2) -> list[int]:
+    parsed = _probabilities(value)
+    return [
+        bucket
+        for bucket, _ in sorted(parsed.items(), key=lambda item: (-item[1], item[0]))[:limit]
+    ]
+
+
 def _brier(value: object, actual_bucket: int) -> float | None:
     parsed = _probabilities(value)
     if not parsed:
@@ -197,6 +205,7 @@ def _gate_report(
         recent_bias_delta = None
         modal_champion_hits = modal_challenger_hits = 0
         center_champion_hits = center_challenger_hits = 0
+        top2_champion_hits = top2_challenger_hits = 0
     else:
         recent_champion_error = recent.forecast_c_champion - recent.max_temp_c
         recent_challenger_error = recent.forecast_c_challenger - recent.max_temp_c
@@ -215,6 +224,22 @@ def _gate_report(
         center_challenger_hits = int((challenger_centers == actual_buckets).sum())
         modal_champion_hits = int((champion_modals == actual_buckets).sum())
         modal_challenger_hits = int((challenger_modals == actual_buckets).sum())
+        top2_champion_hits = int(
+            sum(
+                actual in _top_buckets(probabilities)
+                for actual, probabilities in zip(
+                    actual_buckets, paired.probabilities_json_champion, strict=True
+                )
+            )
+        )
+        top2_challenger_hits = int(
+            sum(
+                actual in _top_buckets(probabilities)
+                for actual, probabilities in zip(
+                    actual_buckets, paired.probabilities_json_challenger, strict=True
+                )
+            )
+        )
 
     bias_delta = (
         abs(float(gate.challenger_bias)) - abs(float(gate.champion_bias))
@@ -303,6 +328,20 @@ def _gate_report(
                 "selected_checkpoint": f"{local:%H:%M} Europe/Madrid",
                 "captured_at": pd.Timestamp(row.captured_at).isoformat(),
                 "actual_bucket": actual_bucket,
+                "actual_c": float(row.max_temp_c),
+                "season": (
+                    "winter"
+                    if row.target_date.month in {12, 1, 2}
+                    else "spring"
+                    if row.target_date.month in {3, 4, 5}
+                    else "summer"
+                    if row.target_date.month in {6, 7, 8}
+                    else "autumn"
+                ),
+                "champion_center_c": float(row.forecast_c_champion),
+                "analog_center_c": float(row.forecast_c_challenger),
+                "champion_center_error_c": float(row.forecast_c_champion - row.max_temp_c),
+                "analog_center_error_c": float(row.forecast_c_challenger - row.max_temp_c),
                 "champion_rounded_center_bucket": champion_center_bucket,
                 "analog_rounded_center_bucket": challenger_center_bucket,
                 "champion_modal_bucket": champion_modal,
@@ -311,6 +350,12 @@ def _gate_report(
                 "analog_center_hit": challenger_center_bucket == actual_bucket,
                 "champion_modal_hit": champion_modal == actual_bucket,
                 "analog_modal_hit": challenger_modal == actual_bucket,
+                "champion_top2_buckets": _top_buckets(row.probabilities_json_champion),
+                "analog_top2_buckets": _top_buckets(row.probabilities_json_challenger),
+                "champion_top2_hit": actual_bucket
+                in _top_buckets(row.probabilities_json_champion),
+                "analog_top2_hit": actual_bucket
+                in _top_buckets(row.probabilities_json_challenger),
                 "champion_brier": _brier(row.probabilities_json_champion, actual_bucket),
                 "analog_brier": _brier(row.probabilities_json_challenger, actual_bucket),
                 "variant_pair_sha256": hashlib.sha256(
@@ -343,6 +388,8 @@ def _gate_report(
             "analog_rounded_center_bucket_hits": center_challenger_hits,
             "champion_modal_bucket_hits": modal_champion_hits,
             "analog_modal_bucket_hits": modal_challenger_hits,
+            "champion_top2_bucket_hits": top2_champion_hits,
+            "analog_top2_bucket_hits": top2_challenger_hits,
             "recent_10_mae_gain_c": recent_mae_gain,
             "recent_10_absolute_bias_guard_delta_c": recent_bias_delta,
         },
