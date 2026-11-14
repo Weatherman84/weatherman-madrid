@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: opportunity-scanner-shadow-v1
@@ -45,8 +46,57 @@ jobs:
             --input scanner-feed.json \
             --database "${RUNNER_TEMP}/opportunity-scanner.db" \
             --existing-url "${PUBLIC_BASE_URL%/}/opportunity-scanner-journal.json" \
+            --existing-snapshot-output scanner-journal-before.json \
             --activation-date "$ACTIVATION_DATE" \
             --output opportunity-scanner-journal.json
+      - name: Select new deduplicated push alerts
+        id: alerts
+        run: |
+          python scripts/build_opportunity_notifications.py \
+            --previous scanner-journal-before.json \
+            --current opportunity-scanner-journal.json \
+            --output opportunity-notifications.json
+          echo "count=$(jq 'length' opportunity-notifications.json)" >> "$GITHUB_OUTPUT"
+      - name: Send GitHub push alerts
+        if: steps.alerts.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ALERT_ASSIGNEE: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="Opportunity Scanner Push Alerts"
+          gh label create opportunity-alert \
+            --repo "$GH_REPO" --color "1D76DB" \
+            --description "Deduplicated Opportunity Scanner push messages" --force
+          issue_number="$(gh issue list --repo "$GH_REPO" --state all --limit 1000 \
+            --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)"
+          if [[ -z "$issue_number" ]]; then
+            issue_url="$(gh issue create --repo "$GH_REPO" --title "$title" \
+              --label opportunity-alert --assignee "$ALERT_ASSIGNEE" \
+              --body "Automatische, deduplizierte Research-only-Meldungen für LTFM-Regelsignale und EPWA-Signale mit positivem konservativem Edge. Keine automatische Ausführung.")"
+            issue_number="${issue_url##*/}"
+          else
+            gh issue edit "$issue_number" --repo "$GH_REPO" --add-assignee "$ALERT_ASSIGNEE"
+            if [[ "$(gh issue view "$issue_number" --repo "$GH_REPO" --json state --jq .state)" == "CLOSED" ]]; then
+              gh issue reopen "$issue_number" --repo "$GH_REPO"
+            fi
+          fi
+          while IFS= read -r encoded; do
+            row="$(printf '%s' "$encoded" | base64 --decode)"
+            opportunity_id="$(jq -r '.opportunity_id' <<<"$row")"
+            marker="<!-- opportunity-alert:${opportunity_id} -->"
+            if gh api --paginate "repos/${GH_REPO}/issues/${issue_number}/comments" \
+              --jq '.[].body' | grep -Fq -- "$marker"; then
+              echo "Already notified: $opportunity_id"
+              continue
+            fi
+            body="$(jq -r '.github_comment' <<<"$row")"
+            gh api "repos/${GH_REPO}/issues/${issue_number}/comments" \
+              --method POST --raw-field body="$body" >/dev/null
+            echo "Notified: $opportunity_id"
+          done < <(jq -r '.[] | @base64' opportunity-notifications.json)
       - name: Validate and publish separate journal
         env:
           PUBLIC_BASE_URL: ${{ vars.OPPORTUNITY_SCANNER_PUBLIC_BASE_URL }}
@@ -69,5 +119,6 @@ jobs:
           name: opportunity-scanner-shadow-${{ github.run_id }}
           path: |
             opportunity-scanner-journal.json
+            opportunity-notifications.json
             scanner-publication.json
           retention-days: 14
