@@ -1397,7 +1397,7 @@ wheels = [
 
 [[package]]
 name = "weatherman-madrid"
-version = "1.0.21"
+version = "1.0.22"
 source = { editable = "." }
 dependencies = [
     { name = "httpx", extra = ["socks"] },

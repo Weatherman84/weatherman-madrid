@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.21")
+discard_stale_weatherman_modules("1.0.22")
 
 import pandas as pd
 import streamlit as st
@@ -36,14 +36,9 @@ from weatherman.cockpit_data import (
     load_cockpit_details, load_madrid_data, load_madrid_history, transfer_diagnostics,
 )
 from weatherman.db import init_db
-from weatherman.decision import (
-    build_trade_decision,
-    latest_prior_probabilities,
-)
-from weatherman.probability_safety import (
-    TRADE_PROBABILITY_CALIBRATION_GATE_PASSED,
-    assess_trade_probability,
-)
+from weatherman.decision import build_trade_decision
+from weatherman.probability_calibration import build_probability_calibration
+from weatherman.probability_safety import assess_trade_probability
 from weatherman.service import (
     build_current_live_nowcast,
     collect_live_trading_refresh,
@@ -578,7 +573,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.21 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.22 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -693,13 +688,29 @@ if retained_nowcast:
         "successful in-session Madrid forecast; use Refresh Madrid now before acting."
     )
 
-probabilities = dict(nowcast.probabilities)
+champion_probabilities = dict(nowcast.probabilities)
+probability_calibration = build_probability_calibration(
+    data["snapshots"],
+    data["variants"],
+    data["actuals"],
+    current_probabilities=champion_probabilities,
+    target=target,
+    captured_at=now,
+    observed_floor=nowcast.observed_max,
+    hours_to_peak=nowcast.hours_to_peak,
+    timezone_name=timezone_name,
+)
+probabilities = (
+    probability_calibration.probabilities
+    if probability_calibration.probabilities
+    else champion_probabilities
+)
 probability_assessment = assess_trade_probability(
     nowcast,
     now,
-    calibration_gate_passed=TRADE_PROBABILITY_CALIBRATION_GATE_PASSED,
+    calibration_gate_passed=probability_calibration.available,
+    post_peak_gate_passed=probability_calibration.available,
 )
-prior_probabilities = latest_prior_probabilities(data["signals"], target)
 market_conflict = detect_market_model_conflict(probabilities, markets)
 material_adjustments = {
     name: value
@@ -714,14 +725,18 @@ trade_decision = build_trade_decision(
     metar_pending=nowcast.metar_pending,
     market_model_conflict=market_conflict.is_conflict,
     forecast_stale=nowcast.forecast_data_stale,
-    previous_probabilities=prior_probabilities,
+    # Stored signal probabilities predate this calibration layer and are not
+    # comparable to the calibrated current distribution.
+    previous_probabilities={},
     live_signals=[
         f"{name.replace('_', ' ')} {float(value):+.2f} °C"
         for name, value in sorted(
             material_adjustments.items(), key=lambda item: abs(float(item[1])), reverse=True
         )[:3]
     ],
-    recommendations_enabled=settings.edge_recommendations_enabled,
+    recommendations_enabled=(
+        settings.edge_recommendations_enabled and probability_calibration.available
+    ),
 )
 
 if nowcast.forecast_data_stale:
@@ -735,10 +750,17 @@ if not probability_assessment.available:
     st.error(
         "TRADE PROBABILITY UNAVAILABLE · "
         + probability_assessment.explanation
+        + (
+            " Blockers: " + "; ".join(probability_calibration.blockers[:3]) + "."
+            if probability_calibration.blockers
+            else ""
+        )
     )
 
 top_bucket = max(probabilities, key=probabilities.get)
 top_probability = float(probabilities[top_bucket])
+champion_top_bucket = max(champion_probabilities, key=champion_probabilities.get)
+champion_top_probability = float(champion_probabilities[champion_top_bucket])
 
 st.subheader("1 · Current Madrid decision state")
 m1, m2, m3, m4, m5 = st.columns(5)
@@ -849,19 +871,22 @@ st.dataframe(
     width="stretch",
 )
 
-st.subheader("3 · Diagnostic bucket model mass")
+st.subheader("3 · Calibrated trading probabilities")
 shadow_probabilities = probability_assessment.shadow_probabilities
 relevant_buckets = sorted(
-    bucket
-    for bucket, probability in probabilities.items()
-    if float(probability) >= 0.005 or abs(int(bucket) - int(top_bucket)) <= 2
+    set(probabilities) | set(champion_probabilities) | set(shadow_probabilities)
 )
 bucket_rows = []
 for bucket in relevant_buckets:
     row = {
         "Bucket": f"{int(bucket)} °C",
-        "Champion model mass · not trade p": percentage(
-            probabilities.get(bucket), digits=1
+        (
+            "Trading probability"
+            if probability_calibration.available
+            else "Provisional calibrated estimate"
+        ): percentage(probabilities.get(bucket), digits=1),
+        "Champion model mass": percentage(
+            champion_probabilities.get(bucket), digits=1
         ),
     }
     if probability_assessment.post_peak:
@@ -871,10 +896,20 @@ for bucket in relevant_buckets:
     bucket_rows.append(row)
 st.dataframe(pd.DataFrame(bucket_rows), hide_index=True, width="stretch")
 st.caption(
-    f"Champion modal bucket: {top_bucket} °C ({top_probability:.1%} diagnostic model mass). "
-    "These values are not calibrated fair odds and must not be used as trade probabilities. "
-    "Buckets are sorted by temperature."
+    f"Calibrated trading modal: {top_bucket} °C ({top_probability:.1%}) · "
+    f"Production Champion modal: {champion_top_bucket} °C "
+    f"({champion_top_probability:.1%} uncalibrated model mass). "
+    f"Calibration {probability_calibration.version}, "
+    f"{probability_calibration.checkpoint}, {probability_calibration.cohort}: "
+    f"{probability_calibration.evidence_days} evidence days, "
+    f"{probability_calibration.validation_days} walk-forward validation days, "
+    f"Brier gain {percentage(probability_calibration.brier_gain, digits=1)}."
 )
+if not probability_calibration.available:
+    st.warning(
+        "The calibrated estimate is visible for evaluation, but it is not trade-grade yet. "
+        "NO BET remains active: " + "; ".join(probability_calibration.blockers)
+    )
 if probability_assessment.post_peak:
     champion_tail = probability_assessment.champion_upper_tail_probability
     shadow_tail = probability_assessment.shadow_upper_tail_probability
@@ -907,6 +942,8 @@ with st.expander("Trading context · research only", expanded=False):
         st.write(f"• {blocker}")
     if not probability_assessment.available:
         st.write(f"• Probability blocker: {probability_assessment.explanation}")
+        for blocker in probability_calibration.blockers:
+            st.write(f"• Calibration gate: {blocker}")
     st.caption(
         "Forecast confidence describes the weather forecast information set, not the "
         "certainty of one specific bet. Edge and wagering remain RESEARCH ONLY."

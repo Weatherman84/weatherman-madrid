@@ -285,7 +285,7 @@ def test_streamlit_cockpit_renders_aemet_after_buckets_without_extra_sql(databas
     )
     headings = [item.value for item in app.subheader]
     assert headings.index('AEMET 3129 · Physical station observations') == (
-        headings.index('3 · Diagnostic bucket model mass') + 1
+        headings.index('3 · Calibrated trading probabilities') + 1
     )
     labels = [item.label for item in app.metric]
     assert 'Tmax report time' in labels and 'Feed status' in labels
