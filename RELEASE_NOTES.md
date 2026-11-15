@@ -1,3 +1,21 @@
+# Release Notes – Madrid v1.0.22
+
+## Empirisch kalibrierte Trading-Wahrscheinlichkeiten
+
+- Die App lernt eine ordinale Isotonic-Kalibrierung ausschließlich aus bereits
+  geladenen, scheduled-causal Champion-Verteilungen und finalen Stored-METAR-Actuals.
+- Die Kalibrierung wird am jeweiligen festen Checkpoint und getrennt für pre/at-peak
+  sowie post-peak walk-forward validiert; kein heutiges Ergebnis fließt rückwirkend ein.
+- Ein eigener Trading-Modal und die kalibrierten Bucket-Schätzungen stehen neben dem
+  unveränderten Production-Champion und dessen diagnostischer Modellmasse.
+- Freigabe erfordert mindestens 60 Evidenztage, 30 passende Phasentage, 30 echte
+  Walk-forward-Validierungstage sowie bestandene Brier-, ECE-, Log-Loss-, Modal- und
+  Recent-Stability-Gates.
+- Bei nicht bestandenen Gates bleibt die Schätzung sichtbar, aber `NO BET` und
+  `Trade edge unavailable` bleiben aktiv.
+- Keine zusätzliche Datenbankabfrage, keine Engine- oder Champion-Änderung und keine
+  automatische Promotion.
+
 # Release Notes – Madrid v1.0.21
 
 ## Probability safety hotfix
