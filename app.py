@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.20")
+discard_stale_weatherman_modules("1.0.21")
 
 import pandas as pd
 import streamlit as st
@@ -39,6 +39,10 @@ from weatherman.db import init_db
 from weatherman.decision import (
     build_trade_decision,
     latest_prior_probabilities,
+)
+from weatherman.probability_safety import (
+    TRADE_PROBABILITY_CALIBRATION_GATE_PASSED,
+    assess_trade_probability,
 )
 from weatherman.service import (
     build_current_live_nowcast,
@@ -574,7 +578,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.20 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.21 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -690,6 +694,11 @@ if retained_nowcast:
     )
 
 probabilities = dict(nowcast.probabilities)
+probability_assessment = assess_trade_probability(
+    nowcast,
+    now,
+    calibration_gate_passed=TRADE_PROBABILITY_CALIBRATION_GATE_PASSED,
+)
 prior_probabilities = latest_prior_probabilities(data["signals"], target)
 market_conflict = detect_market_model_conflict(probabilities, markets)
 material_adjustments = {
@@ -721,6 +730,12 @@ elif nowcast.metar_pending:
     st.error("METAR DUE · wait for the routine report before deciding.")
 elif nowcast.stale_models:
     st.warning("Excluded stale models: " + ", ".join(nowcast.stale_models))
+
+if not probability_assessment.available:
+    st.error(
+        "TRADE PROBABILITY UNAVAILABLE · "
+        + probability_assessment.explanation
+    )
 
 top_bucket = max(probabilities, key=probabilities.get)
 top_probability = float(probabilities[top_bucket])
@@ -834,28 +849,64 @@ st.dataframe(
     width="stretch",
 )
 
-st.subheader("3 · Relevant buckets")
-bucket_rows = [
-    {"Bucket": f"{int(bucket)} °C", "Champion probability": percentage(probability, digits=1)}
-    for bucket, probability in sorted(probabilities.items())
+st.subheader("3 · Diagnostic bucket model mass")
+shadow_probabilities = probability_assessment.shadow_probabilities
+relevant_buckets = sorted(
+    bucket
+    for bucket, probability in probabilities.items()
     if float(probability) >= 0.005 or abs(int(bucket) - int(top_bucket)) <= 2
-]
+)
+bucket_rows = []
+for bucket in relevant_buckets:
+    row = {
+        "Bucket": f"{int(bucket)} °C",
+        "Champion model mass · not trade p": percentage(
+            probabilities.get(bucket), digits=1
+        ),
+    }
+    if probability_assessment.post_peak:
+        row["Post-Peak Shadow mass · not released"] = percentage(
+            shadow_probabilities.get(bucket), digits=1
+        )
+    bucket_rows.append(row)
 st.dataframe(pd.DataFrame(bucket_rows), hide_index=True, width="stretch")
 st.caption(
-    f"Most likely exact bucket: {top_bucket} °C ({top_probability:.1%}). "
-    "Buckets are always sorted by temperature, not probability."
+    f"Champion modal bucket: {top_bucket} °C ({top_probability:.1%} diagnostic model mass). "
+    "These values are not calibrated fair odds and must not be used as trade probabilities. "
+    "Buckets are sorted by temperature."
 )
+if probability_assessment.post_peak:
+    champion_tail = probability_assessment.champion_upper_tail_probability
+    shadow_tail = probability_assessment.shadow_upper_tail_probability
+    st.warning(
+        "Post-Peak Upper-Tail guard active · Champion mass above the observed maximum: "
+        f"{percentage(champion_tail, digits=1)} · Post-Peak Shadow: "
+        f"{percentage(shadow_tail, digits=1)}. The Shadow has only "
+        f"{probability_assessment.shadow_evidence_days}/"
+        f"{probability_assessment.shadow_required_days} required OOS days and is shown "
+        "for comparison only."
+    )
 
 render_aemet_station_panel(target, metar_curve_records, timezone_name)
 
 with st.expander("Trading context · research only", expanded=False):
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Status", trade_decision.status)
+    safe_trade_status = (
+        trade_decision.status if probability_assessment.available else "NO BET"
+    )
+    c1.metric("Status", safe_trade_status)
     c2.metric("Selected bucket", trade_decision.bucket_label or "—")
     c3.metric("YES ask", percentage(trade_decision.buy_price, digits=1))
-    c4.metric("Uncalibrated gap", percentage(trade_decision.edge, digits=1))
+    c4.metric(
+        "Trade edge",
+        percentage(trade_decision.edge, digits=1)
+        if probability_assessment.available
+        else "Unavailable",
+    )
     for blocker in trade_decision.blockers:
         st.write(f"• {blocker}")
+    if not probability_assessment.available:
+        st.write(f"• Probability blocker: {probability_assessment.explanation}")
     st.caption(
         "Forecast confidence describes the weather forecast information set, not the "
         "certainty of one specific bet. Edge and wagering remain RESEARCH ONLY."
