@@ -1,4 +1,4 @@
-> Aktueller Paketstand: v1.0.20. Die saisonale Shadow Engine v1.1 ist eine
+> Aktueller Paketstand: v1.0.21. Die saisonale Shadow Engine v1.1 ist eine
 > additive Research-only-Ansicht mit immutable Multi-Variant-Logging; die
 > Production Forecast Engine bleibt unverändert.
 > AEMET-Cron jetzt `50 * * * *`; Collector und Forecastformel unverändert.
@@ -6,7 +6,7 @@
 # Weatherman Madrid
 
 Eine eigenständige, ressourcenschonende Streamlit-App für **LEMD / Madrid-Barajas**.
-Die aktuelle Madrid-App-Version heißt **v1.0.20** und verwendet Engine **v10.7.11**.
+Die aktuelle Madrid-App-Version heißt **v1.0.21** und verwendet Engine **v10.7.11**.
 Forecastformeln, Gewichte, Biases, Regime und Locks bleiben auf dem Stand v10.7.10;
 v10.7.11 ersetzt ausschließlich die starre 90-Minuten-Modellzulassung durch eine
 modellabhängige Laufkadenz. Das Repository und die Neon-Datenbanken sind vollständig

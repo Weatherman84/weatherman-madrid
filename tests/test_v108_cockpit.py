@@ -279,8 +279,14 @@ def test_streamlit_cockpit_renders_aemet_after_buckets_without_extra_sql(databas
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py')).run()
     app.sidebar.date_input[0].set_value(target).run()
     assert not app.exception, [item.message for item in app.exception]
+    assert any(
+        "TRADE PROBABILITY UNAVAILABLE" in item.value
+        for item in app.error
+    )
     headings = [item.value for item in app.subheader]
-    assert headings.index('AEMET 3129 · Physical station observations') == headings.index('3 · Relevant buckets') + 1
+    assert headings.index('AEMET 3129 · Physical station observations') == (
+        headings.index('3 · Diagnostic bucket model mass') + 1
+    )
     labels = [item.label for item in app.metric]
     assert 'Tmax report time' in labels and 'Feed status' in labels
     assert 'Tmax time' not in labels

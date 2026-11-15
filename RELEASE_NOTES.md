@@ -1,3 +1,15 @@
+# Release Notes – Madrid v1.0.21
+
+## Probability safety hotfix
+
+- Die App weist Champion-Bucketwerte nicht mehr als handelbare Wahrscheinlichkeit aus.
+- Ohne bestandenes Kalibrierungsgate zeigt sie `Trade probability unavailable` und erzwingt
+  `NO BET`; der Modell-Markt-Abstand wird nicht als Edge bezeichnet.
+- Nach dem erwarteten Modellpeak aktiviert sie zusätzlich einen Post-Peak-Guard und zeigt
+  Champion und Post-Peak Upper-Tail Shadow nur als diagnostische Modellmassen nebeneinander.
+- Der Post-Peak Challenger bleibt bei 5/30 erforderlichen sequenziellen OOS-Tagen im Shadow.
+- Forecast Engine v10.7.11 und geschützte Baseline v10.7.10 bleiben unverändert.
+
 # Release Notes – Madrid v1.0.20
 
 ## Neu in v1.0.20
