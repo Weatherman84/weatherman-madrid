@@ -170,7 +170,7 @@ def test_daily_analysis_export_is_read_only_scoped_and_explainable() -> None:
 
     assert before == after == 1
     assert payload["airport"] == "LEMD"
-    assert payload["schema_version"] == "1.3"
+    assert payload["schema_version"] == "1.4"
     assert payload["evaluation_targets"]["mixing_targets_permitted"] is False
     assert payload["contains_credentials"] is False
     assert payload["writes_production_database"] is False
@@ -373,6 +373,56 @@ def test_pipeline_health_does_not_count_arbitrary_manual_run_as_slot() -> None:
     assert health["closeout_success"] is False
     assert health["processed_expected_slots"] == 0
     assert health["unmatched_runs"] == 1
+
+
+def test_export_surfaces_checkpoint_gap_even_when_run_completed() -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    attempt = {
+        "airport": "LEMD",
+        "target_date": "2026-11-18",
+        "checkpoint_label": "D0 Morning @09:00",
+        "checkpoint_at": "2026-11-18T08:00:00+00:00",
+        "checkpoint_recorded_at": "2026-11-18T08:10:00+00:00",
+        "status": "missing",
+        "reason": "no_forecast_inputs_available_at_or_before_cutoff",
+    }
+    with factory() as session:
+        session.add(
+            CollectionRun(
+                run_id="morning-gap",
+                scheduled_at=datetime(2026, 11, 18, 8, 7, tzinfo=timezone.utc),
+                started_at=datetime(2026, 11, 18, 8, 8, tzinfo=timezone.utc),
+                ended_at=datetime(2026, 11, 18, 8, 10, tzinfo=timezone.utc),
+                collector_version="1.0.22",
+                trigger="cloudflare",
+                overall_status="partial",
+                airports_json='["LEMD"]',
+                source_status_json="{}",
+                rows_read_json="{}",
+                rows_written_json=json.dumps(
+                    {
+                        "collector": {
+                            "checkpoints": {"checkpoint_attempts": [attempt]}
+                        }
+                    }
+                ),
+                source_age_json="{}",
+                persistence_status="persisted",
+            )
+        )
+        session.commit()
+        payload = build_daily_analysis_export(
+            session,
+            generated_at=datetime(2026, 11, 18, 20, 0, tzinfo=timezone.utc),
+            days=1,
+        )
+
+    audit = payload["checkpoint_delivery_audit"]
+    assert audit["status_counts"]["missing"] == 1
+    assert audit["attempts"][0]["reason"] == attempt["reason"]
+    assert payload["collector_runs"][0]["checkpoint_delivery_status"] == "has-gaps"
 
 
 def test_aemet_physical_export_is_separate_from_market_actual(monkeypatch) -> None:

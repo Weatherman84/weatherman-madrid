@@ -17,7 +17,7 @@ from statistics import mean
 from typing import Any, Iterable, Mapping, Sequence
 
 
-EVALUATION_VERSION = "madrid_seasonal_timing_shadow_v0.1"
+EVALUATION_VERSION = "madrid_seasonal_timing_shadow_v0.2"
 DEFAULT_HANDOFF_REGISTRY = Path(__file__).parent / "data" / "madrid_research_handoff_cases_v1.json"
 LATE_CHECKPOINT = "Late Live @16:00"
 MORNING_CHECKPOINT = "D0 Morning @09:00"
@@ -411,13 +411,24 @@ def _subgroup_metrics(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def _authoritative_analog_gate(
-    merged: Mapping[str, Any], diagnostic_window: Mapping[str, Any]
+    merged: Mapping[str, Any],
+    diagnostic_window: Mapping[str, Any],
+    handoff_registry: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    gate = (
+    exported_gate = (
         merged.get("analog_promotion_gate", {})
         .get("gates", {})
         .get("late_live_16_00", {})
     )
+    handoff_gate = (
+        (handoff_registry or {})
+        .get("candidate_gate_updates", {})
+        .get("late_analog_16_00", {})
+    )
+    exported_days = int(exported_gate.get("oos_days") or 0)
+    handoff_days = int(handoff_gate.get("oos_days") or 0)
+    use_handoff = bool(handoff_gate) and handoff_days > exported_days
+    gate = handoff_gate if use_handoff else exported_gate
     if not gate:
         return {
             "status": "NOT_EVALUABLE",
@@ -427,19 +438,38 @@ def _authoritative_analog_gate(
     metrics = result.get("metrics", {})
     mae_gain = _number(metrics.get("mae_gain_c"))
     result["candidate"] = "Analog Memory @ fixed Late Live 16:00"
-    result["evidence_version"] = merged.get("analog_promotion_gate", {}).get(
-        "evaluation_version"
+    result["gate_source"] = (
+        "research_handoff_gate_snapshot" if use_handoff else "daily_analysis_export"
     )
+    result["reported_through"] = (
+        (handoff_registry or {}).get("candidate_gate_updates", {}).get("as_of_date")
+        if use_handoff
+        else None
+    )
+    result["evidence_version"] = merged.get("analog_promotion_gate", {}).get("evaluation_version")
     result["valid_evidence_start"] = merged.get("analog_promotion_gate", {}).get(
         "oos_start_date"
     )
     result["mae_gain_shortfall_c"] = (
         max(0.0, MINIMUM_MAE_GAIN_C - mae_gain) if mae_gain is not None else None
     )
-    result["top2"] = {
-        "status": "NOT_AVAILABLE_FOR_FULL_GATE_LINEAGE",
-        "reason": "historical used_days export does not include full probability vectors or top-2 flags",
-    }
+    provenance_audit = result.get("capture_provenance_audit") or {}
+    release_blockers = list(
+        result.get("release_blockers")
+        or provenance_audit.get("release_blockers")
+        or []
+    )
+    if metrics.get("champion_top2_hits") is not None and metrics.get("analog_top2_hits") is not None:
+        result["top2"] = {
+            "status": "REPORTED_IN_GATE_SNAPSHOT",
+            "champion_hits": metrics.get("champion_top2_hits"),
+            "analog_hits": metrics.get("analog_top2_hits"),
+        }
+    else:
+        result["top2"] = {
+            "status": "NOT_AVAILABLE_FOR_FULL_GATE_LINEAGE",
+            "reason": "historical used_days export does not include full probability vectors or top-2 flags",
+        }
     window_rows = _paired_variant_rows(
         diagnostic_window, checkpoint=LATE_CHECKPOINT, factor=ANALOG_FACTOR
     )
@@ -449,20 +479,34 @@ def _authoritative_analog_gate(
         "subgroups": _subgroup_metrics(window_rows),
         "used_days": window_rows,
     }
+    result["release_blockers"] = release_blockers
     result["release_recommendation"] = (
         "READY_FOR_SEPARATE_RELEASE_REVIEW"
-        if result.get("eligible") is True
+        if result.get("eligible") is True and not release_blockers
         else "CONTINUE_SHADOW"
     )
     return result
 
 
-def _post_peak_report(merged: Mapping[str, Any]) -> dict[str, Any]:
+def _post_peak_report(
+    merged: Mapping[str, Any], handoff_registry: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     rows = _paired_variant_rows(merged, checkpoint=LATE_CHECKPOINT, factor=POST_PEAK_FACTOR)
     metrics = _metric_rows(rows, "candidate")
     recent_metrics = _metric_rows(rows[-10:], "candidate")
     conditions = _conditions_from_metrics(metrics, recent_metrics)
     blockers = [item["condition"] for item in conditions if not item["passed"]]
+    supplemental = (
+        (handoff_registry or {})
+        .get("candidate_gate_updates", {})
+        .get("post_peak_upper_tail", {})
+    )
+    mandatory_counterexample_covered = any(
+        row.get("date") == "2026-11-17" and row.get("availability") == "exported"
+        for row in supplemental.get("supplemental_cases", [])
+    )
+    if supplemental and not mandatory_counterexample_covered:
+        blockers.append("mandatory_2026_11_17_counterexample_not_covered")
     return {
         "candidate": "Post-Peak Upper-Tail @ fixed Late Live 16:00",
         "factor": POST_PEAK_FACTOR,
@@ -480,6 +524,8 @@ def _post_peak_report(merged: Mapping[str, Any]) -> dict[str, Any]:
         "metrics": metrics,
         "recent_10_metrics": recent_metrics,
         "subgroups": _subgroup_metrics(rows),
+        "supplemental_handoff_evidence": supplemental,
+        "mandatory_2026_11_17_counterexample_covered": mandatory_counterexample_covered,
         "conditions": conditions,
         "blockers": blockers,
         "status": "ELIGIBLE" if not blockers else "NOT_ELIGIBLE",
@@ -719,6 +765,11 @@ def _handoff_summary(registry: Mapping[str, Any]) -> dict[str, Any]:
     )
     warm_error_dates = role_dates.get("late_warm_error", [])
     cold_error_dates = role_dates.get("late_cold_error", [])
+    mandatory_counterexample_dates = role_dates.get("mandatory_counterexample", [])
+    checkpoint_quality = {
+        key: sum(int((row.get("checkpoint_quality") or {}).get(key) or 0) for row in evaluated)
+        for key in ("stored", "reconstructed", "missing")
+    }
     return {
         "registry_version": registry.get("registry_version"),
         "date_range": registry.get("date_range"),
@@ -737,6 +788,8 @@ def _handoff_summary(registry: Mapping[str, Any]) -> dict[str, Any]:
         "late_warm_error_dates": warm_error_dates,
         "late_cold_error_dates": cold_error_dates,
         "plateau_cap_protection_dates": protection_dates,
+        "mandatory_counterexample_dates": mandatory_counterexample_dates,
+        "checkpoint_quality_totals_where_reported": checkpoint_quality,
         "development_constraints": [
             {
                 "constraint": "no_blanket_plateau_or_remaining_rise_cap",
@@ -757,6 +810,10 @@ def _handoff_summary(registry: Mapping[str, Any]) -> dict[str, Any]:
                     | set(role_dates.get("weather_deterioration", []))
                 ),
             },
+            {
+                "constraint": "solar_heating_end_is_not_a_hard_daily_maximum_lock",
+                "supporting_counterexample_dates": mandatory_counterexample_dates,
+            },
         ],
         "cases": cases,
         "limitations": registry.get("limitations", []),
@@ -774,15 +831,23 @@ def build_research_report(
 ) -> dict[str, Any]:
     merged = merge_exports(exports)
     diagnostic_window = _scoped_merged(merged, analysis_start_date, analysis_end_date)
-    analog = _authoritative_analog_gate(merged, diagnostic_window)
-    post_peak = _post_peak_report(merged)
+    analog = _authoritative_analog_gate(merged, diagnostic_window, handoff_registry)
+    post_peak = _post_peak_report(merged, handoff_registry)
     peak60 = _timing_variant(diagnostic_window, 60)
     peak90 = _timing_variant(diagnostic_window, 90)
     handoff_evidence = _handoff_summary(handoff_registry or {"cases": []})
+    analog_release_blockers = list(analog.get("release_blockers") or [])
+    if not analog_release_blockers and analog.get("eligible") is not True:
+        analog_release_blockers = list(analog.get("blockers") or ["gate_not_eligible"])
     release_blockers = [
         {
             "candidate": "Late Analog",
-            "blocker": "mae_gain_c",
+            "blocker": (
+                analog_release_blockers[0]
+                if analog_release_blockers
+                else None
+            ),
+            "all_blockers": analog_release_blockers,
             "actual": (analog.get("metrics") or {}).get("mae_gain_c"),
             "threshold": MINIMUM_MAE_GAIN_C,
             "shortfall": analog.get("mae_gain_shortfall_c"),
@@ -792,6 +857,11 @@ def build_research_report(
             "blocker": "sequential_oos_days",
             "actual": post_peak.get("evidence_days"),
             "threshold": MINIMUM_OOS_DAYS,
+            "additional_blocker": (
+                "mandatory_2026_11_17_counterexample_not_covered"
+                if not post_peak.get("mandatory_2026_11_17_counterexample_covered")
+                else None
+            ),
         },
         {
             "candidate": "Peak-relative timing",
@@ -843,6 +913,7 @@ def build_research_report(
         },
         "seasonal_component_analysis": _component_associations(diagnostic_window),
         "full_handoff_case_evidence": handoff_evidence,
+        "delivery_audit": dict((handoff_registry or {}).get("delivery_audit") or {}),
         "data_quality": _data_quality(diagnostic_window),
         "release_decision": {
             "status": "NO_RELEASE_CONTINUE_SHADOW",
@@ -852,8 +923,47 @@ def build_research_report(
             "next_engine_version": None,
             "reason": (
                 "no candidate passes unchanged gates on sufficient sequential causal evidence; "
-                "the full handoff series also contains counterexamples against a blanket late cap"
+                "the full handoff series also contains counterexamples against a blanket late cap "
+                "or a hard lock at the end of solar heating"
             ),
+            "next_shadow_candidate": {
+                "name": "dual_path_late_warming_shadow_v0.1",
+                "scope": "research diagnostics only; no Champion probability change",
+                "frozen_paths": [
+                    {
+                        "path": "solar_residual_heating",
+                        "causal_inputs": [
+                            "forecast remaining radiation",
+                            "forecast expected peak",
+                            "observed 30/60/120 minute heating",
+                            "same-bucket plateau duration",
+                        ],
+                    },
+                    {
+                        "path": "flow_or_airmass_warming",
+                        "causal_inputs": [
+                            "checkpoint-available model temperature path",
+                            "wind speed, gusts and direction",
+                            "multi-hour dewpoint path",
+                            "forecast late peak timing",
+                        ],
+                    },
+                ],
+                "mandatory_protection_cases": [
+                    "2026-11-15 no further bucket",
+                    "2026-11-16 no further bucket after clearing",
+                    "2026-11-17 late higher bucket under persistent flow",
+                ],
+                "evidence_policy": (
+                    "new or materially changed candidate starts its own sequential OOS lineage; "
+                    "unchanged Late Analog retains its existing valid lineage"
+                ),
+                "unchanged_gates": {
+                    "minimum_oos_days": MINIMUM_OOS_DAYS,
+                    "minimum_mae_gain_c": MINIMUM_MAE_GAIN_C,
+                    "minimum_brier_gain": MINIMUM_BRIER_GAIN,
+                },
+            },
             "rollback_plan": "not applicable because no production release is proposed",
         },
     }
@@ -867,6 +977,15 @@ def report_markdown(report: Mapping[str, Any]) -> str:
     peak60 = report["timing"]["peak_minus_60"]
     peak90 = report["timing"]["peak_minus_90"]
     handoffs = report.get("full_handoff_case_evidence") or {}
+    analog_shortfall = _number(analog.get("mae_gain_shortfall_c")) or 0.0
+    analog_release_blockers = list(analog.get("release_blockers") or [])
+    analog_blocker_text = (
+        f"MAE-Gewinn {analog_metrics.get('mae_gain_c', 0):.6f} °C < 0,120000 °C "
+        f"(fehlen {analog_shortfall:.6f} °C)"
+        if analog_shortfall > 0.0
+        else "Metrik-Gate PASS; Release blockiert durch "
+        + ", ".join(analog_release_blockers or ["ungeklärte Evidenz"])
+    )
     lines = [
         "# LEMD saisonale Zeitsteuerung – Research-/Shadow-Entscheidung",
         "",
@@ -881,8 +1000,7 @@ def report_markdown(report: Mapping[str, Any]) -> str:
         (
             "| Late Analog 16:00 | "
             f"{analog.get('oos_days', 0)} Tage | CONTINUE_SHADOW | "
-            f"MAE-Gewinn {analog_metrics.get('mae_gain_c', 0):.6f} °C < 0,120000 °C "
-            f"(fehlen {analog.get('mae_gain_shortfall_c', 0):.6f} °C) |"
+            f"{analog_blocker_text} |"
         ),
         (
             "| Post-Peak Upper-Tail 16:00 | "
@@ -928,8 +1046,16 @@ def report_markdown(report: Mapping[str, Any]) -> str:
             "gegen eine pauschale Plateau-/Restanstiegsbegrenzung."
         ),
         "",
+        (
+            "Verpflichtender Gegenfall: "
+            f"{', '.join(handoffs.get('mandatory_counterexample_dates', [])) or 'nicht vorhanden'}. "
+            "Am 17.11. entstand der höhere Bucket erst am Abend unter anhaltender Strömung; "
+            "das Ende solarer Heizung darf daher kein harter Tagesmaximum-Lock sein."
+        ),
+        "",
         "Daraus folgt: Die Weiterentwicklung muss konditioniert nach Pfad, Regime und "
-        "verbleibendem Heizfenster erfolgen; ein allgemeiner Late-Abschlag ist nicht zulässig.",
+        "verbleibendem Heizfenster erfolgen und solare Restheizung von strömungsbedingter "
+        "später Erwärmung trennen; ein allgemeiner Late-Abschlag ist nicht zulässig.",
         "",
         (
             f"Post-Peak: Modal-Treffer "
@@ -940,16 +1066,23 @@ def report_markdown(report: Mapping[str, Any]) -> str:
             "Die Fallzahl reicht nicht für eine Freigabe."
         ),
         "",
+        "Zusätzlich fehlt dem Post-Peak-Kandidaten die Abdeckung des verpflichtenden "
+        "17.11.-Gegenfalls; dieser darf nicht nachträglich rekonstruiert werden.",
+        "",
         "## Reproduzierbarkeit und Grenzen",
         "",
         "- Peak−60/−90 friert die um 09:00 bekannte Peak-Prognose ein; spätere Revisionen werden ignoriert.",
         "- Fehlende dynamische Captures werden nicht rekonstruiert.",
         "- Strahlung ist in den Exporten modelliert, nicht gemessen; vertikale Mischungsprofile fehlen.",
         "- Komponentenwerte sind Assoziationen, keine vollständigen kausalen Ablationen.",
+        "- Rekonstruierte und fehlende Checkpoints werden nicht als zeitgerecht gespeicherte Evidenz gezählt.",
         "- Champion, Gate-Schwellen, Baseline, Datenbank und Wettlogik wurden nicht verändert.",
         "",
         "## Nächster prüfbarer Schritt",
         "",
+        "Den Research-Kandidaten `dual_path_late_warming_shadow_v0.1` einfrieren: "
+        "solare Restheizung und mögliche strömungsbedingte Späterwärmung getrennt diagnostizieren. "
+        "Der Kandidat ändert keine Champion-Wahrscheinlichkeit und beginnt eine eigene sequenzielle OOS-Linie. "
         "Peak−60 und Peak−90 als fest definierte Forward-Shadow-Captures sammeln. "
         "Late Analog unverändert weiterlaufen lassen; Gate nicht absenken. "
         "Post-Peak ab seinem eigenen Evidenzbeginn bis mindestens 30 sequenziellen Fällen sammeln.",

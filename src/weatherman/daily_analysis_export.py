@@ -48,7 +48,7 @@ AIRPORT = "LEMD"
 AIRPORT_TIMEZONE = "Europe/Madrid"
 ANALOG_GATE_START = date(2026, 8, 31)
 ENGINE_BASELINE = "v10.7.11"
-EXPORT_SCHEMA_VERSION = "1.3"
+EXPORT_SCHEMA_VERSION = "1.4"
 FIXED_CHECKPOINT_LABELS = (
     "D-1 Evening @20:00",
     "D0 Morning @09:00",
@@ -720,18 +720,21 @@ def build_daily_analysis_export(
         tzinfo=ZoneInfo(AIRPORT_TIMEZONE),
     ).astimezone(timezone.utc)
 
-    checkpoint_rows = list(
+    gate_checkpoint_rows = list(
         session.scalars(
             select(ForecastSnapshot)
             .where(
                 ForecastSnapshot.airport == AIRPORT,
-                ForecastSnapshot.target_date >= first_target,
+                ForecastSnapshot.target_date >= gate_query_start,
                 ForecastSnapshot.target_date <= last_target,
                 ForecastSnapshot.checkpoint_label.in_(FIXED_CHECKPOINT_LABELS),
             )
             .order_by(ForecastSnapshot.checkpoint_at, ForecastSnapshot.captured_at)
         )
     )
+    checkpoint_rows = [
+        row for row in gate_checkpoint_rows if row.target_date >= first_target
+    ]
     manual_live_rows = list(
         session.scalars(
             select(ForecastSnapshot)
@@ -786,15 +789,36 @@ def build_daily_analysis_export(
         )
     )
     actuals = [row for row in gate_actual_rows if row.target_date >= first_target]
-    gate_variants = pd.DataFrame([
-        {
-            "airport": row.airport, "target_date": row.target_date,
-            "captured_at": row.captured_at, "timing": row.timing,
-            "variant": row.variant, "factor": row.factor,
-            "forecast_c": row.forecast_c, "probabilities_json": row.probabilities_json,
-        }
-        for row in gate_variant_rows
-    ])
+    gate_lineage = {
+        (row.airport, row.target_date, _captured_key(row.captured_at)): row
+        for row in gate_checkpoint_rows
+    }
+    gate_variants_payload = []
+    for row in gate_variant_rows:
+        lineage = gate_lineage.get(
+            (row.airport, row.target_date, _captured_key(row.captured_at))
+        )
+        gate_variants_payload.append(
+            {
+                "airport": row.airport,
+                "target_date": row.target_date,
+                "captured_at": row.captured_at,
+                "timing": row.timing,
+                "variant": row.variant,
+                "factor": row.factor,
+                "forecast_c": row.forecast_c,
+                "probabilities_json": row.probabilities_json,
+                "checkpoint_at": lineage.checkpoint_at if lineage else None,
+                "checkpoint_recorded_at": (
+                    lineage.checkpoint_recorded_at if lineage else None
+                ),
+                "checkpoint_status": lineage.checkpoint_status if lineage else None,
+                "checkpoint_reconstructed": (
+                    lineage.checkpoint_reconstructed if lineage else None
+                ),
+            }
+        )
+    gate_variants = pd.DataFrame(gate_variants_payload)
     gate_actuals = pd.DataFrame([
         {
             "airport": row.airport, "target_date": row.target_date,
@@ -907,6 +931,29 @@ def build_daily_analysis_export(
         if run_ids
         else []
     )
+    checkpoint_delivery_attempts = []
+    for run in collection_runs:
+        written = _json_value(run.rows_written_json, {})
+        collector_payload = written.get("collector", {}) if isinstance(written, dict) else {}
+        checkpoint_payload = (
+            collector_payload.get("checkpoints", {})
+            if isinstance(collector_payload, dict)
+            else {}
+        )
+        attempts = (
+            checkpoint_payload.get("checkpoint_attempts", [])
+            if isinstance(checkpoint_payload, dict)
+            else []
+        )
+        for attempt in attempts if isinstance(attempts, list) else []:
+            if not isinstance(attempt, dict):
+                continue
+            checkpoint_delivery_attempts.append(
+                {
+                    "run_ref": _public_ref(run.run_id),
+                    **attempt,
+                }
+            )
 
     checkpoints = []
     for row in checkpoint_rows:
@@ -999,6 +1046,20 @@ def build_daily_analysis_export(
         "checkpoints": checkpoints,
         "manual_live_checkpoints": manual_live_checkpoints,
         "analog_promotion_gate": analog_promotion_gate,
+        "checkpoint_delivery_audit": {
+            "definition": (
+                "Every due checkpoint attempt is classified as written, missing, "
+                "reconstructed or failed; collector success is not checkpoint proof."
+            ),
+            "attempts": checkpoint_delivery_attempts,
+            "status_counts": {
+                status: sum(
+                    item.get("status") == status
+                    for item in checkpoint_delivery_attempts
+                )
+                for status in ("written", "missing", "reconstructed", "failed")
+            },
+        },
         "provider_calls": [
             {
                 "local_date": row.local_date.isoformat(),
@@ -1028,6 +1089,9 @@ def build_daily_analysis_export(
                 "execution_seconds": row.execution_seconds,
                 "persistence_status": row.persistence_status,
                 "error_reason": _safe_error_text(row.error_reason),
+                "checkpoint_delivery_status": (
+                    "has-gaps" if row.overall_status == "partial" else "no-known-gap"
+                ),
             }
             for row in collection_runs
         ],

@@ -17,7 +17,7 @@ import pandas as pd
 from .actual_quality import settlement_grade_actuals
 from .regime_memory import evaluate_promotion_gate
 
-EVALUATION_VERSION = "analog_promotion_gate_transparency_v1"
+EVALUATION_VERSION = "analog_promotion_gate_transparency_v2"
 ANALOG_FACTOR = "regime_memory_analog"
 MINIMUM_OOS_DAYS = 30
 MINIMUM_MAE_GAIN_C = 0.12
@@ -72,6 +72,21 @@ def _bucket(value: object) -> int | None:
     return math.floor(float(parsed) + 0.5) if pd.notna(parsed) else None
 
 
+def _capture_provenance(row: pd.Series | dict[str, object]) -> str:
+    status = str(row.get("checkpoint_status") or "").strip().casefold()
+    reconstructed_value = row.get("checkpoint_reconstructed")
+    reconstructed = (
+        False
+        if reconstructed_value is None or bool(pd.isna(reconstructed_value))
+        else bool(reconstructed_value)
+    )
+    if reconstructed or "reconstructed" in status:
+        return "reconstructed"
+    if status in {"scheduled-causal", "scheduled-precutoff"}:
+        return "timely"
+    return "unknown"
+
+
 def _condition(
     name: str,
     actual: float | int | None,
@@ -109,10 +124,11 @@ def _prepared_variants(
         "probabilities_json",
     }
     if variants.empty or not required.issubset(variants.columns):
-        return pd.DataFrame(columns=sorted(required))
+        return pd.DataFrame(columns=[*sorted(required), "capture_provenance"])
     frame = variants.copy()
     frame["target_date"] = pd.to_datetime(frame.target_date, errors="coerce").dt.date
     frame["captured_at"] = pd.to_datetime(frame.captured_at, utc=True, errors="coerce")
+    frame["capture_provenance"] = frame.apply(_capture_provenance, axis=1)
     if oos_start_date:
         start = pd.to_datetime(oos_start_date, errors="coerce")
         if not pd.isna(start):
@@ -136,19 +152,37 @@ def _paired_evidence(frame: pd.DataFrame, actuals: pd.DataFrame) -> pd.DataFrame
     if frame.empty or actuals.empty:
         return pd.DataFrame()
     champion = frame[frame.variant == "Champion"]
-    challenger = frame[frame.factor == ANALOG_FACTOR]
+    challenger = frame[frame.factor == ANALOG_FACTOR][
+        [
+            "airport",
+            "target_date",
+            "captured_at",
+            "forecast_c",
+            "probabilities_json",
+        ]
+    ]
     if champion.empty or challenger.empty:
         return pd.DataFrame()
+    champion_columns = [
+        "airport",
+        "target_date",
+        "captured_at",
+        "forecast_c",
+        "probabilities_json",
+        "capture_provenance",
+    ]
+    champion_columns.extend(
+        column
+        for column in (
+            "checkpoint_at",
+            "checkpoint_recorded_at",
+            "checkpoint_status",
+            "checkpoint_reconstructed",
+        )
+        if column in champion.columns
+    )
     paired = challenger.merge(
-        champion[
-            [
-                "airport",
-                "target_date",
-                "captured_at",
-                "forecast_c",
-                "probabilities_json",
-            ]
-        ],
+        champion[champion_columns],
         on=["airport", "target_date", "captured_at"],
         suffixes=("_challenger", "_champion"),
     )
@@ -182,6 +216,7 @@ def _gate_report(
     timezone_name: str,
     checkpoint_local_time: str | None,
     oos_start_date: date | str | None,
+    provenance_classes: set[str] | None = None,
 ) -> dict[str, Any]:
     frame = _prepared_variants(
         variants,
@@ -189,6 +224,8 @@ def _gate_report(
         checkpoint_local_time=checkpoint_local_time,
         oos_start_date=oos_start_date,
     )
+    if provenance_classes is not None:
+        frame = frame[frame.capture_provenance.isin(provenance_classes)].copy()
     gate = evaluate_promotion_gate(
         frame,
         actuals,
@@ -327,6 +364,27 @@ def _gate_report(
                 "target_date": row.target_date.isoformat(),
                 "selected_checkpoint": f"{local:%H:%M} Europe/Madrid",
                 "captured_at": pd.Timestamp(row.captured_at).isoformat(),
+                "checkpoint_at": (
+                    pd.Timestamp(row.checkpoint_at).isoformat()
+                    if hasattr(row, "checkpoint_at") and pd.notna(row.checkpoint_at)
+                    else None
+                ),
+                "checkpoint_recorded_at": (
+                    pd.Timestamp(row.checkpoint_recorded_at).isoformat()
+                    if hasattr(row, "checkpoint_recorded_at")
+                    and pd.notna(row.checkpoint_recorded_at)
+                    else None
+                ),
+                "checkpoint_status": (
+                    row.checkpoint_status if hasattr(row, "checkpoint_status") else None
+                ),
+                "checkpoint_reconstructed": (
+                    bool(row.checkpoint_reconstructed)
+                    if hasattr(row, "checkpoint_reconstructed")
+                    and pd.notna(row.checkpoint_reconstructed)
+                    else None
+                ),
+                "capture_provenance": row.capture_provenance,
                 "actual_bucket": actual_bucket,
                 "actual_c": float(row.max_temp_c),
                 "season": (
@@ -371,6 +429,7 @@ def _gate_report(
             if checkpoint_local_time
             else "unchanged combined live gate; latest paired D0-live snapshot per day"
         ),
+        "capture_provenance_filter": sorted(provenance_classes or []),
         "status": gate.status,
         "eligible": gate.eligible,
         "oos_days": gate.oos_days,
@@ -430,6 +489,73 @@ def build_analog_promotion_report(
             timezone_name=timezone_name,
             checkpoint_local_time="16:00",
             oos_start_date=oos_start_date,
+        ),
+    }
+    late = gates["late_live_16_00"]
+    provenance_counts = {
+        name: sum(
+            item.get("capture_provenance") == name for item in late["used_days"]
+        )
+        for name in ("timely", "reconstructed", "unknown")
+    }
+    provenance_cohorts = {
+        "non_reconstructed_including_unknown": _gate_report(
+            variants,
+            actuals,
+            scope="late_live_16_00_non_reconstructed_including_unknown",
+            timezone_name=timezone_name,
+            checkpoint_local_time="16:00",
+            oos_start_date=oos_start_date,
+            provenance_classes={"timely", "unknown"},
+        ),
+        "timely_only": _gate_report(
+            variants,
+            actuals,
+            scope="late_live_16_00_timely_only",
+            timezone_name=timezone_name,
+            checkpoint_local_time="16:00",
+            oos_start_date=oos_start_date,
+            provenance_classes={"timely"},
+        ),
+        "reconstructed_only": _gate_report(
+            variants,
+            actuals,
+            scope="late_live_16_00_reconstructed_only",
+            timezone_name=timezone_name,
+            checkpoint_local_time="16:00",
+            oos_start_date=oos_start_date,
+            provenance_classes={"reconstructed"},
+        ),
+        "unknown_only": _gate_report(
+            variants,
+            actuals,
+            scope="late_live_16_00_unknown_only",
+            timezone_name=timezone_name,
+            checkpoint_local_time="16:00",
+            oos_start_date=oos_start_date,
+            provenance_classes={"unknown"},
+        ),
+    }
+    release_blockers = []
+    if provenance_counts["reconstructed"]:
+        release_blockers.append("reconstructed_evidence_in_published_gate")
+    if provenance_counts["unknown"]:
+        release_blockers.append("capture_provenance_unknown")
+    cleaned = provenance_cohorts["non_reconstructed_including_unknown"]
+    if not cleaned["eligible"]:
+        release_blockers.append("non_reconstructed_gate_fails_unchanged_conditions")
+    late["capture_provenance_audit"] = {
+        "counts": provenance_counts,
+        "classification": {
+            "timely": "stored scheduled checkpoint with explicit causal status",
+            "reconstructed": "written after the checkpoint grace window or explicitly reconstructed",
+            "unknown": "no linked checkpoint storage provenance; neither accepted nor rejected automatically",
+        },
+        "cohorts": provenance_cohorts,
+        "published_gate_status_preserved": late["status"],
+        "release_blockers": release_blockers,
+        "release_recommendation": (
+            "READY_FOR_RELEASE_REVIEW" if not release_blockers else "CONTINUE_SHADOW"
         ),
     }
     return {

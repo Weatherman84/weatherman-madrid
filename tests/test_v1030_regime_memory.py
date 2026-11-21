@@ -306,6 +306,81 @@ def test_promotion_gate_exports_conditions_and_separates_first_from_late():
     assert metrics["analog_modal_bucket_hits"] == 40
 
 
+def test_late_gate_keeps_published_result_but_blocks_release_on_provenance() -> None:
+    variants = []
+    actuals = []
+    madrid = ZoneInfo("Europe/Madrid")
+    for index in range(32):
+        target = date(2026, 9, 1) + timedelta(days=index)
+        captured = datetime.combine(
+            target, datetime.min.time(), tzinfo=madrid
+        ).replace(hour=16).astimezone(timezone.utc)
+        provenance = (
+            "reconstructed-causal"
+            if index == 31
+            else None
+            if index == 30
+            else "scheduled-causal"
+        )
+        champion_center = 30.3 if index < 31 else 31.0
+        analog_center = 30.2 if index < 31 else 30.0
+        actuals.append(
+            {
+                "airport": "LEMD",
+                "target_date": target,
+                "max_temp_c": 30.0,
+                "source": "stored-metar-station",
+            }
+        )
+        common = {
+            "airport": "LEMD",
+            "target_date": target,
+            "captured_at": captured,
+            "timing": "D0 live",
+            "checkpoint_at": captured,
+            "checkpoint_recorded_at": captured + timedelta(minutes=10),
+            "checkpoint_status": provenance,
+            "checkpoint_reconstructed": index == 31,
+        }
+        variants.extend(
+            [
+                {
+                    **common,
+                    "variant": "Champion",
+                    "factor": None,
+                    "forecast_c": champion_center,
+                    "probabilities_json": '{"30":0.6,"31":0.4}',
+                },
+                {
+                    **common,
+                    "variant": "Analog Memory Challenger",
+                    "factor": "regime_memory_analog",
+                    "forecast_c": analog_center,
+                    "probabilities_json": '{"30":0.8,"31":0.2}',
+                },
+            ]
+        )
+
+    report = build_analog_promotion_report(pd.DataFrame(variants), pd.DataFrame(actuals))
+    late = report["gates"]["late_live_16_00"]
+    audit = late["capture_provenance_audit"]
+
+    assert late["eligible"] is True
+    assert audit["counts"] == {"timely": 30, "reconstructed": 1, "unknown": 1}
+    assert audit["cohorts"]["non_reconstructed_including_unknown"]["eligible"] is False
+    assert audit["release_recommendation"] == "CONTINUE_SHADOW"
+    assert audit["release_blockers"] == [
+        "reconstructed_evidence_in_published_gate",
+        "capture_provenance_unknown",
+        "non_reconstructed_gate_fails_unchanged_conditions",
+    ]
+    reconstructed = next(
+        item for item in late["used_days"] if item["capture_provenance"] == "reconstructed"
+    )
+    assert reconstructed["checkpoint_reconstructed"] is True
+    assert reconstructed["checkpoint_recorded_at"] is not None
+
+
 @dataclass(frozen=True)
 class DummyNowcast:
     live_features: dict[str, object]

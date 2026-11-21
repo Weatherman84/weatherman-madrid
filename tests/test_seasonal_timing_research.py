@@ -131,6 +131,10 @@ def test_report_keeps_release_blocked_and_preserves_exact_analog_gate() -> None:
     assert analog["mae_gain_shortfall_c"] == pytest.approx(0.009)
     assert analog["release_recommendation"] == "CONTINUE_SHADOW"
     assert report["release_decision"]["status"] == "NO_RELEASE_CONTINUE_SHADOW"
+    assert (
+        report["release_decision"]["next_shadow_candidate"]["name"]
+        == "dual_path_late_warming_shadow_v0.1"
+    )
     assert report["production_changed"] is False
     assert report["automatic_promotion"] is False
 
@@ -181,11 +185,32 @@ def test_full_handoff_registry_covers_all_documented_days_and_counterexamples() 
     )
     handoffs = report["full_handoff_case_evidence"]
 
-    assert handoffs["date_range"] == {"start": "2026-10-11", "end": "2026-11-13"}
-    assert handoffs["total_calendar_records"] == 34
-    assert handoffs["evaluated_days"] == 33
+    assert handoffs["date_range"] == {"start": "2026-10-11", "end": "2026-11-17"}
+    assert handoffs["total_calendar_records"] == 38
+    assert handoffs["evaluated_days"] == 37
     assert handoffs["unavailable_days"] == ["2026-10-23"]
     assert "2026-10-14" in handoffs["plateau_cap_protection_dates"]
     assert "2026-11-02" in handoffs["plateau_cap_protection_dates"]
     assert "2026-11-10" in handoffs["late_warm_error_dates"]
+    assert handoffs["mandatory_counterexample_dates"] == ["2026-11-17"]
+    assert handoffs["checkpoint_quality_totals_where_reported"] == {
+        "stored": 12,
+        "reconstructed": 3,
+        "missing": 1,
+    }
+    analog = report["candidates"]["late_analog"]
+    assert analog["oos_days"] == 82
+    assert analog["metrics"]["mae_gain_c"] == pytest.approx(0.1224795)
+    assert analog["mae_gain_shortfall_c"] == 0.0
+    assert analog["gate_source"] == "research_handoff_gate_snapshot"
+    assert analog["release_recommendation"] == "CONTINUE_SHADOW"
+    assert analog["release_blockers"] == [
+        "reconstructed_evidence_in_published_gate",
+        "capture_provenance_unknown",
+        "non_reconstructed_gate_fails_mae_gain",
+    ]
+    assert report["delivery_audit"]["morning_d0_09_00"][2]["status"] == "missing"
+    post_peak = report["candidates"]["post_peak_upper_tail"]
+    assert post_peak["mandatory_2026_11_17_counterexample_covered"] is False
+    assert "mandatory_2026_11_17_counterexample_not_covered" in post_peak["blockers"]
     assert report["handoff_registry_provenance"]["sha256"]
