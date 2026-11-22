@@ -112,6 +112,15 @@ def test_scores_include_actual_outside_exported_support():
     assert score({17: 1}, 17)["brier"] == 0
 
 
+def test_probability_rank_ties_are_stable_across_floating_point_roundoff():
+    left = score({16: .5 - 1e-16, 17: .5 + 1e-16}, 16)
+    right = score({16: .5 + 1e-16, 17: .5 - 1e-16}, 16)
+    assert left["modal"] == right["modal"] == 16
+    assert left["top1"] == right["top1"] == 1
+    assert score({11: .25 - 5e-17, 12: .5, 13: .25 + 5e-17}, 11)["top2"] == 1
+    assert score({16: .5 - 1e-9, 17: .5 + 1e-9}, 16)["modal"] == 17
+
+
 def test_temperature_scaling_keeps_zeros_and_mass():
     p = temperature_scale({16: .8, 17: .2, 18: 0}, 2)
     assert p.get(18, 0) == 0

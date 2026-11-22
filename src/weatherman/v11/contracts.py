@@ -146,7 +146,10 @@ def market_partition(values: dict, buckets: list[dict]) -> dict[str, float]:
 
 def score(values: dict, actual: int) -> dict:
     p = distribution(values)
-    order = sorted(p, key=lambda k: (-p[k], k))
+    # Symmetric CDF differences can differ by one floating-point bit across libc
+    # implementations. Resolve probability ties at 12 decimals by lower bucket.
+    # Probabilities and proper scores themselves retain full precision.
+    order = sorted(p, key=lambda k: (-round(p[k], 12), k))
     center = sum(k * v for k, v in p.items())
     low, high = min(min(p), actual), max(max(p), actual)
     cumulative, rps = 0.0, 0.0

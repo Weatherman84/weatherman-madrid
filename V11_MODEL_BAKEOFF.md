@@ -37,7 +37,7 @@ Gefittete Kandidatenauswahl ausschließlich anhand des vorangegangenen Kalibrier
 |---|---:|---:|---:|---:|---:|---:|
 | champion | 329 | 44.1% | 0.6868 | 1.5220 | 0.791 | 89.1% |
 | emos_spread:1.0 | 329 | 40.7% | 0.7007 | 1.4696 | 0.807 | 90.6% |
-| equal_raw | 329 | 36.5% | 0.7623 | 1.7669 | 0.872 | 84.8% |
+| equal_raw | 329 | 36.2% | 0.7623 | 1.7669 | 0.872 | 84.8% |
 
 ### D0 Morning @09:00
 
@@ -147,7 +147,7 @@ Ein höherer Top-1-Wert eines Einzelmodells beweist keine bessere Wahrscheinlich
 
 ## Kalibrierung und Unsicherheit
 
-Brier ist der unskalierte Mehrklassen-Brier, Log-Loss nutzt einen expliziten 1e-12-Boden und zählt Nullmasse-Fälle zusätzlich. CRPS ist hier der diskrete RPS auf ganzzahligen, gleich weit entfernten Temperatur-Buckets. Top-Label-ECE ist keine vollständige multivariate Kalibrierungsprüfung. 80%-Intervalle sind diskrete Quantilintervalle und können konservativ überdecken. Sharpness steht als Intervallbreite in den maschinenlesbaren Ergebnissen.
+Brier ist der unskalierte Mehrklassen-Brier, Log-Loss nutzt einen expliziten 1e-12-Boden und zählt Nullmasse-Fälle zusätzlich. Für Top-1/Top-2 werden Wahrscheinlichkeiten beim Ranking auf zwölf Dezimalstellen gerundet; Gleichstände gewinnt der niedrigere Bucket. Das verhindert plattformabhängige Reihenfolgen symmetrischer CDF-Differenzen, ohne die Verteilungen oder Proper Scores zu runden. CRPS ist hier der diskrete RPS auf ganzzahligen, gleich weit entfernten Temperatur-Buckets. Top-Label-ECE ist keine vollständige multivariate Kalibrierungsprüfung. 80%-Intervalle sind diskrete Quantilintervalle und können konservativ überdecken. Sharpness steht als Intervallbreite in den maschinenlesbaren Ergebnissen.
 
 Die Coverage liegt teils deutlich über 80%. Das ist kein Nachweis, dass individuelle 80%-Zahlen korrekt sind. Alle v11-Ausgaben bleiben `provisional`. Temperatur-Skalierung wurde ausschließlich im separaten früheren Kalibrierungsblock angepasst; sie behebt keine falsche Modal-Reihenfolge.
 
