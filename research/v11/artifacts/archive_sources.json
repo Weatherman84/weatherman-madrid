@@ -1,0 +1,32 @@
+{
+  "archives": [
+    {
+      "filename": "Madrid-Deep-Seasonal-Replay-v1.zip",
+      "size_bytes": 22249964,
+      "sha256": "3135444c75a4d8cda5e59d9b890f4e9f95c659b96eb3c2fbba8e88e9f750c1ea",
+      "library_file_id": "libfile_efd715afd3c48191b42d492ea6bd52fe"
+    },
+    {
+      "filename": "Madrid-Historical-Replay-Update-v03.zip",
+      "size_bytes": 84264071,
+      "sha256": "4581b5629028727c33ec86f4c72069a0429f9113847b8c43539e129e8f1724d6",
+      "library_file_id": "libfile_b910e648486481919986f7b002eade79"
+    },
+    {
+      "filename": "weatherman-release-review-2026-11-20.zip",
+      "size_bytes": 2066728,
+      "sha256": "0dcc249e1dae243cfe7a3a8c5723fe1182913b6c4428206626b654b3199b59bd",
+      "library_file_id": "libfile_9ed254a4914c8191bcb9344b45016a87"
+    },
+    {
+      "filename": "causal-prepeak-six-airport-benchmark-v1.zip",
+      "size_bytes": 1823290,
+      "sha256": "d73aecc1d57b7d63ca7e153c0b70135b83ed2d6ffc3a6472def0b48f44052d2d",
+      "library_file_id": "libfile_bd7116b489748191aa576af4b2ee51dc"
+    }
+  ],
+  "base_commit": "b57b1d6c4b7c2f04462d363fa3f7052cc52547d4",
+  "case_summary_source_commit": "0c2628639a67846ef619467b8c38c8ab3b8dfa6b",
+  "production_database_reads": 0,
+  "production_database_writes": 0
+}

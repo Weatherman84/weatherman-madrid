@@ -1,0 +1,693 @@
+{
+  "status": "NON_EXECUTABLE_CROSS_TARGET_DIAGNOSTIC",
+  "official_roi": null,
+  "trading_edge_proven": false,
+  "target_alignment": {
+    "same_stored_and_official_category": 47
+  },
+  "excluded": {
+    "missing_or_stale_price": 12,
+    "price_after_cutoff_or_stale": 1
+  },
+  "limitations": [
+    "Price series are not best ask or bid/ask books",
+    "No historical fees, depth, or fills; no ROI",
+    "Market WU resolution and stored METAR are distinct targets",
+    "Historical candidate selection was not a contemporary frozen signal"
+  ],
+  "summaries": [
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "normalized_market_series",
+      "n": 13,
+      "top1": 0.3076923076923077,
+      "top2": 0.6153846153846154,
+      "mae": 0.904880579131492,
+      "bias": 0.540230104545172,
+      "brier": 0.7569554071408665,
+      "log_loss": 1.5711680636259369,
+      "discrete_crps": 0.6198685405655694,
+      "winner_probability": 0.24843243631464845,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9230769230769231,
+      "width80": 3.3076923076923075,
+      "top_label_ece": 0.11211863538904475,
+      "reliability": [
+        {
+          "lower": 0.0,
+          "n": 1,
+          "predicted": 0.09090909090909091,
+          "observed": 0
+        },
+        {
+          "lower": 0.2,
+          "n": 2,
+          "predicted": 0.2837738000594249,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 4,
+          "predicted": 0.35796893242186023,
+          "observed": 0.25
+        },
+        {
+          "lower": 0.4,
+          "n": 6,
+          "predicted": 0.4387983601096333,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "weather_frozen_selection",
+      "n": 13,
+      "top1": 0.23076923076923078,
+      "top2": 0.6153846153846154,
+      "mae": 1.072326275852627,
+      "bias": 0.7692075225353397,
+      "brier": 0.7697758790825147,
+      "log_loss": 1.5553756510376924,
+      "discrete_crps": 0.7010173422797804,
+      "winner_probability": 0.24592364913817594,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9230769230769231,
+      "width80": 2.8461538461538463,
+      "top_label_ece": 0.17481710248739596,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 2,
+          "predicted": 0.24692840138476638,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.3521951294673521,
+          "observed": 0.14285714285714285
+        },
+        {
+          "lower": 0.4,
+          "n": 4,
+          "predicted": 0.42165009417621246,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "target": "stored_metar_proxy",
+      "candidate": "normalized_market_series",
+      "n": 13,
+      "top1": 0.3076923076923077,
+      "top2": 0.6153846153846154,
+      "mae": 0.904880579131492,
+      "bias": 0.540230104545172,
+      "brier": 0.7569554071408665,
+      "log_loss": 1.5711680636259369,
+      "discrete_crps": 0.6198685405655694,
+      "winner_probability": 0.24843243631464845,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9230769230769231,
+      "width80": 3.3076923076923075,
+      "top_label_ece": 0.11211863538904475,
+      "reliability": [
+        {
+          "lower": 0.0,
+          "n": 1,
+          "predicted": 0.09090909090909091,
+          "observed": 0
+        },
+        {
+          "lower": 0.2,
+          "n": 2,
+          "predicted": 0.2837738000594249,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 4,
+          "predicted": 0.35796893242186023,
+          "observed": 0.25
+        },
+        {
+          "lower": 0.4,
+          "n": 6,
+          "predicted": 0.4387983601096333,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "target": "stored_metar_proxy",
+      "candidate": "weather_frozen_selection",
+      "n": 13,
+      "top1": 0.23076923076923078,
+      "top2": 0.6153846153846154,
+      "mae": 1.072326275852627,
+      "bias": 0.7692075225353397,
+      "brier": 0.7697758790825147,
+      "log_loss": 1.5553756510376924,
+      "discrete_crps": 0.7010173422797804,
+      "winner_probability": 0.24592364913817594,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9230769230769231,
+      "width80": 2.8461538461538463,
+      "top_label_ece": 0.17481710248739596,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 2,
+          "predicted": 0.24692840138476638,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.3521951294673521,
+          "observed": 0.14285714285714285
+        },
+        {
+          "lower": 0.4,
+          "n": 4,
+          "predicted": 0.42165009417621246,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "normalized_market_series",
+      "n": 14,
+      "top1": 0.2857142857142857,
+      "top2": 0.7142857142857143,
+      "mae": 0.8292997106148343,
+      "bias": 0.4535950492941188,
+      "brier": 0.6971609567684891,
+      "log_loss": 1.356644671732572,
+      "discrete_crps": 0.5448791394830661,
+      "winner_probability": 0.29826980031560374,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9285714285714286,
+      "width80": 2.357142857142857,
+      "top_label_ece": 0.1868265937785917,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.3554459598052084,
+          "observed": 0.14285714285714285
+        },
+        {
+          "lower": 0.4,
+          "n": 6,
+          "predicted": 0.44366797161416516,
+          "observed": 0.3333333333333333
+        },
+        {
+          "lower": 0.5,
+          "n": 1,
+          "predicted": 0.5345572354211663,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "weather_frozen_selection",
+      "n": 14,
+      "top1": 0.2857142857142857,
+      "top2": 0.5714285714285714,
+      "mae": 1.1847174445318143,
+      "bias": 0.9183620652564608,
+      "brier": 0.8224024254049291,
+      "log_loss": 1.8391904793154905,
+      "discrete_crps": 0.8164304341640506,
+      "winner_probability": 0.24428084922569673,
+      "zero_winner_mass": 0,
+      "coverage80": 0.7142857142857143,
+      "width80": 2.2857142857142856,
+      "top_label_ece": 0.12730399421273456,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 1,
+          "predicted": 0.26755325347281056,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 3,
+          "predicted": 0.35742807320305375,
+          "observed": 0
+        },
+        {
+          "lower": 0.4,
+          "n": 10,
+          "predicted": 0.44424184458963123,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "target": "stored_metar_proxy",
+      "candidate": "normalized_market_series",
+      "n": 14,
+      "top1": 0.2857142857142857,
+      "top2": 0.7142857142857143,
+      "mae": 0.8292997106148343,
+      "bias": 0.4535950492941188,
+      "brier": 0.6971609567684891,
+      "log_loss": 1.356644671732572,
+      "discrete_crps": 0.5448791394830661,
+      "winner_probability": 0.29826980031560374,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9285714285714286,
+      "width80": 2.357142857142857,
+      "top_label_ece": 0.1868265937785917,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.3554459598052084,
+          "observed": 0.14285714285714285
+        },
+        {
+          "lower": 0.4,
+          "n": 6,
+          "predicted": 0.44366797161416516,
+          "observed": 0.3333333333333333
+        },
+        {
+          "lower": 0.5,
+          "n": 1,
+          "predicted": 0.5345572354211663,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "target": "stored_metar_proxy",
+      "candidate": "weather_frozen_selection",
+      "n": 14,
+      "top1": 0.2857142857142857,
+      "top2": 0.5714285714285714,
+      "mae": 1.1847174445318143,
+      "bias": 0.9183620652564608,
+      "brier": 0.8224024254049291,
+      "log_loss": 1.8391904793154905,
+      "discrete_crps": 0.8164304341640506,
+      "winner_probability": 0.24428084922569673,
+      "zero_winner_mass": 0,
+      "coverage80": 0.7142857142857143,
+      "width80": 2.2857142857142856,
+      "top_label_ece": 0.12730399421273456,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 1,
+          "predicted": 0.26755325347281056,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 3,
+          "predicted": 0.35742807320305375,
+          "observed": 0
+        },
+        {
+          "lower": 0.4,
+          "n": 10,
+          "predicted": 0.44424184458963123,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "normalized_market_series",
+      "n": 14,
+      "top1": 0.35714285714285715,
+      "top2": 0.6428571428571429,
+      "mae": 0.7980434373939921,
+      "bias": 0.4725374376895171,
+      "brier": 0.7632977165296435,
+      "log_loss": 1.5164036966458998,
+      "discrete_crps": 0.5450707666720117,
+      "winner_probability": 0.2878771355150723,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9285714285714286,
+      "width80": 2.0714285714285716,
+      "top_label_ece": 0.2872503551587578,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 4,
+          "predicted": 0.36551859188114344,
+          "observed": 0.25
+        },
+        {
+          "lower": 0.4,
+          "n": 4,
+          "predicted": 0.45956617196167526,
+          "observed": 0.75
+        },
+        {
+          "lower": 0.5,
+          "n": 5,
+          "predicted": 0.5547771537470426,
+          "observed": 0.2
+        },
+        {
+          "lower": 0.6,
+          "n": 1,
+          "predicted": 0.6238095238095238,
+          "observed": 0
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "weather_frozen_selection",
+      "n": 14,
+      "top1": 0.2857142857142857,
+      "top2": 0.5714285714285714,
+      "mae": 1.1847174445318143,
+      "bias": 0.9183620652564608,
+      "brier": 0.8224024254049291,
+      "log_loss": 1.8391904793154905,
+      "discrete_crps": 0.8164304341640506,
+      "winner_probability": 0.24428084922569673,
+      "zero_winner_mass": 0,
+      "coverage80": 0.7142857142857143,
+      "width80": 2.2857142857142856,
+      "top_label_ece": 0.12730399421273456,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 1,
+          "predicted": 0.26755325347281056,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 3,
+          "predicted": 0.35742807320305375,
+          "observed": 0
+        },
+        {
+          "lower": 0.4,
+          "n": 10,
+          "predicted": 0.44424184458963123,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "target": "stored_metar_proxy",
+      "candidate": "normalized_market_series",
+      "n": 14,
+      "top1": 0.35714285714285715,
+      "top2": 0.6428571428571429,
+      "mae": 0.7980434373939921,
+      "bias": 0.4725374376895171,
+      "brier": 0.7632977165296435,
+      "log_loss": 1.5164036966458998,
+      "discrete_crps": 0.5450707666720117,
+      "winner_probability": 0.2878771355150723,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9285714285714286,
+      "width80": 2.0714285714285716,
+      "top_label_ece": 0.2872503551587578,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 4,
+          "predicted": 0.36551859188114344,
+          "observed": 0.25
+        },
+        {
+          "lower": 0.4,
+          "n": 4,
+          "predicted": 0.45956617196167526,
+          "observed": 0.75
+        },
+        {
+          "lower": 0.5,
+          "n": 5,
+          "predicted": 0.5547771537470426,
+          "observed": 0.2
+        },
+        {
+          "lower": 0.6,
+          "n": 1,
+          "predicted": 0.6238095238095238,
+          "observed": 0
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "target": "stored_metar_proxy",
+      "candidate": "weather_frozen_selection",
+      "n": 14,
+      "top1": 0.2857142857142857,
+      "top2": 0.5714285714285714,
+      "mae": 1.1847174445318143,
+      "bias": 0.9183620652564608,
+      "brier": 0.8224024254049291,
+      "log_loss": 1.8391904793154905,
+      "discrete_crps": 0.8164304341640506,
+      "winner_probability": 0.24428084922569673,
+      "zero_winner_mass": 0,
+      "coverage80": 0.7142857142857143,
+      "width80": 2.2857142857142856,
+      "top_label_ece": 0.12730399421273456,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 1,
+          "predicted": 0.26755325347281056,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 3,
+          "predicted": 0.35742807320305375,
+          "observed": 0
+        },
+        {
+          "lower": 0.4,
+          "n": 10,
+          "predicted": 0.44424184458963123,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "normalized_market_series",
+      "n": 6,
+      "top1": 1,
+      "top2": 1,
+      "mae": 0.22856753778612454,
+      "bias": 0.1869072828695944,
+      "brier": 0.18825973427966441,
+      "log_loss": 0.39859910964473405,
+      "discrete_crps": 0.09274420623892327,
+      "winner_probability": 0.6796568777993659,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 1.3333333333333333,
+      "top_label_ece": 0.3203431222006341,
+      "reliability": [
+        {
+          "lower": 0.5,
+          "n": 2,
+          "predicted": 0.5583479175766447,
+          "observed": 1
+        },
+        {
+          "lower": 0.6,
+          "n": 2,
+          "predicted": 0.6705250606216548,
+          "observed": 1
+        },
+        {
+          "lower": 0.7,
+          "n": 1,
+          "predicted": 0.7673509286412512,
+          "observed": 1
+        },
+        {
+          "lower": 0.8,
+          "n": 1,
+          "predicted": 0.8528443817583451,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "target": "reported_official_resolution_cross_target",
+      "candidate": "weather_frozen_selection",
+      "n": 6,
+      "top1": 0.6666666666666666,
+      "top2": 1,
+      "mae": 0.38438860684025516,
+      "bias": 0.38288810950137464,
+      "brier": 0.4711401421256624,
+      "log_loss": 0.8082354942209021,
+      "discrete_crps": 0.2415632349326735,
+      "winner_probability": 0.47403162527377357,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 1.6666666666666667,
+      "top_label_ece": 0.18558794798213515,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 1,
+          "predicted": 0.36514002056402317,
+          "observed": 1
+        },
+        {
+          "lower": 0.4,
+          "n": 2,
+          "predicted": 0.4561598174906686,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.5,
+          "n": 2,
+          "predicted": 0.5798257538911724,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.7,
+          "n": 1,
+          "predicted": 0.7686641643441736,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "target": "stored_metar_proxy",
+      "candidate": "normalized_market_series",
+      "n": 6,
+      "top1": 1,
+      "top2": 1,
+      "mae": 0.22856753778612454,
+      "bias": 0.1869072828695944,
+      "brier": 0.18825973427966441,
+      "log_loss": 0.39859910964473405,
+      "discrete_crps": 0.09274420623892327,
+      "winner_probability": 0.6796568777993659,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 1.3333333333333333,
+      "top_label_ece": 0.3203431222006341,
+      "reliability": [
+        {
+          "lower": 0.5,
+          "n": 2,
+          "predicted": 0.5583479175766447,
+          "observed": 1
+        },
+        {
+          "lower": 0.6,
+          "n": 2,
+          "predicted": 0.6705250606216548,
+          "observed": 1
+        },
+        {
+          "lower": 0.7,
+          "n": 1,
+          "predicted": 0.7673509286412512,
+          "observed": 1
+        },
+        {
+          "lower": 0.8,
+          "n": 1,
+          "predicted": 0.8528443817583451,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "target": "stored_metar_proxy",
+      "candidate": "weather_frozen_selection",
+      "n": 6,
+      "top1": 0.6666666666666666,
+      "top2": 1,
+      "mae": 0.38438860684025516,
+      "bias": 0.38288810950137464,
+      "brier": 0.4711401421256624,
+      "log_loss": 0.8082354942209021,
+      "discrete_crps": 0.2415632349326735,
+      "winner_probability": 0.47403162527377357,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 1.6666666666666667,
+      "top_label_ece": 0.18558794798213515,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 1,
+          "predicted": 0.36514002056402317,
+          "observed": 1
+        },
+        {
+          "lower": 0.4,
+          "n": 2,
+          "predicted": 0.4561598174906686,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.5,
+          "n": 2,
+          "predicted": 0.5798257538911724,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.7,
+          "n": 1,
+          "predicted": 0.7686641643441736,
+          "observed": 1
+        }
+      ]
+    }
+  ],
+  "source_sha256": "37aacd909e3932f9980ff781db8b4804909e7040a3f98df26b1fbb8e1db7ea86"
+}

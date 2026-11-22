@@ -1,0 +1,38 @@
+name: V11 offline research
+
+on:
+  push:
+    branches: [codex/engine-v11-research]
+  pull_request:
+    paths:
+      - "src/weatherman/v11/**"
+      - "scripts/*v11*"
+      - "tests/test_v11_research.py"
+      - "research/v11/**"
+      - ".github/workflows/v11-research.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]" -r research/v11/requirements.txt
+      - run: pytest tests/test_v11_research.py -q
+      - name: Reproduce the historical experiments without network or database inputs
+        run: |
+          python scripts/run_v11_research.py --rows research/v11/artifacts/rows.jsonl.gz --output /tmp/v11-replay
+          python scripts/run_v11_extended_models.py --rows research/v11/artifacts/extended_rows.jsonl.gz --output /tmp/v11-extended
+          python scripts/verify_v11_reproduction.py --actual /tmp/v11-replay/results.json --expected research/v11/artifacts/results.json
+          python scripts/verify_v11_reproduction.py --actual /tmp/v11-extended/extended_results.json --expected research/v11/artifacts/extended_results.json
+      - run: python scripts/verify_engine_baseline.py
