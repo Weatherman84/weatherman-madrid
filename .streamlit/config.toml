@@ -1,9 +1,0 @@
-[client]
-showSidebarNavigation = false
-
-[server]
-fileWatcherType = "none"
-headless = true
-
-[browser]
-gatherUsageStats = false
