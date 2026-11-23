@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.23")
+discard_stale_weatherman_modules("1.0.24")
 
 import pandas as pd
 import streamlit as st
@@ -51,6 +51,7 @@ from weatherman.promotion_gate_transparency import build_analog_promotion_report
 from weatherman.madrid_late_shadow_display import (
     table_view_for_target, checkpoint_shadow_value, bucket_shadow_value,
 )
+from weatherman.madrid_late_shadow_public import fetch_journal as fetch_v11_shadow_journal
 from weatherman.terminology import EVIDENCE_GLOSSARY, FRESHNESS_GLOSSARY
 
 
@@ -259,6 +260,11 @@ def checkpoint_rows(
             }
         )
     return pd.DataFrame(rows)
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def load_v11_shadow_journal() -> dict:
+    return fetch_v11_shadow_journal()
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -576,7 +582,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.23 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.24 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -667,7 +673,7 @@ fixed_checkpoint_table = checkpoint_rows(
     zone=timezone_name,
     labels=checkpoint_labels,
 )
-v11_shadow_view = table_view_for_target(target)
+v11_shadow_view = table_view_for_target(target, live=load_v11_shadow_journal())
 fixed_checkpoint_table["v11 Shadow · Late"] = [
     checkpoint_shadow_value(v11_shadow_view, label)
     for label in fixed_checkpoint_table["Checkpoint"]

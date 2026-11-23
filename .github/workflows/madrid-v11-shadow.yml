@@ -1,0 +1,102 @@
+name: 15 - Madrid v11 prospective Late Shadow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/madrid-v11-shadow.yml"
+      - "scripts/record_madrid_late_shadow.py"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: auto records only in the live window; audit reads sources without recording
+        type: choice
+        default: auto
+        options: [auto, audit]
+  workflow_run:
+    workflows: ["3 - Madrid collector"]
+    types: [completed]
+    branches: [main]
+  schedule:
+    # Both DST offsets. No backfill when GitHub delivers a trigger too late.
+    - cron: "50,55 13,14 * * *"
+    - cron: "15 5,6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: madrid-v11-prospective-shadow
+  cancel-in-progress: false
+
+jobs:
+  shadow:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Check actual Madrid time before reading any source
+        id: gate
+        env:
+          MODE: ${{ github.event_name == 'push' && 'audit' || inputs.mode || 'auto' }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo("Europe/Madrid"))
+          due = (now.hour == 15 and now.minute >= 50) or 6 <= now.hour < 9
+          print(f"due={'true' if due or os.environ['MODE'] == 'audit' else 'false'}")
+          PY
+      - uses: actions/checkout@v6
+        if: steps.gate.outputs.due == 'true'
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        if: steps.gate.outputs.due == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.gate.outputs.due == 'true'
+        run: pip install -e .
+      - name: Check out the separate append-only data branch
+        if: steps.gate.outputs.due == 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: madrid-v11-shadow-data
+          path: shadow-store
+      - name: Capture or settle with a read-only repeatable database snapshot
+        if: steps.gate.outputs.due == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MODE: ${{ github.event_name == 'push' && 'audit' || inputs.mode || 'auto' }}
+        run: python scripts/record_madrid_late_shadow.py --store shadow-store --mode "$MODE"
+      - name: Publish decisions without replacing any previous file
+        if: steps.gate.outputs.due == 'true'
+        working-directory: shadow-store
+        run: |
+          git add -- journal.json
+          for folder in decisions outcomes; do
+            if [[ -d "$folder" ]]; then
+              if [[ -n "$(git diff --name-only -- "$folder")" ]]; then
+                echo "Refusing changes to a previously committed record" >&2
+                exit 1
+              fi
+              git add -- "$folder"
+            fi
+          done
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Append Madrid v11 Shadow evidence"
+          git push origin HEAD:madrid-v11-shadow-data
+      - name: Save exact published journal
+        if: steps.gate.outputs.due == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrid-v11-prospective-shadow-${{ github.run_id }}
+          path: shadow-store/journal.json
+          retention-days: 30

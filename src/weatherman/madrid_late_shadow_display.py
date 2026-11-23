@@ -97,8 +97,25 @@ def modal(values):
     return k, p[k]
 
 
-def table_view_for_target(target, bundle=None):
+def table_view_for_target(target, bundle=None, live=None):
     """One view for both existing cockpit tables; missing remains missing."""
+    if live is not None:
+        try:
+            from .madrid_late_shadow_public import validate_journal
+            from .madrid_late_shadow_model import ZONE, instant
+
+            validate_journal(live)
+            day = target.isoformat() if isinstance(target, date) else str(target)
+            record = next((r for r in live["decisions"] if r["target_date"] == day), None)
+            if record is not None:
+                at = instant(record["captured_at"]).astimezone(ZONE).strftime("%H:%M:%S")
+                kind = "prospective curve candidate" if record["curve_available"] else "prospective reference fallback; curve unavailable"
+                return {"status": "prospective_shadow" if record["curve_available"] else "prospective_fallback",
+                        "target_date": day, "record": record, "live_available": True,
+                        "probabilities": probabilities(record["candidate"]),
+                        "caption": f"v11 Shadow · Late 16:00: {kind}; inputs frozen {at} Madrid. Research only; First Live unchanged."}
+        except (ValueError, KeyError, TypeError):
+            live = {"status": "live_journal_unavailable"}
     try:
         view = view_for_target(bundle if bundle is not None else load_bundle(), target)
     except (OSError, ValueError, KeyError, TypeError):
@@ -112,8 +129,10 @@ def table_view_for_target(target, bundle=None):
     view["probabilities"] = probabilities(record["candidate"]) if record else {}
     if record is None:
         view["caption"] = (
-            "v11 Shadow · Late 16:00: — = no recorded Shadow for this day; live recording is not active."
+            "v11 Shadow · Late 16:00: — = no recorded Shadow for this day; missed cutoffs are not backfilled."
         )
+        if live and live.get("status") == "live_journal_unavailable":
+            view["caption"] += " Live journal temporarily unavailable."
     elif not record["curve_available"]:
         view["caption"] = (
             "v11 Shadow · Late 16:00: retrospective reference fallback; no comparable curve. Not a live forecast."
