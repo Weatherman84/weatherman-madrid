@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.22")
+discard_stale_weatherman_modules("1.0.23")
 
 import pandas as pd
 import streamlit as st
@@ -48,6 +48,9 @@ from weatherman.settings import settings
 from weatherman.research_ui import render_research_tracks
 from weatherman.forward_shadow_public import fetch_forward_shadow_journal
 from weatherman.promotion_gate_transparency import build_analog_promotion_report
+from weatherman.madrid_late_shadow_display import (
+    table_view_for_target, checkpoint_shadow_value, bucket_shadow_value,
+)
 from weatherman.terminology import EVIDENCE_GLOSSARY, FRESHNESS_GLOSSARY
 
 
@@ -573,7 +576,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.22 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.23 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -664,6 +667,11 @@ fixed_checkpoint_table = checkpoint_rows(
     zone=timezone_name,
     labels=checkpoint_labels,
 )
+v11_shadow_view = table_view_for_target(target)
+fixed_checkpoint_table["v11 Shadow · Late"] = [
+    checkpoint_shadow_value(v11_shadow_view, label)
+    for label in fixed_checkpoint_table["Checkpoint"]
+]
 
 if nowcast is None:
     st.warning(
@@ -678,6 +686,7 @@ if nowcast is None:
         hide_index=True,
         width="stretch",
     )
+    st.caption(v11_shadow_view["caption"])
     render_analog_promotion_gate(analog_promotion_report)
     render_aemet_station_panel(target, metar_curve_records, timezone_name)
     st.stop()
@@ -870,11 +879,13 @@ st.dataframe(
     hide_index=True,
     width="stretch",
 )
+st.caption(v11_shadow_view["caption"])
 
 st.subheader("3 · Calibrated trading probabilities")
 shadow_probabilities = probability_assessment.shadow_probabilities
 relevant_buckets = sorted(
     set(probabilities) | set(champion_probabilities) | set(shadow_probabilities)
+    | set(v11_shadow_view["probabilities"])
 )
 bucket_rows = []
 for bucket in relevant_buckets:
@@ -888,6 +899,7 @@ for bucket in relevant_buckets:
         "Champion model mass": percentage(
             champion_probabilities.get(bucket), digits=1
         ),
+        "v11 Shadow · Late": bucket_shadow_value(v11_shadow_view, bucket),
     }
     if probability_assessment.post_peak:
         row["Post-Peak Shadow mass · not released"] = percentage(
@@ -895,6 +907,7 @@ for bucket in relevant_buckets:
         )
     bucket_rows.append(row)
 st.dataframe(pd.DataFrame(bucket_rows), hide_index=True, width="stretch")
+st.caption(v11_shadow_view["caption"])
 st.caption(
     f"Calibrated trading modal: {top_bucket} °C ({top_probability:.1%}) · "
     f"Production Champion modal: {champion_top_bucket} °C "
