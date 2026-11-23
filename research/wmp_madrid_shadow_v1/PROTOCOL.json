@@ -1,0 +1,32 @@
+{
+  "candidate_id": "wmp_madrid_metar_floor_v1",
+  "upstream_commit": "cc01f6f228250138a9300e20d3cdc791675bbb96",
+  "airport": "LEMD",
+  "checkpoint": "Late Live @16:00",
+  "timezone": "Europe/Madrid",
+  "latitude": 40.466,
+  "longitude": -3.555,
+  "history_years": 20,
+  "station_offset": 0.0,
+  "spread_inflation": 1.0,
+  "seed": 7,
+  "ensemble_samples": 20000,
+  "final_samples": 60000,
+  "kernel_sd_c": 0.6,
+  "family_members": {
+    "ncep_gefs025": 31,
+    "ecmwf_ifs025_ensemble": 51,
+    "icon_seamless_eps": 40,
+    "gem_global_ensemble": 21
+  },
+  "research_only": true,
+  "automatic_promotion": false,
+  "automatic_execution": false,
+  "live_activation": false,
+  "historical_full_ensemble_validation_passed": false,
+  "floor_source": "LEMD measured METAR; replaces upstream Forecast-API floor and defines a separately named adaptation",
+  "buckets": "all integer cells [k-0.5,k+0.5), no truncated support",
+  "missing_family_policy": "no prediction; never substitute deterministic maxima or silently use climatology-only",
+  "evidence_policy": "diagnostic snapshot replay is not prospective OOS; a future collector must freeze before cutoff and independently audit historical evidence",
+  "station_mode": "manual city mode, fixed airport coordinates; no unverified nearest-station offset or Kalshi auto-calibration"
+}

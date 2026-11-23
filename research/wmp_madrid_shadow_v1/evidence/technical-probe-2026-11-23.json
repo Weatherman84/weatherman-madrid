@@ -1,0 +1,24 @@
+{
+  "database_queries": 0,
+  "historical_full_model_cases": 0,
+  "network_requests": 4,
+  "normalized_input_sha256": "47d8c2cce0b2f6540a103d900c814ac775bb16267d2f5863dfe1a7b96a93652e",
+  "numeric_parity_error_vs_upstream": 0.0,
+  "numpy": "2.5.5",
+  "pandas": "2.3.3",
+  "production_writes": 0,
+  "single_offline_run_seconds": 0.04024050900011389,
+  "source_payload_bytes": 202096,
+  "source_received_at": {
+    "ensemble": "2026-11-23T20:45:30.216742+00:00",
+    "history": "2026-11-23T20:45:30.238092+00:00",
+    "metar": "2026-11-23T20:45:30.088967+00:00",
+    "recent": "2026-11-23T20:45:30.273173+00:00"
+  },
+  "source_sizes_bytes": {
+    "ensemble": 18750,
+    "history": 186100,
+    "metar": 18383,
+    "recent": 1034
+  }
+}

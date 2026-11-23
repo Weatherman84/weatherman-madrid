@@ -1,0 +1,102 @@
+{
+  "code_status": "offline_research_prototype",
+  "forecast_diagnostic": {
+    "airport": "LEMD",
+    "all_sources_received_by_checkpoint": false,
+    "automatic_execution": false,
+    "automatic_promotion": false,
+    "candidate": {
+      "13": 0.6346833333333334,
+      "14": 0.29191666666666666,
+      "15": 0.054516666666666665,
+      "16": 0.00985,
+      "17": 0.004383333333333334,
+      "18": 0.0021333333333333334,
+      "19": 0.0015333333333333334,
+      "20": 0.0007,
+      "21": 0.00028333333333333335
+    },
+    "candidate_id": "wmp_madrid_metar_floor_v1",
+    "checkpoint": "Late Live @16:00",
+    "checkpoint_at": "2026-11-23T15:00:00+00:00",
+    "climatology_coefficients": [
+      20.895439649964707,
+      0.14660984163940122,
+      -3.860729840507476,
+      -10.740409376260942,
+      1.944767473012387,
+      0.08987283493385506,
+      -0.3319745105028012,
+      -0.35101932911527206
+    ],
+    "climatology_ref_year": 2016.0,
+    "climatology_residual_sha256": "4f65f00e8d51cbec282393ba66c4fddf599592fd80286392f649d86e33bd6423",
+    "differences_from_app": [
+      "measured LEMD METAR floor replaces modeled grid floor",
+      "full settlement-compatible integer buckets replace default grid bins",
+      "no GEV context, LLM commentary, prices, Kelly or trading signals"
+    ],
+    "ensemble_weight": 0.95,
+    "input_as_of": "2026-11-23T20:45:30.274427+00:00",
+    "input_sha256": "47d8c2cce0b2f6540a103d900c814ac775bb16267d2f5863dfe1a7b96a93652e",
+    "live_activation": false,
+    "members": {
+      "ecmwf_ifs025_ensemble": 51,
+      "gem_global_ensemble": 21,
+      "icon_seamless_eps": 40,
+      "ncep_gefs025": 31
+    },
+    "observed_metar_floor_c": 13,
+    "prospective_OOS": false,
+    "protocol_sha256": "4c66154f46d46359b80ffce158240adcd389b193a8199f958b0966eb4deeea2d",
+    "regime_offset": -0.481425508732114,
+    "research_only": true,
+    "source_sha256": {
+      "ensemble": "0ee5622947cb645adbd685041400ffe945d7d70dedc0be9253a396bfa26b0657",
+      "history": "1b201cb1feb539821b7e6f9bbf392eab350cc4e3d09037b9efaa0a2211745b70",
+      "metar": "d53e4dc9ef1267b9d4241135e776ce1e35a0df1cb94189f95c8fb954988a0f90",
+      "recent": "0f842b2b663f6366d970af9e1b881fb0a33c7b25b7546e1d5dd4b8e77ba18915"
+    },
+    "status": "offline_diagnostic_only",
+    "target_date": "2026-11-23",
+    "upstream_commit": "cc01f6f228250138a9300e20d3cdc791675bbb96",
+    "upstream_grid_math_without_floor": {
+      "6": 3.3333333333333335e-05,
+      "7": 0.00015,
+      "8": 0.0002666666666666667,
+      "9": 0.0012166666666666667,
+      "10": 0.004083333333333333,
+      "11": 0.013833333333333333,
+      "12": 0.16438333333333333,
+      "13": 0.45071666666666665,
+      "14": 0.29191666666666666,
+      "15": 0.054516666666666665,
+      "16": 0.00985,
+      "17": 0.004383333333333334,
+      "18": 0.0021333333333333334,
+      "19": 0.0015333333333333334,
+      "20": 0.0007,
+      "21": 0.00028333333333333335
+    }
+  },
+  "historical_readiness": {
+    "candidate_snapshot_dates": [
+      "2026-11-23"
+    ],
+    "cases_checked": 434,
+    "eligible_dates": [],
+    "excluded": {
+      "late_or_incomplete_source_bundle": 0,
+      "missing_target_member_snapshot": 434
+    },
+    "full_historical_scores": null,
+    "full_historical_skill_evaluation_performed": false,
+    "gate_status": "BLOCKED_MISSING_HISTORICAL_MEMBER_INPUTS",
+    "live_activation": false,
+    "member_archive_screen_passed_cases": 0,
+    "note": "A member-archive screen alone does not validate source hashes, calibration or forecast skill. No deterministic proxy is used."
+  },
+  "input_file_sha256": "47d8c2cce0b2f6540a103d900c814ac775bb16267d2f5863dfe1a7b96a93652e",
+  "live_job_enabled": false,
+  "production_changes": false
+}
