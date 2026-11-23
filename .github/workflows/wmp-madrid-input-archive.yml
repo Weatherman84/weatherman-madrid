@@ -1,0 +1,107 @@
+name: 16 - Archive WMP Madrid inputs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/wmp-madrid-input-archive.yml"
+      - "scripts/archive_wmp_madrid_inputs.py"
+      - "src/weatherman/research_wmp/archive.py"
+      - "src/weatherman/research_wmp/capture.py"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: auto archives only in the real capture window; audit checks existing files without API calls
+        type: choice
+        default: audit
+        options: [audit, auto]
+  workflow_run:
+    workflows: ["3 - Madrid collector"]
+    types: [completed]
+    branches: [main]
+  schedule:
+    # DST pairs; the actual Madrid clock is checked again before any network call.
+    - cron: "50,55 13,14 * * *"
+    - cron: "12,32 14,15 * * *"
+    - cron: "12 20 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wmp-madrid-input-archive
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Gate on the actual local time; push performs an audit only
+        id: gate
+        env:
+          MODE: ${{ github.event_name == 'push' && 'audit' || inputs.mode || 'auto' }}
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo("Europe/Madrid"))
+          capture = now.hour == 15 and now.minute >= 50
+          closeout = (now.hour == 16 and now.minute >= 10) or 20 <= now.hour <= 22
+          print(f"due={'true' if os.environ['MODE'] == 'audit' or capture or closeout else 'false'}")
+          PY
+      - uses: actions/checkout@v6
+        if: steps.gate.outputs.due == 'true'
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        if: steps.gate.outputs.due == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.gate.outputs.due == 'true'
+        run: pip install -e .
+      - name: Check out the independent public input store
+        if: steps.gate.outputs.due == 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: wmp-madrid-input-archive
+          path: input-store
+      - name: Archive or audit inputs; no forecast generation or database access
+        if: steps.gate.outputs.due == 'true'
+        env:
+          MODE: ${{ github.event_name == 'push' && 'audit' || inputs.mode || 'auto' }}
+        run: |
+          export WMP_CODE_REVISION="$(git rev-parse HEAD)"
+          python scripts/archive_wmp_madrid_inputs.py --store input-store --mode "$MODE"
+      - name: Publish new objects and derived index without replacing old evidence
+        if: steps.gate.outputs.due == 'true'
+        working-directory: input-store
+        run: |
+          git add -- journal.json
+          for folder in bundles checkpoints gaps attempts; do
+            if [[ -d "$folder" ]]; then
+              if [[ -n "$(git diff --name-only -- "$folder")" ]]; then
+                echo "Refusing to modify existing input evidence" >&2
+                exit 1
+              fi
+              git add -- "$folder"
+            fi
+          done
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Archive WMP Madrid input evidence"
+          git push origin HEAD:wmp-madrid-input-archive
+      - name: Save the exact archive index
+        if: always() && steps.gate.outputs.due == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wmp-madrid-input-index-${{ github.run_id }}-${{ github.run_attempt }}
+          path: input-store/journal.json
+          retention-days: 30

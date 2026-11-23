@@ -1,12 +1,12 @@
 # WMP Madrid Shadow v1 – technische Entscheidungsvorlage
 
-Stand: 23. November 2026. **Offline-Research-Prototyp. Kein aktiver Shadow in der App, kein neuer Zeitplan, keine Modell-Promotion.**
+Stand: 23. November 2026. **Research-Prototyp mit vorbereitetem Eingabe-Archiver. Kein aktiver Shadow in der App, keine Modell-Promotion.**
 
 ## Ergebnis
 
 Die vorhandene Weatherman-Infrastruktur kann einen zusätzlichen WMP-Vergleichskandidaten tragen. Der vollständige numerische Pfad wurde mit aktuellen, archivierten API-Antworten für Madrid ausgeführt: 143 echte Ensemble-Member, 20 Jahre Grid-Historie, modellbasierter Regimeinput und echte LEMD-METAR-Werte. Vier öffentliche HTTP-Abfragen, rund 0,2 MB normalisiertes Eingangspaket, keine Datenbankabfrage. Die genaue Laufzeit und Paketgrößen stehen in `evidence/technical-probe-2026-11-23.json`.
 
-Die Historie reicht jedoch noch nicht für einen fairen Vergleich dieses vollständigen Modells: Für **0 von 434** vorhandenen Madrid-Vergleichstagen liegen passende damalige WMP-Member-Pakete vor. Die vorhandenen sechs deterministischen Modelle sind kein Ersatz für die vier EPS-Produkte. Historische Skillmetriken werden deshalb nicht erfunden; das Ergebnisfeld bleibt `null`. Ein weiterer Live-Kandidat ist mit diesem PR noch nicht freigegeben oder aktiviert.
+Die Historie reicht jedoch noch nicht für einen fairen Vergleich dieses vollständigen Modells: Für **0 von 434** vorhandenen Madrid-Vergleichstagen liegen passende damalige WMP-Member-Pakete vor. Die vorhandenen sechs deterministischen Modelle sind kein Ersatz für die vier EPS-Produkte. Historische Skillmetriken werden deshalb nicht erfunden; das Ergebnisfeld bleibt `null`. Ein weiterer Live-Kandidat ist mit diesem PR noch nicht freigegeben oder aktiviert. Der nun vorbereitete [Archiver](ARCHIVE.md) erfasst ausschließlich Eingangsdaten; sein Zeitplan wird erst durch einen Merge in `main` aktiviert.
 
 ## Was genau nachgebaut wurde
 
@@ -55,7 +55,7 @@ Die aktuelle [Open-Meteo-Ensemble-Dokumentation](https://open-meteo.com/en/docs/
 | Vergleich | Champion, v11 und WMP-Madrid auf derselben verfügbaren Tagesmaske und demselben akzeptierten METAR-Tagesmaximum; eigene Quellenklasse und klare Abdeckungszahlen. |
 | Zugang | Prototyp nutzt öffentliche Endpunkte. Für einen Dauerbetrieb ist der passende API-Zugang entsprechend den [Open-Meteo-Nutzungsbedingungen](https://open-meteo.com/en/terms) separat zu klären. Kein kostenpflichtiger Zugang wurde bestellt. |
 
-**Nächster notwendiger Schritt:** ein tatsächliches Member-Snapshot-Archiv aufbauen bzw. passende historische Archive beschaffen und deren Run-/Lead-/Verfügbarkeitsgleichheit prüfen. Erst dann ist die im Auftrag verlangte historische Vollmodell-Evaluation möglich. Der vorliegende Code kann auf neue eingefrorene Pakete erneut angewandt werden; eine Numerikprüfung allein öffnet die Aktivierungssperre nicht.
+**Nächster notwendiger Schritt:** den vorbereiteten Daten-Archiver aktivieren bzw. passende historische Archive beschaffen und deren Run-/Lead-/Verfügbarkeitsgleichheit prüfen. Erst dann ist die im Auftrag verlangte historische Vollmodell-Evaluation möglich. Der vorliegende Code kann auf neue eingefrorene Pakete erneut angewandt werden; eine Numerikprüfung allein öffnet die Modell-Aktivierungssperre nicht. Rechtzeitig gespeicherte Eingangsdaten sind keine rechtzeitig abgegebenen Prognosen und erhöhen keinen OOS-Prognosezähler.
 
 PR #34 und dessen v11-Live-Aktivierung bleiben von dieser Untersuchung getrennt und unverändert. Dieser Research-PR enthält keinen Merge-/Deployment- oder Datenbank-Schreibschritt.
 

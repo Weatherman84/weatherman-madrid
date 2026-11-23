@@ -134,8 +134,8 @@ def buckets(samples):
     return {int(k): float(n / samples.size) for k, n in zip(labels, counts)}
 
 
-def run_snapshot(snapshot, protocol):
-    """Replay only. Historical skill/production activation cannot be inferred here."""
+def validate_snapshot(snapshot, protocol):
+    """Validate inputs without fitting climatology or generating probabilities."""
     validate_protocol(protocol)
     verify_upstream()
     if snapshot["schema"] != "wmp_madrid_inputs_v1":
@@ -162,6 +162,15 @@ def run_snapshot(snapshot, protocol):
             raise ValueError("Daily time/value length mismatch")
     counts = member_counts(ensemble, today.isoformat())
     floor = metar_floor(payloads["metar"], at)
+    return payloads, counts, floor
+
+
+def run_snapshot(snapshot, protocol):
+    """Replay only. Historical skill/production activation cannot be inferred here."""
+    payloads, counts, floor = validate_snapshot(snapshot, protocol)
+    at = instant(snapshot["as_of"])
+    today = at.astimezone(ZONE).date()
+    history, recent, ensemble = (payloads[k] for k in ("history", "recent", "ensemble"))
     rng = np.random.default_rng(protocol["seed"])
     clim = fit_climatology(history)
     regime = regime_offset(recent, clim)
