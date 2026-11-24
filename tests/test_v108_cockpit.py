@@ -256,6 +256,9 @@ def test_streamlit_cockpit_renders_aemet_after_buckets_without_extra_sql(databas
     import weatherman.db as db
     import weatherman.service as service
     import weatherman.settings as settings_module
+    import weatherman.madrid_late_shadow_public as v11_public
+
+    monkeypatch.setattr(v11_public, 'fetch_journal', lambda: {'status': 'live_journal_unavailable', 'decisions': []})
 
     _, target, now = database
     current = cockpit.load_madrid_data(target, 'LEMD', 'Europe/Madrid')

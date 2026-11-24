@@ -1,0 +1,454 @@
+[
+  {
+    "candidate": {
+      "23": 0.0621821786939575,
+      "24": 0.6151630455341773,
+      "25": 0.24267501723538587,
+      "26": 0.07079365972655774,
+      "27": 0.0025256645062181012,
+      "28": 0.0017201516188090759,
+      "29": 0.0016480393590665753,
+      "30": 0.0016461292155932805,
+      "31": 0.0016461141102101528,
+      "32": 2.4372726059596084e-14,
+      "33": 4.44089209850063e-18,
+      "34": 0.0,
+      "35": 0.0,
+      "36": 0.0
+    },
+    "input": {
+      "airport": "LEMD",
+      "checkpoint": "Late Live @16:00",
+      "checkpoint_at": "2025-09-01T14:00:00+00:00",
+      "curve_audit": {
+        "models": {
+          "ecmwf_ifs025": {
+            "available_at": "2025-09-01T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.45000000000000284,
+            "version": "fixed_lead_1"
+          },
+          "gfs_global": {
+            "available_at": "2025-09-01T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 1.3500000000000014,
+            "version": "fixed_lead_1"
+          },
+          "icon_eu": {
+            "available_at": "2025-09-01T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.6500000000000057,
+            "version": "fixed_lead_1"
+          },
+          "icon_global": {
+            "available_at": "2025-09-01T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.5999999999999979,
+            "version": "fixed_lead_1"
+          },
+          "meteofrance_arpege_europe": {
+            "available_at": "2025-09-01T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 1.0499999999999972,
+            "version": "fixed_lead_1"
+          },
+          "ukmo_global_deterministic_10km": {
+            "available_at": "2025-09-01T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.8500000000000014,
+            "version": "fixed_lead_1"
+          }
+        },
+        "observation_at": "2025-09-01T13:30:00+00:00",
+        "source": "long_fixed_lead_reduced_fidelity",
+        "status": "available"
+      },
+      "curve_available": true,
+      "features": {
+        "cloud_cover": 45.0,
+        "curve_remaining_mean_c": 0.8250000000000011,
+        "dewpoint_change": -1.0,
+        "future_radiation": 834.1,
+        "gap_to_max": 0.0,
+        "heating120": 1.0,
+        "heating30": 0.0,
+        "heating60": 1.0,
+        "latest_observed_at": "2025-09-01T13:30:00+00:00",
+        "local_hour": 16,
+        "model_count": 6,
+        "model_radiation": 748.5,
+        "model_spread": 0.7455423082115019,
+        "observation_age": 30.0,
+        "observed_max": 23,
+        "plateau_minutes": 30.0,
+        "prior_minus_observed": 1.75,
+        "remaining_model_rise": 0.8999999999999986,
+        "season_cos": -0.49253272872205434,
+        "season_sin": -0.8702939222685674,
+        "taf_issue_age_hours": 1.8833333333333333,
+        "taf_tx_minus_equal_model_mean_c": 1.25,
+        "taf_tx_minus_known_metar_max_c": 3.0,
+        "wind_change": 9.260000000000002,
+        "wind_cos": -0.17364817766693033,
+        "wind_sin": -0.984807753012208,
+        "wind_speed": 14.816
+      },
+      "models": {
+        "ecmwf_ifs025": 25.2,
+        "gfs_global": 25.2,
+        "icon_eu": 24.7,
+        "icon_global": 23.9,
+        "meteofrance_arpege_europe": 25.8,
+        "ukmo_global_deterministic_10km": 23.7
+      },
+      "observed_max": 23,
+      "taf_audit": {
+        "availability_basis": "estimated_issue_plus_5_minutes",
+        "available_at": "2025-09-01T12:12:00+00:00",
+        "causal_certification": false,
+        "content_hash": "9c5c85981b4bcdcd63fc84ed87164e06d4ed64b7b24d2fd97f19f28ee99bf639",
+        "is_amended": true,
+        "is_corrected": false,
+        "issue_time": "2025-09-01T12:07:00+00:00",
+        "max_temp_at": "2025-09-01T15:00:00+00:00",
+        "max_temp_c": 26.0,
+        "status": "target_TX_available"
+      },
+      "taf_present": true,
+      "target_date": "2025-09-01"
+    },
+    "reference": {
+      "23": 0.0733826141751141,
+      "24": 0.6332509457098607,
+      "25": 0.2204404168676278,
+      "26": 0.06450663479498478,
+      "27": 0.0023723224347163216,
+      "28": 0.001566809547307296,
+      "29": 0.0014946972875647955,
+      "30": 0.0014927871440915006,
+      "31": 0.001492772038708373,
+      "32": 2.437272605959608e-14,
+      "33": 4.44089209850063e-18,
+      "34": 0.0,
+      "35": 0.0,
+      "36": 0.0
+    }
+  },
+  {
+    "candidate": {
+      "26": 0.42285463797283335,
+      "27": 0.5560578430768126,
+      "28": 0.016218788721956243,
+      "29": 0.004353950564861598,
+      "30": 0.0001103229666605276,
+      "31": 0.00010121245549239427,
+      "32": 0.00010108180717281695,
+      "33": 0.00010108121752083638,
+      "34": 0.0001010812166896557,
+      "35": 0.0,
+      "36": 0.0,
+      "37": 0.0
+    },
+    "input": {
+      "airport": "LEMD",
+      "checkpoint": "Late Live @16:00",
+      "checkpoint_at": "2025-09-10T14:00:00+00:00",
+      "curve_audit": {
+        "models": {
+          "ecmwf_ifs025": {
+            "available_at": "2025-09-10T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.6000000000000014,
+            "version": "fixed_lead_1"
+          },
+          "gfs_global": {
+            "available_at": "2025-09-10T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0,
+            "version": "fixed_lead_1"
+          },
+          "icon_eu": {
+            "available_at": "2025-09-10T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.8999999999999986,
+            "version": "fixed_lead_1"
+          },
+          "icon_global": {
+            "available_at": "2025-09-10T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.29999999999999716,
+            "version": "fixed_lead_1"
+          },
+          "meteofrance_arpege_europe": {
+            "available_at": "2025-09-10T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 1.25,
+            "version": "fixed_lead_1"
+          },
+          "ukmo_global_deterministic_10km": {
+            "available_at": "2025-09-10T03:10:00+00:00",
+            "initialized_at": null,
+            "remaining_rise_c": 0.5500000000000043,
+            "version": "fixed_lead_1"
+          }
+        },
+        "observation_at": "2025-09-10T13:30:00+00:00",
+        "source": "long_fixed_lead_reduced_fidelity",
+        "status": "available"
+      },
+      "curve_available": true,
+      "features": {
+        "cloud_cover": 45.0,
+        "curve_remaining_mean_c": 0.6000000000000002,
+        "dewpoint_change": 1.0,
+        "future_radiation": 692.0,
+        "gap_to_max": 0.0,
+        "heating120": 1.5,
+        "heating30": 4.0,
+        "heating60": 1.0,
+        "latest_observed_at": "2025-09-10T13:30:00+00:00",
+        "local_hour": 16,
+        "model_count": 6,
+        "model_radiation": 491.5,
+        "model_spread": 0.7831560082980489,
+        "observation_age": 30.0,
+        "observed_max": 26,
+        "plateau_minutes": 0.0,
+        "prior_minus_observed": 0.10000000000000142,
+        "remaining_model_rise": 1.1000000000000014,
+        "season_cos": -0.35243871088460327,
+        "season_sin": -0.9358348973349941,
+        "taf_issue_age_hours": null,
+        "taf_tx_minus_equal_model_mean_c": null,
+        "taf_tx_minus_known_metar_max_c": null,
+        "wind_change": -1.8520000000000003,
+        "wind_cos": -0.3420201433256694,
+        "wind_sin": -0.9396926207859082,
+        "wind_speed": 20.372
+      },
+      "models": {
+        "ecmwf_ifs025": 27.0,
+        "gfs_global": 26.2,
+        "icon_eu": 26.0,
+        "icon_global": 25.3,
+        "meteofrance_arpege_europe": 25.0,
+        "ukmo_global_deterministic_10km": 27.1
+      },
+      "observed_max": 26,
+      "taf_audit": {
+        "availability_basis": "estimated_issue_plus_5_minutes",
+        "available_at": "2025-09-10T11:52:00+00:00",
+        "causal_certification": false,
+        "content_hash": "25208d1efb1d14f16db6a7cf580e0dc8323be3647c19276cece0574d3d67f714",
+        "is_amended": true,
+        "is_corrected": false,
+        "issue_time": "2025-09-10T11:47:00+00:00",
+        "max_temp_at": null,
+        "max_temp_c": null,
+        "status": "latest_bulletin_has_no_target_TX"
+      },
+      "taf_present": false,
+      "target_date": "2025-09-10"
+    },
+    "reference": {
+      "26": 0.40930911668195674,
+      "27": 0.5641985374829256,
+      "28": 0.02032192955070352,
+      "29": 0.005514149006093587,
+      "30": 0.00013862048961740537,
+      "31": 0.00012950997844927203,
+      "32": 0.0001293793301296947,
+      "33": 0.00012937874047771412,
+      "34": 0.00012937873964653345,
+      "35": 0.0,
+      "36": 0.0,
+      "37": 0.0
+    }
+  },
+  {
+    "candidate": {
+      "23": 0.37211866436550506,
+      "24": 0.4599072197931694,
+      "25": 0.12771884978988024,
+      "26": 0.03589653627986957,
+      "27": 0.0008849925136844383,
+      "28": 0.0008686752278424515,
+      "29": 0.0008683554068517818,
+      "30": 0.0008683533138716393,
+      "31": 0.0008683533093253781,
+      "32": 0.0,
+      "33": 0.0,
+      "34": 0.0,
+      "35": 0.0
+    },
+    "input": {
+      "airport": "LEMD",
+      "checkpoint": "Late Live @16:00",
+      "checkpoint_at": "2026-10-11T14:00:00+00:00",
+      "curve_audit": {
+        "status": "missing_comparable_long_path"
+      },
+      "curve_available": false,
+      "features": {
+        "cloud_cover": 0.0,
+        "curve_remaining_mean_c": null,
+        "dewpoint_change": 1.0,
+        "future_radiation": 591.0,
+        "gap_to_max": 0.0,
+        "heating120": 2.0,
+        "heating30": 2.0,
+        "heating60": 2.0,
+        "latest_observed_at": "2026-10-11T13:30:00+00:00",
+        "local_hour": 16,
+        "model_count": 6,
+        "model_radiation": 493.8,
+        "model_spread": 0.8239471396205513,
+        "observation_age": 30.0,
+        "observed_max": 23,
+        "plateau_minutes": 0.0,
+        "prior_minus_observed": 0.13333333333333286,
+        "remaining_model_rise": 1.0,
+        "season_cos": 0.172236243027682,
+        "season_sin": -0.9850556718215013,
+        "taf_issue_age_hours": 3.0,
+        "taf_tx_minus_equal_model_mean_c": -1.1333333333333329,
+        "taf_tx_minus_known_metar_max_c": -1.0,
+        "wind_change": 1.852,
+        "wind_cos": null,
+        "wind_sin": null,
+        "wind_speed": 3.704
+      },
+      "models": {
+        "ecmwf_ifs025": 22.8,
+        "gfs_global": 24.5,
+        "icon_eu": 22.8,
+        "icon_global": 22.0,
+        "meteoblue": 23.77,
+        "meteofrance_arome_france": 25.7,
+        "meteofrance_arome_france_hd": 25.8,
+        "meteofrance_arpege_europe": 23.9,
+        "ukmo_global_deterministic_10km": 22.8
+      },
+      "observed_max": 23,
+      "taf_audit": {
+        "availability_basis": "recorded_first_seen_in_export_not_independently_certified",
+        "available_at": "2026-10-11T12:08:10.053875+00:00",
+        "causal_certification": false,
+        "content_hash": "c09b8f952a4a8ee1c81a43ee9d430726c594166d7bbef17361a8da83270d5ace",
+        "is_amended": false,
+        "is_corrected": false,
+        "issue_time": "2026-10-11T11:00:00+00:00",
+        "max_temp_at": "2026-10-11T15:00:00+00:00",
+        "max_temp_c": 22.0,
+        "status": "target_TX_available"
+      },
+      "taf_present": true,
+      "target_date": "2026-10-11"
+    },
+    "reference": {
+      "23": 0.37211866436550506,
+      "24": 0.4599072197931694,
+      "25": 0.12771884978988024,
+      "26": 0.03589653627986957,
+      "27": 0.0008849925136844383,
+      "28": 0.0008686752278424515,
+      "29": 0.0008683554068517818,
+      "30": 0.0008683533138716393,
+      "31": 0.0008683533093253781,
+      "32": 0.0,
+      "33": 0.0,
+      "34": 0.0,
+      "35": 0.0
+    }
+  },
+  {
+    "candidate": {
+      "26": 0.32464014037755995,
+      "27": 0.5984908244091472,
+      "28": 0.05861835857126162,
+      "29": 0.016273597411643387,
+      "30": 0.000395885249948584,
+      "31": 0.00039529913365025503,
+      "32": 0.0003952982823936398,
+      "33": 0.0003952982821976455,
+      "34": 0.00039529828219763883,
+      "35": 0.0
+    },
+    "input": {
+      "airport": "LEMD",
+      "checkpoint": "Late Live @16:00",
+      "checkpoint_at": "2026-10-12T14:00:00+00:00",
+      "curve_audit": {
+        "status": "missing_comparable_long_path"
+      },
+      "curve_available": false,
+      "features": {
+        "cloud_cover": 0.0,
+        "curve_remaining_mean_c": null,
+        "dewpoint_change": 0.0,
+        "future_radiation": 604.9,
+        "gap_to_max": 0.0,
+        "heating120": 1.0,
+        "heating30": 2.0,
+        "heating60": 1.0,
+        "latest_observed_at": "2026-10-12T13:30:00+00:00",
+        "local_hour": 16,
+        "model_count": 6,
+        "model_radiation": 600.3,
+        "model_spread": 0.4072263907623536,
+        "observation_age": 30.0,
+        "observed_max": 26,
+        "plateau_minutes": 0.0,
+        "prior_minus_observed": 0.14999999999999858,
+        "remaining_model_rise": 0.6999999999999993,
+        "season_cos": 0.18915526872004093,
+        "season_sin": -0.981947190186646,
+        "taf_issue_age_hours": null,
+        "taf_tx_minus_equal_model_mean_c": null,
+        "taf_tx_minus_known_metar_max_c": null,
+        "wind_change": 3.704,
+        "wind_cos": -0.8660254037844386,
+        "wind_sin": -0.5000000000000001,
+        "wind_speed": 7.408
+      },
+      "models": {
+        "ecmwf_ifs025": 26.7,
+        "gfs_global": 25.8,
+        "icon_eu": 26.3,
+        "icon_global": 26.1,
+        "meteoblue": 26.37,
+        "meteofrance_arome_france": 26.8,
+        "meteofrance_arome_france_hd": 26.9,
+        "meteofrance_arpege_europe": 26.5,
+        "ukmo_global_deterministic_10km": 25.5
+      },
+      "observed_max": 26,
+      "taf_audit": {
+        "availability_basis": "recorded_first_seen_in_export_not_independently_certified",
+        "available_at": "2026-10-12T11:38:17.572363+00:00",
+        "causal_certification": false,
+        "content_hash": "7129a76212b542d7fa01644e2ae850cc643587cc029384bbb83a17b6467dc127",
+        "is_amended": false,
+        "is_corrected": false,
+        "issue_time": "2026-10-12T11:00:00+00:00",
+        "max_temp_at": null,
+        "max_temp_c": null,
+        "status": "latest_bulletin_has_no_target_TX"
+      },
+      "taf_present": false,
+      "target_date": "2026-10-12"
+    },
+    "reference": {
+      "26": 0.32464014037755995,
+      "27": 0.5984908244091472,
+      "28": 0.05861835857126162,
+      "29": 0.016273597411643387,
+      "30": 0.000395885249948584,
+      "31": 0.00039529913365025503,
+      "32": 0.0003952982823936398,
+      "33": 0.0003952982821976455,
+      "34": 0.00039529828219763883,
+      "35": 0.0
+    }
+  }
+]
