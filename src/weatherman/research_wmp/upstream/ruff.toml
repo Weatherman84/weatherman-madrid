@@ -1,0 +1,4 @@
+# Preserve the pinned MIT-licensed upstream source byte-for-byte.
+extend = "../../../../pyproject.toml"
+[lint]
+ignore = ["F401"]

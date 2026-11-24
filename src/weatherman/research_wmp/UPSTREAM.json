@@ -1,0 +1,13 @@
+{
+  "commit": "cc01f6f228250138a9300e20d3cdc791675bbb96",
+  "files_sha256": {
+    "LICENSE": "6c4b42a8a26dad323cb11ee6e1dbc6bd15693b4ff79c258d5cfea6a7c6b8e072",
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "blend.py": "a630aa6e0dc4029988bfeaf440e1b04ab00bc0749ee434683f4be0d7e329a386",
+    "models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "models/bias_correct.py": "27d756b0a76f7279ccc3ae3d001b4ec56c34f72a28adb6e59907e32a3b34cdea",
+    "models/climatology.py": "9294175efd995a7c3316c5d202d1ba97cb331417309e541ad1533d5593ed464e",
+    "models/ensemble.py": "38b5db96e6c2f3d3862de6d486515dfbe8bca1af16b6199dd530733d40253882"
+  },
+  "repository": "https://github.com/portrara/weather-market-predictor"
+}

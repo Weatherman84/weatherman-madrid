@@ -232,8 +232,10 @@ def test_new_workflow_uses_its_own_branch_and_never_backfills():
 def test_source_reader_has_no_writes_and_no_outcome_input():
     # The script deliberately avoids the DB module's initialization/migration helpers.
     source = (ROOT / "scripts/record_madrid_late_shadow.py").read_text()
-    assert "default_transaction_read_only=on" in source
+    assert "connect_args={\"options\"" not in source
     assert "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY" in source
+    assert "SET LOCAL statement_timeout" in source
+    assert "SHOW transaction_read_only" in source
     assert "transaction.rollback()" in source
     assert "init_db" not in source and "weatherman.db" not in source
     spec = importlib.util.spec_from_file_location("shadow_recorder", ROOT / "scripts/record_madrid_late_shadow.py")
@@ -253,3 +255,43 @@ def test_source_reader_has_no_writes_and_no_outcome_input():
     module.read_sources(Connection(), "2026-11-24")
     assert queries and all(q.startswith("SELECT ") for q in queries)
     assert all("actual" not in q and "market" not in q for q in queries)
+
+
+def test_pooled_connection_is_read_only_before_source_queries_and_always_rolled_back():
+    spec = importlib.util.spec_from_file_location("readonly_recorder", ROOT / "scripts/record_madrid_late_shadow.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    events = []
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            events.append("close")
+
+        def begin(self):
+            events.append("begin")
+            return self
+
+        def execute(self, statement):
+            events.append(str(statement))
+
+        def scalar(self, statement):
+            events.append(str(statement))
+            return "on"
+
+        def rollback(self):
+            events.append("rollback")
+
+    class Engine:
+        def connect(self):
+            return Connection()
+
+    with pytest.raises(RuntimeError, match="source read failure"):
+        with module.read_only_snapshot(Engine()) as connection:
+            connection.execute("SELECT weather_sources")
+            raise RuntimeError("source read failure")
+    assert events == ["begin", "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY",
+                      "SET LOCAL statement_timeout = '20s'", "SHOW transaction_read_only",
+                      "SELECT weather_sources", "rollback", "close"]

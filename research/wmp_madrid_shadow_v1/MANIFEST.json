@@ -1,0 +1,12 @@
+{
+  "classification": "technical_reproducibility_not_forecast_skill",
+  "files_sha256": {
+    "PROTOCOL.json": "7b6f3ff615b8b5e8b68ef221227d85069d764da5807c1d4574914aafadeb8480",
+    "evidence/diagnostic-and-readiness-2026-11-23.json": "eb393c69b33f921a14d6d4f5307d52342c0271985ecc40a8f25453cec963b3b9",
+    "evidence/manual-inputs-2026-11-23.json": "3ddeedeb18fd8af87d264add1eb5a0fbbba7c39893fbe71408b1d027610e0101",
+    "evidence/technical-probe-2026-11-23.json": "c73ebda4d5d99aee9e64e203c4811cb9205d3afe70af07938ae6a5eba90e2da1",
+    "evidence/upstream-parity-2026-11-23.json": "110872eea5af97c76628a191530b523a9118f723f133610d6893c160a6e1e327"
+  },
+  "live_activation": false,
+  "writes_production_database": false
+}

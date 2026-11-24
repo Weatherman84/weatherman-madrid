@@ -1,6 +1,7 @@
 """Read-only source snapshot; append new decisions/outcomes in a separate Git store."""
 
 import argparse
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 import json
 import os
@@ -14,6 +15,21 @@ from weatherman.madrid_late_shadow_journal import (
     append_record, build_journal, decision, outcome, records,
 )
 from weatherman.madrid_late_shadow_model import CHECKPOINT, MODELS, ZONE, bounds, cutoff, instant
+
+
+@contextmanager
+def read_only_snapshot(engine):
+    """Transaction-scoped settings work through Neon's pooled connections."""
+    with engine.connect() as connection:
+        transaction = connection.begin()
+        try:
+            connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
+            connection.execute(text("SET LOCAL statement_timeout = '20s'"))
+            if connection.scalar(text("SHOW transaction_read_only")) != "on":
+                raise RuntimeError("Read-only transaction could not be verified")
+            yield connection
+        finally:
+            transaction.rollback()
 
 
 def rows(connection, query, params):
@@ -119,16 +135,11 @@ def main():
             url = "postgresql+psycopg://" + url[len("postgres://"):]
         elif url.startswith("postgresql://"):
             url = "postgresql+psycopg://" + url[len("postgresql://"):]
-        engine = create_engine(url, connect_args={"options": "-c default_transaction_read_only=on -c statement_timeout=20000"})
+        engine = create_engine(url, connect_args={"connect_timeout": 10})
         try:
-            with engine.connect() as connection:
-                transaction = connection.begin()
-                try:
-                    connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
-                    inserted, settled = record(connection, args.store, mode=args.mode, now=now,
-                                               run_id=os.getenv("GITHUB_RUN_ID", "local"))
-                finally:
-                    transaction.rollback()
+            with read_only_snapshot(engine) as connection:
+                inserted, settled = record(connection, args.store, mode=args.mode, now=now,
+                                           run_id=os.getenv("GITHUB_RUN_ID", "local"))
         finally:
             engine.dispose()
     payload = build_journal(args.store)
@@ -143,6 +154,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except SQLAlchemyError:
+    except SQLAlchemyError as exc:
         # SQLAlchemy exception text can include connection details; never publish it.
-        raise SystemExit("Read-only database access failed; no forecast published.") from None
+        kind = type(exc.orig).__name__ if getattr(exc, "orig", None) else type(exc).__name__
+        raise SystemExit(f"Read-only database access failed ({kind}); no forecast published.") from None
