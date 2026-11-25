@@ -219,7 +219,8 @@ def test_public_network_failure_preserves_missing_state(monkeypatch):
 
 def test_new_workflow_uses_its_own_branch_and_never_backfills():
     source = (ROOT / ".github/workflows/madrid-v11-shadow.yml").read_text()
-    assert 'workflows: ["3 - Madrid collector"]' in source
+    assert '"3 - Madrid collector"' in source
+    assert '"13 - Build opportunity scanner causal feed"' in source
     assert 'cron: "50,55 13,14 * * *"' in source
     assert "madrid-v11-shadow-data" in source
     assert "git push origin HEAD:madrid-v11-shadow-data" in source

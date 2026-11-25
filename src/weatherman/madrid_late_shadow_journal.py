@@ -137,17 +137,33 @@ def summary(decisions, outcomes, curve_available):
     return result
 
 
-def build_journal(root):
+def recording_coverage(decisions, as_of):
+    """Describe absent recordings, never fabricate forecasts or OOS evidence."""
+    generated = instant(as_of)
+    today = generated.astimezone(ZONE).date()
+    closed = today if generated >= cutoff(today) + timedelta(minutes=10) else today - timedelta(days=1)
+    start = date(2026, 11, 24)
+    recorded = {r["target_date"] for r in decisions}
+    missing = [(start + timedelta(days=i)).isoformat() for i in range(max(0, (closed - start).days + 1))
+               if (start + timedelta(days=i)).isoformat() not in recorded]
+    return {"recording_start_date": start.isoformat(), "closed_through": closed.isoformat(),
+            "missing_days": missing, "missing_day_count": len(missing),
+            "classification": "recording_coverage_only_not_forecasts"}
+
+
+def build_journal(root, as_of=None):
     decisions, outcomes = records(root, "decisions"), records(root, "outcomes")
     by_day = {r["target_date"]: r for r in decisions}
     for o in outcomes:
         if o["target_date"] not in by_day or o["decision_sha256"] != by_day[o["target_date"]]["sha256"]:
             raise ValueError("Outcome does not match immutable decision")
+    generated = instant(as_of or datetime.now(timezone.utc))
     return {"schema": "madrid_late_prospective_shadow_v1", "candidate_id": VERSION,
             "airport": "LEMD", "parameter_sha256": PARAMETER_SHA, "research_only": True,
             "automatic_promotion": False, "automatic_execution": False,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": generated.isoformat(),
             "capture_window_local": "15:50 <= capture < 16:00 Europe/Madrid; first valid capture wins",
             "decisions": decisions, "outcomes": outcomes,
+            "recording_coverage": recording_coverage(decisions, generated),
             "curve_evidence": summary(decisions, outcomes, True),
             "fallback_only": summary(decisions, outcomes, False)}

@@ -14,12 +14,15 @@ on:
         default: auto
         options: [auto, audit]
   workflow_run:
-    workflows: ["3 - Madrid collector"]
+    workflows:
+      - "3 - Madrid collector"
+      - "13 - Build opportunity scanner causal feed"
     types: [completed]
     branches: [main]
   schedule:
     # Both DST offsets. No backfill when GitHub delivers a trigger too late.
     - cron: "50,55 13,14 * * *"
+    - cron: "12,32 14,15 * * *"
     - cron: "15 5,6 * * *"
 
 permissions:
@@ -31,7 +34,7 @@ concurrency:
 
 jobs:
   shadow:
-    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -47,8 +50,12 @@ jobs:
           from datetime import datetime
           from zoneinfo import ZoneInfo
           now = datetime.now(ZoneInfo("Europe/Madrid"))
-          due = (now.hour == 15 and now.minute >= 50) or 6 <= now.hour < 9
-          print(f"due={'true' if due or os.environ['MODE'] == 'audit' else 'false'}")
+          due = ((now.hour == 15 and now.minute >= 50) or 6 <= now.hour < 9
+                 or (now.hour == 16 and now.minute >= 10))
+          due = due or os.environ['MODE'] == 'audit'
+          print(f"due={'true' if due else 'false'}")
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"Madrid clock: {now.isoformat()}. Source step: {'run' if due else 'skip outside capture/closeout window'}.\n")
           PY
       - uses: actions/checkout@v6
         if: steps.gate.outputs.due == 'true'

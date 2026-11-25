@@ -1,0 +1,17 @@
+{
+  "classification": "operational_trigger_evidence_not_weather_predictions",
+  "source": "GitHub Actions job metadata retrieved 2026-11-25",
+  "no_shadow_decision_recorded": true,
+  "upstream_jobs": [
+    {
+      "run_id": 45416122246,
+      "workflow": "3 - Madrid collector",
+      "completed_at": "2026-11-24T14:37:59Z"
+    },
+    {
+      "run_id": 45418912910,
+      "workflow": "13 - Build opportunity scanner causal feed",
+      "completed_at": "2026-11-24T14:53:19Z"
+    }
+  ]
+}
