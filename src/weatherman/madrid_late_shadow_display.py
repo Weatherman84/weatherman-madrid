@@ -114,6 +114,11 @@ def table_view_for_target(target, bundle=None, live=None):
                         "target_date": day, "record": record, "live_available": True,
                         "probabilities": probabilities(record["candidate"]),
                         "caption": f"v11 Shadow · Late 16:00: {kind}; inputs frozen {at} Madrid. Research only; First Live unchanged."}
+            coverage = live.get("recording_coverage", {})
+            if isinstance(coverage, dict) and day in coverage.get("missing_days", []):
+                return {"status": "missed_checkpoint", "target_date": day, "record": None,
+                        "live_available": False, "probabilities": {},
+                        "caption": f"v11 Shadow · Late 16:00: no valid pre-cutoff forecast was recorded for {day}. The missing checkpoint is not backfilled."}
         except (ValueError, KeyError, TypeError):
             live = {"status": "live_journal_unavailable"}
     try:

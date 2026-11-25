@@ -16,7 +16,9 @@ on:
         default: audit
         options: [audit, auto]
   workflow_run:
-    workflows: ["3 - Madrid collector"]
+    workflows:
+      - "3 - Madrid collector"
+      - "13 - Build opportunity scanner causal feed"
     types: [completed]
     branches: [main]
   schedule:
@@ -34,7 +36,7 @@ concurrency:
 
 jobs:
   archive:
-    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -52,7 +54,10 @@ jobs:
           now = datetime.now(ZoneInfo("Europe/Madrid"))
           capture = now.hour == 15 and now.minute >= 50
           closeout = (now.hour == 16 and now.minute >= 10) or 20 <= now.hour <= 22
-          print(f"due={'true' if os.environ['MODE'] == 'audit' or capture or closeout else 'false'}")
+          due = os.environ['MODE'] == 'audit' or capture or closeout
+          print(f"due={'true' if due else 'false'}")
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"Madrid clock: {now.isoformat()}. Archive step: {'run' if due else 'skip outside capture/closeout window'}.\n")
           PY
       - uses: actions/checkout@v6
         if: steps.gate.outputs.due == 'true'
