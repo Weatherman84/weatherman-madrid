@@ -21,8 +21,8 @@ on:
           - aviation
           - fixed
   schedule:
-    # GitHub is only the hourly safety net. Cloudflare supplies 30-minute aviation
-    # slots plus explicitly labelled fixed-checkpoint runs.
+    # GitHub is the hourly safety net. The guarded wrapper turns the 08:xx Madrid
+    # slot into a pre-cutoff model refresh and audits every currently due checkpoint.
     - cron: "7 * * * *"
 
 permissions:
@@ -50,8 +50,8 @@ jobs:
           echo "WEATHERMAN_RUN_STARTED_AT=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }} --jq .run_started_at)" >> "$GITHUB_ENV"
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Collect and persist Madrid directly in Neon
-        run: python -m weatherman.cli run-collector --airports LEMD --mode "$WEATHERMAN_COLLECTION_MODE"
+      - name: Collect, persist and audit Madrid checkpoint delivery
+        run: python scripts/run_madrid_collector_guarded.py --mode "$WEATHERMAN_COLLECTION_MODE"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           METEOBLUE_API_KEY: ${{ secrets.METEOBLUE_API_KEY }}
