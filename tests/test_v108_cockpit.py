@@ -294,6 +294,6 @@ def test_streamlit_cockpit_renders_aemet_after_buckets_without_extra_sql(databas
     assert 'Tmax report time' in labels and 'Feed status' in labels
     assert 'Tmax time' not in labels
     frames = [table.value for table in app.dataframe]
-    assert any('Checkpoint' in frame and 'v11 Shadow · Late' in frame for frame in frames)
-    assert any('Bucket' in frame and 'v11 Shadow · Late' in frame for frame in frames)
+    assert any('Checkpoint' in frame and 'v11 Curve · Late' in frame and 'v11 Fallback · Late' in frame for frame in frames)
+    assert any('Bucket' in frame and 'v11 Curve · Late' in frame and 'v11 Fallback · Late' in frame for frame in frames)
     assert not any('Curve Shadow' in heading for heading in headings)

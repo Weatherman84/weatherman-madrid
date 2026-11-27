@@ -1,0 +1,68 @@
+{
+  "classification": "after_cutoff_source_diagnostic_not_forecast",
+  "target_date": "2026-11-27",
+  "oos_days": 0,
+  "production_database_queries": 0,
+  "models": [
+    {
+      "model": "ecmwf_ifs025",
+      "received_at": "2026-11-27T22:20:19.092642+00:00",
+      "hours": 24,
+      "complete_local_day": true,
+      "daily_hourly_maximum_match": false,
+      "daily_max": 11.8,
+      "hourly_max": 11.9,
+      "first_hour_utc": "2026-11-26T23:00:00+00:00"
+    },
+    {
+      "model": "gfs_global",
+      "received_at": "2026-11-27T22:20:19.119966+00:00",
+      "hours": 24,
+      "complete_local_day": true,
+      "daily_hourly_maximum_match": false,
+      "daily_max": 11.9,
+      "hourly_max": 11.8,
+      "first_hour_utc": "2026-11-26T23:00:00+00:00"
+    },
+    {
+      "model": "icon_global",
+      "received_at": "2026-11-27T22:20:22.541925+00:00",
+      "hours": 24,
+      "complete_local_day": true,
+      "daily_hourly_maximum_match": false,
+      "daily_max": 11.7,
+      "hourly_max": 11.6,
+      "first_hour_utc": "2026-11-26T23:00:00+00:00"
+    },
+    {
+      "model": "icon_eu",
+      "received_at": "2026-11-27T22:20:22.542895+00:00",
+      "hours": 24,
+      "complete_local_day": true,
+      "daily_hourly_maximum_match": false,
+      "daily_max": 12.1,
+      "hourly_max": 12.0,
+      "first_hour_utc": "2026-11-26T23:00:00+00:00"
+    },
+    {
+      "model": "meteofrance_arpege_europe",
+      "received_at": "2026-11-27T22:20:25.836479+00:00",
+      "hours": 24,
+      "complete_local_day": true,
+      "daily_hourly_maximum_match": true,
+      "daily_max": 10.9,
+      "hourly_max": 10.9,
+      "first_hour_utc": "2026-11-26T23:00:00+00:00"
+    },
+    {
+      "model": "ukmo_global_deterministic_10km",
+      "received_at": "2026-11-27T22:20:25.836203+00:00",
+      "hours": 24,
+      "complete_local_day": true,
+      "daily_hourly_maximum_match": false,
+      "daily_max": 9.9,
+      "hourly_max": 9.8,
+      "first_hour_utc": "2026-11-26T23:00:00+00:00"
+    }
+  ]
+}

@@ -28,8 +28,11 @@ def validate_decision(record):
             or record.get("airport") != "LEMD" or record.get("checkpoint") != CHECKPOINT
             or record.get("research_only") is not True or record.get("automatic_promotion") is not False
             or record.get("automatic_execution") is not False
-            or record.get("input_source_class") != "live_point_in_time_composite_v1"):
+            or record.get("input_source_class") not in {"live_point_in_time_composite_v1", "live_open_meteo_coherent_day_v2"}):
         raise ValueError("Invalid Shadow identity/safety flags")
+    if record["input_source_class"] == "live_open_meteo_coherent_day_v2":
+        from .madrid_coherent_inputs import validate_bundle
+        validate_bundle(record["inputs"])
     cut = cutoff(record["target_date"])
     if (instant(record["checkpoint_at"]) != cut or not capture_due(record["captured_at"])
             or cutoff(instant(record["captured_at"]).astimezone(ZONE).date()) != cut
@@ -158,12 +161,25 @@ def build_journal(root, as_of=None):
         if o["target_date"] not in by_day or o["decision_sha256"] != by_day[o["target_date"]]["sha256"]:
             raise ValueError("Outcome does not match immutable decision")
     generated = instant(as_of or datetime.now(timezone.utc))
+    attempts = []
+    for path in sorted((Path(root) / "attempts").glob("*.json")):
+        attempt = verify(json.loads(path.read_text()))
+        if attempt.get("classification") != "operational_attempt_not_forecast":
+            raise ValueError("Invalid operational attempt")
+        attempts.append(attempt)
+    attempts.sort(key=lambda a: a["recorded_at"])
+    classes = sorted({d["input_source_class"] for d in decisions})
+    cohorts = {source: {"curve_evidence": summary([d for d in decisions if d["input_source_class"] == source], outcomes, True),
+                        "fallback_only": summary([d for d in decisions if d["input_source_class"] == source], outcomes, False)}
+               for source in classes}
     return {"schema": "madrid_late_prospective_shadow_v1", "candidate_id": VERSION,
             "airport": "LEMD", "parameter_sha256": PARAMETER_SHA, "research_only": True,
             "automatic_promotion": False, "automatic_execution": False,
             "generated_at": generated.isoformat(),
             "capture_window_local": "15:50 <= capture < 16:00 Europe/Madrid; first valid capture wins",
-            "decisions": decisions, "outcomes": outcomes,
+            "decisions": decisions, "outcomes": outcomes, "capture_attempts": attempts,
+            "evidence_by_input_source_class": cohorts,
+            "aggregate_metrics_classification": "mixed_input_versions_diagnostic_only" if len(classes) > 1 else "single_input_version",
             "recording_coverage": recording_coverage(decisions, generated),
             "curve_evidence": summary(decisions, outcomes, True),
             "fallback_only": summary(decisions, outcomes, False)}

@@ -9,6 +9,7 @@ from weatherman.daily_analysis_export import (
     write_export,
 )
 from weatherman.db import Session
+from weatherman.madrid_late_shadow_public import fetch_journal
 
 
 def main() -> None:
@@ -25,6 +26,7 @@ def main() -> None:
         set_read_only(session)
         payload = build_daily_analysis_export(session, days=args.days)
         session.rollback()
+    payload["v11_late_shadow"] = fetch_journal()
     write_export(args.output, payload)
     print(
         {

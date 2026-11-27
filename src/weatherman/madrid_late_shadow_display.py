@@ -109,16 +109,25 @@ def table_view_for_target(target, bundle=None, live=None):
             record = next((r for r in live["decisions"] if r["target_date"] == day), None)
             if record is not None:
                 at = instant(record["captured_at"]).astimezone(ZONE).strftime("%H:%M:%S")
+                reasons = record.get("curve_missing_reasons", {})
+                reason_text = "; ".join(f"{capture_reason_label(reason)} ({list(reasons.values()).count(reason)}/6 models)"
+                                        for reason in sorted(set(reasons.values())))
+                evidence = live.get("evidence_by_input_source_class", {}).get(record["input_source_class"], live)
                 kind = "prospective curve candidate" if record["curve_available"] else "prospective reference fallback; curve unavailable"
                 return {"status": "prospective_shadow" if record["curve_available"] else "prospective_fallback",
                         "target_date": day, "record": record, "live_available": True,
                         "probabilities": probabilities(record["candidate"]),
-                        "caption": f"v11 Shadow · Late 16:00: {kind}; inputs frozen {at} Madrid. Research only; First Live unchanged."}
+                        "caption": f"v11 Shadow · Late 16:00: {kind}; inputs frozen {at} Madrid. "
+                                   f"Source {record['input_source_class']}; parameters {record['parameter_sha256'][:12]}. "
+                                   f"Curve days {evidence['curve_evidence']['frozen_days']}; fallback days {evidence['fallback_only']['frozen_days']}. "
+                                   f"Research only; First Live unchanged. {reason_text}"}
             coverage = live.get("recording_coverage", {})
+            attempts = [a for a in live.get("capture_attempts", []) if a["target_date"] == day]
+            reason = capture_reason_label(attempts[-1]["reason"]) if attempts else INCIDENT_REASONS.get(day, "reason not recorded")
             if isinstance(coverage, dict) and day in coverage.get("missing_days", []):
                 return {"status": "missed_checkpoint", "target_date": day, "record": None,
                         "live_available": False, "probabilities": {},
-                        "caption": f"v11 Shadow · Late 16:00: no valid pre-cutoff forecast was recorded for {day}. The missing checkpoint is not backfilled."}
+                        "caption": f"v11 Shadow · Late 16:00: no valid pre-cutoff forecast was recorded for {day}. Reason: {reason}. The missing checkpoint is not backfilled."}
         except (ValueError, KeyError, TypeError):
             live = {"status": "live_journal_unavailable"}
     try:
@@ -183,3 +192,53 @@ def comparison_rows(case):
             }
         )
     return rows
+
+
+INCIDENT_REASONS = {
+    "2026-11-24": "no trigger reached the capture window (incident reviewed 2026-11-27)",
+    "2026-11-27": "latest ECMWF forecast rejected as invalid/stale (incident reviewed 2026-11-27)",
+}
+
+
+def component_views(view):
+    """Reference and emitted fallback are not two independently scored candidates."""
+    record = view.get("record")
+    reference = probabilities(record["reference"]) if record else {}
+    active = bool(record and record["curve_available"])
+    return {
+        "v11 Reference · Late": {"probabilities": reference},
+        "v11 Curve · Late": {"probabilities": view["probabilities"] if active else {}},
+        "v11 Fallback · Late": {"probabilities": view["probabilities"] if record and not active else {}},
+    }
+
+
+def stored_late_champion(variants, target):
+    """Exact day/time match; never substitute the current Champion nowcast."""
+    from .madrid_late_shadow_model import cutoff, instant
+    if variants.empty:
+        return {}
+    selected = [r for r in variants.to_dict("records")
+                if str(r.get("target_date"))[:10] == str(target)[:10]
+                and r.get("airport") == "LEMD" and r.get("variant") == "Champion"
+                and instant(r["captured_at"]) == cutoff(target)]
+    if len(selected) != 1:
+        return {}
+    try:
+        values = selected[0]["probabilities_json"]
+        return probabilities(json.loads(values) if isinstance(values, str) else values)
+    except (ValueError, KeyError, TypeError):
+        return {}
+
+
+def capture_reason_label(reason):
+    return {
+        "latest_fetch_too_old": "latest model receipt is older than six hours",
+        "latest_run_too_old": "latest model cycle is older than 48 hours",
+        "stale_metar": "no sufficiently fresh METAR",
+        "model_source_unavailable": "weather model source unavailable",
+        "incomplete_local_day": "local-day hourly curve incomplete",
+        "daily_hourly_maximum_mismatch": "daily maximum differs from hourly maximum",
+        "latest_matched_run_has_incomplete_hourly_day": "matching hourly day is incomplete",
+        "model_updated_during_fetch": "model changed during source capture",
+        "invalid_forecast_time_order": "source timestamps are inconsistent",
+    }.get(reason, reason.replace("_", " "))

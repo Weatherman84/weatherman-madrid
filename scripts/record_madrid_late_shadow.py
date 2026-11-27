@@ -11,6 +11,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from weatherman.madrid_late_shadow_inputs import build_input, capture_due
+from weatherman.shadow_capture_health import CaptureRejected, append_attempt
+from weatherman.madrid_coherent_inputs import SOURCE_CLASS, fetch_models
 from weatherman.madrid_late_shadow_journal import (
     append_record, build_journal, decision, outcome, records,
 )
@@ -88,7 +90,7 @@ def read_champion(connection, day):
     return r
 
 
-def record(connection, store, *, mode, now, run_id):
+def record(connection, store, *, mode, now, run_id, coherent=None):
     day = now.astimezone(ZONE).date().isoformat()
     existing = {r["target_date"] for r in records(store, "decisions")}
     inserted = settled = 0
@@ -101,7 +103,13 @@ def record(connection, store, *, mode, now, run_id):
                               "rows": {k: len(v) for k, v in sources.items() if isinstance(v, list)},
                               "writes_production_database": False, "backfill": False}))
         else:
+            if coherent is not None:
+                sources.update(forecasts=coherent["forecasts"], hourly=coherent["hourly"])
             row = build_input(day, captured, **sources)
+            if coherent is not None:
+                row["input_source_class"] = SOURCE_CLASS
+                row["curve_audit"]["source"] = SOURCE_CLASS
+                row["coherent_input_bundle"] = coherent["archive"]
             item = decision(row, captured_at=captured, generated_at=datetime.now(timezone.utc), run_id=run_id)
             inserted = int(append_record(store, "decisions", item))
     # Settle measured day maxima only after the next day's 06:00 closeout.
@@ -129,7 +137,18 @@ def main():
     args = parser.parse_args()
     now = datetime.now(timezone.utc)
     inserted = settled = 0
-    if args.mode == "audit" or capture_due(now) or 6 <= now.astimezone(ZONE).hour < 9:
+    rejected = None
+    run_id = os.getenv("GITHUB_RUN_ID", "local") + "-" + os.getenv("GITHUB_RUN_ATTEMPT", "1")
+    day = now.astimezone(ZONE).date().isoformat()
+    coherent = None
+    try:
+        if (args.mode == "auto" and capture_due(now)
+                and os.getenv("V11_INPUT_SOURCE") == SOURCE_CLASS
+                and day not in {r["target_date"] for r in records(args.store, "decisions")}):
+            coherent = fetch_models(day)
+    except CaptureRejected as exc:
+        rejected = exc
+    if rejected is None and (args.mode == "audit" or capture_due(now) or 6 <= now.astimezone(ZONE).hour < 9):
         url = os.environ["DATABASE_URL"]
         if url.startswith("postgres://"):
             url = "postgresql+psycopg://" + url[len("postgres://"):]
@@ -139,16 +158,27 @@ def main():
         try:
             with read_only_snapshot(engine) as connection:
                 inserted, settled = record(connection, args.store, mode=args.mode, now=now,
-                                           run_id=os.getenv("GITHUB_RUN_ID", "local"))
+                                           run_id=run_id, coherent=coherent)
+        except (CaptureRejected, SQLAlchemyError, ValueError) as exc:
+            rejected = exc
         finally:
             engine.dispose()
+    if rejected is not None or (args.mode == "auto" and capture_due(now)):
+        reason = (rejected.reason if isinstance(rejected, CaptureRejected) else
+                  "database_read_failed" if isinstance(rejected, SQLAlchemyError) else
+                  "input_validation_failed" if rejected is not None else
+                  "recorded" if inserted else "already_recorded")
+        append_attempt(args.store, day=day, run_id=run_id, reason=reason,
+                       details=rejected.details if isinstance(rejected, CaptureRejected) else {})
     payload = build_journal(args.store)
     args.store.mkdir(parents=True, exist_ok=True)
     (args.store / "journal.json").write_text(json.dumps(payload, sort_keys=True, allow_nan=False, separators=(",", ":")) + "\n")
-    print(json.dumps({"status": "complete", "inserted": inserted, "settled": settled,
+    print(json.dumps({"status": "rejected" if rejected is not None else "complete", "inserted": inserted, "settled": settled,
                       "prospective_curve_days": payload["curve_evidence"]["frozen_days"],
                       "fallback_only_days": payload["fallback_only"]["frozen_days"],
                       "writes_production_database": False, "automatic_promotion": False}))
+    if rejected is not None:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

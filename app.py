@@ -12,7 +12,7 @@ if str(SRC) not in sys.path:
 
 from runtime_bootstrap import discard_stale_weatherman_modules
 
-discard_stale_weatherman_modules("1.0.25")
+discard_stale_weatherman_modules("1.0.26")
 
 import pandas as pd
 import streamlit as st
@@ -49,7 +49,8 @@ from weatherman.research_ui import render_research_tracks
 from weatherman.forward_shadow_public import fetch_forward_shadow_journal
 from weatherman.promotion_gate_transparency import build_analog_promotion_report
 from weatherman.madrid_late_shadow_display import (
-    table_view_for_target, checkpoint_shadow_value, bucket_shadow_value,
+    table_view_for_target, checkpoint_shadow_value, bucket_shadow_value, component_views,
+    stored_late_champion,
 )
 from weatherman.madrid_late_shadow_public import fetch_journal as fetch_v11_shadow_journal
 from weatherman.terminology import EVIDENCE_GLOSSARY, FRESHNESS_GLOSSARY
@@ -121,6 +122,10 @@ def render_analog_promotion_gate(report: dict[str, object]) -> None:
             key="analog-promotion-gate-scope",
         )
         selected = dict(gates.get(scope) or {})
+        provenance = selected.get("provenance_review") or {}
+        if provenance:
+            st.caption("Provenance review pending: " + str(provenance.get("recording_counts", {}))
+                       + ". Provider availability is not proof of received inputs. No release authorized.")
         conditions = pd.DataFrame(selected.get("conditions") or [])
         if conditions.empty:
             st.info("No settled paired evidence is available for this gate.")
@@ -582,7 +587,7 @@ local_today = datetime.now(ZoneInfo(timezone_name)).date()
 
 st.title("Weatherman Madrid")
 st.caption(
-    "App v1.0.25 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
+    "App v1.0.26 · Engine v10.7.11 · protected forecast baseline v10.7.10 · cadence-aware model "
     "freshness · Neon/PostgreSQL persistence"
 )
 
@@ -628,7 +633,7 @@ history_data = load_madrid_history(target, airport_code)
 data = combine_cockpit_data(current_data, history_data)
 analog_promotion_report = build_analog_promotion_report(
     data["variants"], data["actuals"], timezone_name=timezone_name,
-    oos_start_date=settings.regime_memory_oos_start_date,
+    oos_start_date=settings.regime_memory_oos_start_date, snapshots=data["snapshots"],
 )
 metar_curve_records = filter_metar_day(
     data["observations"][["observed_at", "temp_c"]].to_dict("records")
@@ -674,10 +679,12 @@ fixed_checkpoint_table = checkpoint_rows(
     labels=checkpoint_labels,
 )
 v11_shadow_view = table_view_for_target(target, live=load_v11_shadow_journal())
-fixed_checkpoint_table["v11 Shadow · Late"] = [
-    checkpoint_shadow_value(v11_shadow_view, label)
-    for label in fixed_checkpoint_table["Checkpoint"]
-]
+v11_components = component_views(v11_shadow_view)
+for column, component in v11_components.items():
+    fixed_checkpoint_table[column] = [
+        checkpoint_shadow_value(component, label) for label in fixed_checkpoint_table["Checkpoint"]
+    ]
+v11_paired_champion = stored_late_champion(data["variants"], target)
 
 if nowcast is None:
     st.warning(
@@ -891,7 +898,7 @@ st.subheader("3 · Calibrated trading probabilities")
 shadow_probabilities = probability_assessment.shadow_probabilities
 relevant_buckets = sorted(
     set(probabilities) | set(champion_probabilities) | set(shadow_probabilities)
-    | set(v11_shadow_view["probabilities"])
+    | set(v11_shadow_view["probabilities"]) | set(v11_paired_champion)
 )
 bucket_rows = []
 for bucket in relevant_buckets:
@@ -905,7 +912,8 @@ for bucket in relevant_buckets:
         "Champion model mass": percentage(
             champion_probabilities.get(bucket), digits=1
         ),
-        "v11 Shadow · Late": bucket_shadow_value(v11_shadow_view, bucket),
+        "Champion · stored Late 16:00": bucket_shadow_value({"probabilities": v11_paired_champion}, bucket),
+        **{column: bucket_shadow_value(component, bucket) for column, component in v11_components.items()},
     }
     if probability_assessment.post_peak:
         row["Post-Peak Shadow mass · not released"] = percentage(

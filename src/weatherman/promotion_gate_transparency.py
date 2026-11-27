@@ -404,6 +404,7 @@ def build_analog_promotion_report(
     *,
     timezone_name: str = "Europe/Madrid",
     oos_start_date: date | str | None = "2026-08-31",
+    snapshots: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Return combined, First and Late gates from already-loaded evidence."""
     gates = {
@@ -432,7 +433,8 @@ def build_analog_promotion_report(
             oos_start_date=oos_start_date,
         ),
     }
-    return {
+    from .analog_recording_provenance import annotate_report
+    return annotate_report({
         "evaluation_version": EVALUATION_VERSION,
         "generated_from": "already-loaded ForecastVariantSnapshot and DailyActual rows",
         "timezone": timezone_name,
@@ -444,4 +446,4 @@ def build_analog_promotion_report(
         "changes_betting_logic": False,
         "existing_combined_gate_unchanged": True,
         "gates": gates,
-    }
+    }, snapshots)

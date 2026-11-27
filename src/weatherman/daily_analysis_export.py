@@ -805,6 +805,9 @@ def build_daily_analysis_export(
     analog_promotion_gate = build_analog_promotion_report(
         gate_variants, gate_actuals, timezone_name=AIRPORT_TIMEZONE,
         oos_start_date=ANALOG_GATE_START,
+        snapshots=pd.DataFrame([{k: getattr(r, k) for k in ("airport", "target_date", "captured_at",
+                    "checkpoint_recorded_at", "checkpoint_reconstructed", "checkpoint_status",
+                    "source_provenance_json", "used_models_json")} for r in checkpoint_rows]),
     )
     observations = list(
         session.scalars(
@@ -1054,6 +1057,9 @@ def build_daily_analysis_export(
             collection_runs,
         ),
     }
+    from .shadow_capture_health import checkpoint_recording_health
+    payload["checkpoint_recording_health"] = checkpoint_recording_health(
+        payload["checkpoints"], generated_at=generated, target_date=local_today)
     return _sanitize_public_value(payload)
 
 
