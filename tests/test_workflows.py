@@ -10,7 +10,7 @@ def workflow(name: str) -> str:
 
 def test_collector_writes_to_neon_without_committing_a_sqlite_file() -> None:
     source = workflow("madrid-collector.yml")
-    assert "run-collector --airports LEMD" in source
+    assert "scripts/run_madrid_collector_checked.py" in source
     assert "secrets.DATABASE_URL" in source
     assert "group: madrid-neon-writer" in source
     assert "contents: read" in source

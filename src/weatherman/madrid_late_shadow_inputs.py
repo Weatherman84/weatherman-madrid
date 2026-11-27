@@ -4,6 +4,7 @@ from math import cos, isfinite, pi, sin
 from statistics import mean, pstdev
 
 from .madrid_late_shadow_model import MODELS, CHECKPOINT, ZONE, bounds, cutoff, instant
+from .shadow_capture_health import CaptureRejected
 
 # Preserve the historical feature formulas; receipt is now proved by the live snapshot.
 day_bounds = bounds
@@ -45,18 +46,22 @@ def build_input(day, captured_at, observations, forecasts, hourly, bulletins, dr
         usable.append({**o, "available_at": max(captured, instant(o["observed_at"]) + timedelta(minutes=5)).isoformat()})
     f = observation_features(usable, cut.isoformat(), str(day))
     if not f or not 5 <= f["observation_age"] <= 45:
-        raise ValueError("No fresh pre-cutoff METAR")
+        raise CaptureRejected("stale_metar", "No fresh pre-cutoff METAR")
     chosen = {}
     for model in MODELS:
         options = [r for r in forecasts if r["model"] == model]
         if not options:
-            raise ValueError("Missing common forecast: " + model)
+            raise CaptureRejected("missing_model", "Missing common forecast: " + model, model=model)
         r = max(options, key=lambda r: (instant(r["fetched_at"]), r["id"]))
         fetched, run = instant(r["fetched_at"]), instant(r["run_at"])
-        if (not run <= fetched <= captured or captured - fetched > timedelta(hours=6)
-                or captured - run > timedelta(hours=48)
-                or not isfinite(r["max_temp_c"])):
-            raise ValueError("Invalid/stale latest forecast: " + model)
+        reason = ("invalid_forecast_time_order" if not run <= fetched <= captured else
+                  "latest_fetch_too_old" if captured - fetched > timedelta(hours=6) else
+                  "latest_run_too_old" if captured - run > timedelta(hours=48) else
+                  "nonfinite_forecast" if not isfinite(r["max_temp_c"]) else None)
+        if reason:
+            raise CaptureRejected(reason, "Invalid/stale latest forecast: " + model, model=model,
+                                  fetched_at=fetched.isoformat(), run_at=run.isoformat(),
+                                  captured_at=captured.isoformat())
         if r.get("available_at") and not run <= instant(r["available_at"]) <= fetched:
             raise ValueError("Invalid forecast availability: " + model)
         chosen[model] = r

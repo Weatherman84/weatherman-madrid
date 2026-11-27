@@ -98,13 +98,15 @@ def test_streamlit_existing_tables_have_shadow_column_and_no_new_panel():
     assert not app.exception, [e.message for e in app.exception]
     assert len(app.dataframe) == 2 and not app.metric and not app.selectbox
     for table in app.dataframe:
-        assert "v11 Shadow · Late" in table.value.columns
+        assert "v11 Reference · Late" in table.value.columns
+        assert "v11 Curve · Late" in table.value.columns
+        assert "v11 Fallback · Late" in table.value.columns
     checkpoints = app.dataframe[0].value
-    assert checkpoints.iloc[2]["v11 Shadow · Late"] == "—"
-    assert "21 °C" in checkpoints.iloc[3]["v11 Shadow · Late"]
+    assert checkpoints.iloc[2]["v11 Curve · Late"] == "—"
+    assert "21 °C" in checkpoints.iloc[3]["v11 Curve · Late"]
     app.date_input[0].set_value(date(2026, 11, 23)).run()
     assert not app.exception, [e.message for e in app.exception]
-    assert set(app.dataframe[0].value["v11 Shadow · Late"]) == {"—"}
+    assert set(app.dataframe[0].value["v11 Curve · Late"]) == {"—"}
     assert "no recorded Shadow" in app.caption[-1].value
 
 

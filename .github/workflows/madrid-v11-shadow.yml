@@ -76,9 +76,12 @@ jobs:
           ref: madrid-v11-shadow-data
           path: shadow-store
       - name: Capture or settle with a read-only repeatable database snapshot
+        id: capture
+        continue-on-error: true
         if: steps.gate.outputs.due == 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          V11_INPUT_SOURCE: live_open_meteo_coherent_day_v2
           MODE: ${{ github.event_name == 'push' && 'audit' || inputs.mode || 'auto' }}
         run: python scripts/record_madrid_late_shadow.py --store shadow-store --mode "$MODE"
       - name: Publish decisions without replacing any previous file
@@ -86,7 +89,7 @@ jobs:
         working-directory: shadow-store
         run: |
           git add -- journal.json
-          for folder in decisions outcomes; do
+          for folder in decisions outcomes attempts; do
             if [[ -d "$folder" ]]; then
               if [[ -n "$(git diff --name-only -- "$folder")" ]]; then
                 echo "Refusing changes to a previously committed record" >&2
@@ -107,3 +110,6 @@ jobs:
           name: madrid-v11-prospective-shadow-${{ github.run_id }}
           path: shadow-store/journal.json
           retention-days: 30
+      - name: Fail visibly after preserving a rejected capture
+        if: steps.capture.outcome == 'failure'
+        run: exit 2

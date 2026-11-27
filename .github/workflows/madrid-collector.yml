@@ -51,12 +51,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Collect and persist Madrid directly in Neon
-        run: python -m weatherman.cli run-collector --airports LEMD --mode "$WEATHERMAN_COLLECTION_MODE"
+        run: python scripts/run_madrid_collector_checked.py --mode "$WEATHERMAN_COLLECTION_MODE"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          COLLECTOR_PROVIDER_WORKERS: "4"
+          COLLECTOR_PROVIDER_TIMEOUT_SECONDS: "10"
           METEOBLUE_API_KEY: ${{ secrets.METEOBLUE_API_KEY }}
           METEOBLUE_DAILY_CALL_LIMIT: "4"
           LIVE_OPEN_METEO_REFRESH_MINUTES: "60"
           WEATHERMAN_EXPECTED_SLOT_AT: ${{ inputs.scheduled_slot }}
           WEATHERMAN_TRIGGER_SOURCE: ${{ inputs.source }}
           WEATHERMAN_COLLECTION_MODE: ${{ inputs.collection_mode || 'auto' }}
+      - name: Preserve actual recording and pre-cutoff source receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: madrid-checkpoint-health-${{ github.run_id }}
+          path: madrid-checkpoint-health.json
+          if-no-files-found: warn
+          retention-days: 30
