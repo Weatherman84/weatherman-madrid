@@ -1,0 +1,118 @@
+{
+  "sources": [
+    {
+      "path": "deep/normalized/metars.parquet",
+      "sha256": "624d4b785fbed8427bf87c454a75c041a4dea78edcf17d76025862b8137db3a1"
+    },
+    {
+      "path": "deep/derived/checkpoints.json",
+      "sha256": "30a48981564778c79fd711381e7e4f3dcd6768ec978a71aacdb7271947a78b24"
+    },
+    {
+      "path": "daily/2026-10-05.json",
+      "sha256": "8d45d3a0dcc9664938e51d18447c4537ac1ab82ee9132d9383628bb566b91a68"
+    },
+    {
+      "path": "daily/2026-10-11.json",
+      "sha256": "e945510b4e0f8140865a5207c1ef8bb10ec1bf317ce868dc180b1d5ec454ce5c"
+    },
+    {
+      "path": "daily/2026-10-17.json",
+      "sha256": "658f86113060e2caedda63287d7ef2e7c983d978726634de53f7b49fe6948c3c"
+    },
+    {
+      "path": "daily/2026-10-23.json",
+      "sha256": "bf4a2b820139c2274be50ab716fbe28dbe7a37c77f189f32bd4fd79225af6bd9"
+    },
+    {
+      "path": "daily/2026-10-24.json",
+      "sha256": "3cb0d66b3c5249740637cf1042ea56d563985524346ce432d148fe3f7474937a"
+    },
+    {
+      "path": "daily/2026-10-30.json",
+      "sha256": "adf698b1ce011e62aea23572b77427b507c2bff66ffeb71deaa35e5eda9b872e"
+    },
+    {
+      "path": "daily/2026-10-31.json",
+      "sha256": "39049d564d6ba81a2d5bf782b1678e98ee29c693c7ddd3e9846c0d7c8f467304"
+    },
+    {
+      "path": "daily/2026-11-06.json",
+      "sha256": "c995812492e0f6bd227ba6b5a9148fcfc70687e53b506a841a76cf65c67ae172"
+    },
+    {
+      "path": "daily/2026-11-07.json",
+      "sha256": "e1d51cdd99f151b3f1d3a5cd26f3f32cfb2ded52abee5d132b88439b6a8043be"
+    },
+    {
+      "path": "daily/2026-11-13.json",
+      "sha256": "de24aaf704130e73624a052bd8d488d70fd1e72789813c74974f8f14b080cd25"
+    },
+    {
+      "path": "daily/2026-11-14.json",
+      "sha256": "8c33dc11ecd2547f3268f8d6e32aaf2ed34018efb6594ebe995c7d7edfc6ce62"
+    },
+    {
+      "path": "daily/2026-11-20.json",
+      "sha256": "f21ec3993550edbc46c737896f9af3331b5b709563e0a480e5c1d04af3f8caa2"
+    },
+    {
+      "path": "daily/weatherman-review-20.json",
+      "sha256": "f21ec3993550edbc46c737896f9af3331b5b709563e0a480e5c1d04af3f8caa2"
+    }
+  ],
+  "rows": 2901,
+  "classes": {
+    "historical_reduced_fidelity": 2740,
+    "scheduled_causal_production": 158,
+    "reconstructed": 3
+  },
+  "models": {
+    "ecmwf_ifs025": {
+      "rows": 2901,
+      "first": "2024-11-01",
+      "last": "2026-11-20"
+    },
+    "gfs_global": {
+      "rows": 2901,
+      "first": "2024-11-01",
+      "last": "2026-11-20"
+    },
+    "icon_eu": {
+      "rows": 2900,
+      "first": "2024-11-01",
+      "last": "2026-11-20"
+    },
+    "icon_global": {
+      "rows": 2901,
+      "first": "2024-11-01",
+      "last": "2026-11-20"
+    },
+    "meteoblue": {
+      "rows": 161,
+      "first": "2026-10-11",
+      "last": "2026-11-20"
+    },
+    "meteofrance_arome_france": {
+      "rows": 159,
+      "first": "2026-10-11",
+      "last": "2026-11-20"
+    },
+    "meteofrance_arome_france_hd": {
+      "rows": 159,
+      "first": "2026-10-11",
+      "last": "2026-11-20"
+    },
+    "meteofrance_arpege_europe": {
+      "rows": 2897,
+      "first": "2024-11-01",
+      "last": "2026-11-20"
+    },
+    "ukmo_global_deterministic_10km": {
+      "rows": 2689,
+      "first": "2024-11-01",
+      "last": "2026-11-20"
+    }
+  },
+  "normalized_sha256": "ef75149a4fb2056e2afbfffb9c8bb9c53d199374cf2c8c470936fa16a474613a"
+}

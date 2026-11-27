@@ -1,0 +1,1066 @@
+{
+  "version": "v11-madrid-case-registry-1",
+  "cases": [
+    {
+      "date": "2026-10-11",
+      "handoff_summary": {
+        "date": "2026-10-11",
+        "status": "evaluated",
+        "actual_c": 25.0,
+        "late_modal": 25,
+        "late_center_c": 25.039,
+        "roles": [
+          "correct_late",
+          "protect_against_early_plateau_cap",
+          "reduced_model_coverage"
+        ],
+        "lesson": "Positive longer heating survived a short stall; a blanket plateau throttle would have harmed the correct late call."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 24,
+      "stored_metar_actual": 25,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-12",
+      "handoff_summary": {
+        "date": "2026-10-12",
+        "status": "evaluated",
+        "actual_c": 27.0,
+        "late_modal": 28,
+        "late_center_c": 28.426,
+        "roles": [
+          "late_warm_error",
+          "no_higher_bucket_after_plateau",
+          "cumulative_positive_overcorrection"
+        ],
+        "lesson": "Clear-sky, dry mixing, anchor, heating and cloud accumulated beyond the remaining bucket potential."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 27,
+      "stored_metar_actual": 27,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-13",
+      "handoff_summary": {
+        "date": "2026-10-13",
+        "status": "evaluated",
+        "actual_c": 29.0,
+        "late_modal": 29,
+        "late_center_c": 29.228,
+        "roles": [
+          "correct_late",
+          "protect_against_plateau_cap",
+          "later_higher_bucket_after_plateau"
+        ],
+        "lesson": "A one-hour plateau was followed by another bucket; multi-scale heating protected a justified late rise."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 28,
+      "stored_metar_actual": 29,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-14",
+      "handoff_summary": {
+        "date": "2026-10-14",
+        "status": "evaluated",
+        "actual_c": 28.0,
+        "late_modal": 27,
+        "late_center_c": 27.443,
+        "roles": [
+          "late_cold_error",
+          "protect_against_plateau_cap",
+          "later_higher_bucket_after_plateau"
+        ],
+        "lesson": "A 90-minute plateau was followed by a two-bucket rise; the live correction was too defensive."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 26,
+      "stored_metar_actual": 28,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-15",
+      "handoff_summary": {
+        "date": "2026-10-15",
+        "status": "evaluated",
+        "actual_c": 26.0,
+        "late_modal": 27,
+        "late_center_c": 26.668,
+        "roles": [
+          "late_warm_error",
+          "stored_metar_bucket_boundary",
+          "model_base_near_target"
+        ],
+        "lesson": "The center was meteorologically close but distributed too much probability into the next integer METAR bucket."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 25,
+      "stored_metar_actual": 26,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-16",
+      "handoff_summary": {
+        "date": "2026-10-16",
+        "status": "evaluated",
+        "actual_c": 27.0,
+        "late_modal": 27,
+        "late_center_c": 27.181,
+        "roles": [
+          "correct_late",
+          "protect_against_plateau_cap",
+          "later_higher_bucket_after_plateau"
+        ],
+        "lesson": "A 90-minute plateau still ended with a one-time higher bucket touch; the positive live correction was justified."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 26,
+      "stored_metar_actual": 27,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-17",
+      "handoff_summary": {
+        "date": "2026-10-17",
+        "status": "evaluated",
+        "actual_c": 23.0,
+        "late_modal": 23,
+        "late_center_c": 23.298,
+        "roles": [
+          "correct_late",
+          "weather_deterioration",
+          "conditioning_protected_observed_max"
+        ],
+        "lesson": "Cloud and stronger north wind ended heating; the strongly negative late update plus conditioning was appropriate."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 23,
+      "stored_metar_actual": 23,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-18",
+      "handoff_summary": {
+        "date": "2026-10-18",
+        "status": "evaluated",
+        "actual_c": 15.0,
+        "late_modal": 15,
+        "late_center_c": 15.067,
+        "roles": [
+          "correct_late",
+          "night_maximum",
+          "rain_cloud_regime",
+          "conditioning_protected_observed_max"
+        ],
+        "lesson": "The daily maximum occurred at night and was not exceeded during the rainy, overcast afternoon."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 15,
+      "stored_metar_actual": 15,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-19",
+      "handoff_summary": {
+        "date": "2026-10-19",
+        "status": "evaluated",
+        "actual_c": 14.0,
+        "late_modal": 14,
+        "late_center_c": 14.156,
+        "roles": [
+          "correct_late",
+          "protect_against_plateau_cap",
+          "later_higher_bucket_after_plateau",
+          "cloudy_regime"
+        ],
+        "lesson": "A late clearing coincided with a one-time higher touch after flat short heating rates."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 13,
+      "stored_metar_actual": 14,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-20",
+      "handoff_summary": {
+        "date": "2026-10-20",
+        "status": "evaluated",
+        "actual_c": 17.0,
+        "late_modal": 19,
+        "late_center_c": 18.705,
+        "roles": [
+          "late_warm_error",
+          "long_plateau_no_higher_bucket",
+          "clear_sky_cloud_overweight",
+          "conditioning_added_warmth"
+        ],
+        "lesson": "Five hours without temperature response outweighed positive modelled clearing and radiation signals."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 17,
+      "stored_metar_actual": 17,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-21",
+      "handoff_summary": {
+        "date": "2026-10-21",
+        "status": "evaluated",
+        "actual_c": 19.0,
+        "late_modal": 19,
+        "late_center_c": 18.908,
+        "roles": [
+          "correct_late",
+          "protect_against_plateau_cap",
+          "later_higher_bucket_after_plateau"
+        ],
+        "lesson": "A further bucket followed a 90-minute plateau; weaker wind than the prior day was an important contrast."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 18,
+      "stored_metar_actual": 19,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-22",
+      "handoff_summary": {
+        "date": "2026-10-22",
+        "status": "evaluated",
+        "actual_c": 20.0,
+        "late_modal": 20,
+        "late_center_c": 20.481,
+        "roles": [
+          "correct_late",
+          "protect_against_wind_plateau_cap",
+          "upper_tail_overweight",
+          "clear_sky_benefit_and_risk"
+        ],
+        "lesson": "The modal was right after a later touch, but the 21-degree upper tail became almost as likely as the winner."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 19,
+      "stored_metar_actual": 20,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-23",
+      "handoff_summary": {
+        "date": "2026-10-23",
+        "status": "unavailable",
+        "roles": [
+          "missing_final_export"
+        ],
+        "lesson": "No final daily export was available; no meteorological conclusion is permitted."
+      },
+      "summary_available": false,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 19,
+      "stored_metar_actual": 21,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-24",
+      "handoff_summary": {
+        "date": "2026-10-24",
+        "status": "evaluated",
+        "actual_c": 19.0,
+        "late_modal": 20,
+        "late_center_c": null,
+        "roles": [
+          "late_warm_error",
+          "clear_sky_harm",
+          "first_max_touch_not_long_plateau"
+        ],
+        "lesson": "Removing the clear-sky override would have restored the correct 19-degree modal."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 18,
+      "stored_metar_actual": 19,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-25",
+      "handoff_summary": {
+        "date": "2026-10-25",
+        "status": "evaluated",
+        "actual_c": 23.0,
+        "late_modal": 22,
+        "late_center_c": 22.429,
+        "roles": [
+          "late_cold_error",
+          "continued_heating",
+          "model_and_taf_cold"
+        ],
+        "lesson": "Even a large positive anchor correction did not fully recover a shared model and TAF cold error."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 22,
+      "stored_metar_actual": 23,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-26",
+      "handoff_summary": {
+        "date": "2026-10-26",
+        "status": "evaluated",
+        "actual_c": 24.0,
+        "late_modal": 25,
+        "late_center_c": 25.117,
+        "roles": [
+          "late_warm_error",
+          "anchor_overcorrection",
+          "cumulative_positive_overcorrection"
+        ],
+        "lesson": "Anchor, dry mixing, memory, wind and heating jointly pushed the correct bucket outside the top two."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 24,
+      "stored_metar_actual": 24,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-27",
+      "handoff_summary": {
+        "date": "2026-10-27",
+        "status": "evaluated",
+        "actual_c": 23.0,
+        "late_modal": 23,
+        "late_center_c": 23.258,
+        "roles": [
+          "correct_late",
+          "protect_against_plateau_cap",
+          "later_higher_bucket_after_plateau"
+        ],
+        "lesson": "A single higher touch followed a plateau despite only 0.1 degree of modelled remaining rise."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 22,
+      "stored_metar_actual": 23,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-28",
+      "handoff_summary": {
+        "date": "2026-10-28",
+        "status": "evaluated",
+        "actual_c": 23.0,
+        "late_modal": 24,
+        "late_center_c": 23.851,
+        "roles": [
+          "late_warm_error",
+          "first_max_touch",
+          "anchor_overcorrection",
+          "dry_mixing_positive"
+        ],
+        "lesson": "The first observed 23-degree touch did not justify forecasting another integer bucket."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 23,
+      "stored_metar_actual": 23,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-29",
+      "handoff_summary": {
+        "date": "2026-10-29",
+        "status": "evaluated",
+        "actual_c": 22.0,
+        "late_modal": 23,
+        "late_center_c": 22.94,
+        "roles": [
+          "late_warm_error",
+          "clear_sky_harm",
+          "dry_mixing_positive"
+        ],
+        "lesson": "Clear-sky helped in the morning but harmed late; the same component needs phase-dependent evaluation."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 22,
+      "stored_metar_actual": 22,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-30",
+      "handoff_summary": {
+        "date": "2026-10-30",
+        "status": "evaluated",
+        "actual_c": 22.0,
+        "late_modal": 23,
+        "late_center_c": 23.126,
+        "roles": [
+          "late_warm_error",
+          "long_plateau_no_higher_bucket",
+          "dry_mixing_positive"
+        ],
+        "lesson": "A two-hour causal plateau with zero heating did not receive enough weight against positive live components."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 22,
+      "stored_metar_actual": 22,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-10-31",
+      "handoff_summary": {
+        "date": "2026-10-31",
+        "status": "evaluated",
+        "actual_c": 22.0,
+        "late_modal": 23,
+        "late_center_c": 22.824,
+        "roles": [
+          "late_warm_error",
+          "first_max_touch",
+          "anchor_overcorrection",
+          "dry_mixing_positive"
+        ],
+        "lesson": "A first maximum touch was followed by no additional bucket despite strong anchor and dry-mixing additions."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 22,
+      "stored_metar_actual": 22,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-01",
+      "handoff_summary": {
+        "date": "2026-11-01",
+        "status": "evaluated",
+        "actual_c": 21.0,
+        "late_modal": 22,
+        "late_center_c": 22.033,
+        "roles": [
+          "late_warm_error",
+          "stale_live_observation",
+          "anchor_overcorrection",
+          "dry_mixing_positive"
+        ],
+        "lesson": "Evidence complete did not mean observation current; the last METAR was already 30 minutes old at the late checkpoint."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 21,
+      "stored_metar_actual": 21,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-02",
+      "handoff_summary": {
+        "date": "2026-11-02",
+        "status": "evaluated",
+        "actual_c": 20.0,
+        "late_modal": 20,
+        "late_center_c": 19.739,
+        "roles": [
+          "correct_late",
+          "protect_against_rest_rise_cap",
+          "later_higher_bucket_after_checkpoint"
+        ],
+        "lesson": "A higher bucket occurred with only 0.2 degree modelled remaining rise; a blanket residual-rise cap would fail."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 19,
+      "stored_metar_actual": 20,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-03",
+      "handoff_summary": {
+        "date": "2026-11-03",
+        "status": "evaluated",
+        "actual_c": 14.0,
+        "late_modal": 15,
+        "late_center_c": 15.161,
+        "roles": [
+          "late_warm_error",
+          "long_plateau_no_higher_bucket",
+          "model_base_warm",
+          "bias_increased_warm_error"
+        ],
+        "lesson": "The warm error began before live correction; negative live evidence could not undo the raw and bias error."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 14,
+      "stored_metar_actual": 14,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-04",
+      "handoff_summary": {
+        "date": "2026-11-04",
+        "status": "evaluated",
+        "actual_c": 15.0,
+        "late_modal": 15,
+        "late_center_c": 15.419,
+        "roles": [
+          "correct_late",
+          "conditioning_increased_center_error"
+        ],
+        "lesson": "The modal remained correct even though conditioning made the numerical center error larger."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 15,
+      "stored_metar_actual": 15,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-05",
+      "handoff_summary": {
+        "date": "2026-11-05",
+        "status": "evaluated",
+        "actual_c": 16.0,
+        "late_modal": 17,
+        "late_center_c": 17.139466654584233,
+        "roles": [
+          "late_warm_error",
+          "anchor_positive",
+          "dry_mixing_positive"
+        ],
+        "lesson": "Positive late components produced the next-bucket modal even though the observed maximum already matched the final target."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 16,
+      "stored_metar_actual": 16,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-06",
+      "handoff_summary": {
+        "date": "2026-11-06",
+        "status": "evaluated",
+        "actual_c": 17.0,
+        "late_modal": 18,
+        "late_center_c": 18.14699845893116,
+        "roles": [
+          "late_warm_error",
+          "flat_short_heating",
+          "anchor_overcorrection",
+          "clear_sky_positive",
+          "dry_mixing_positive"
+        ],
+        "lesson": "Flat short heating and only positive 120-minute heating did not justify the accumulated next-bucket push."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 17,
+      "stored_metar_actual": 17,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-07",
+      "handoff_summary": {
+        "date": "2026-11-07",
+        "status": "evaluated",
+        "actual_c": 18.0,
+        "late_modal": 18,
+        "late_center_c": 18.378315313355085,
+        "roles": [
+          "correct_late",
+          "flat_or_negative_heating"
+        ],
+        "lesson": "The late modal stayed correct despite a mildly warm center and no modelled remaining rise."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 18,
+      "stored_metar_actual": 18,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-08",
+      "handoff_summary": {
+        "date": "2026-11-08",
+        "status": "evaluated",
+        "actual_c": 16.0,
+        "late_modal": 18,
+        "late_center_c": 17.718463455392758,
+        "roles": [
+          "late_warm_error",
+          "clear_sky_cloud_overweight",
+          "moistening_regime",
+          "model_base_warm"
+        ],
+        "lesson": "A negative anchor was overwhelmed by positive sky contributions despite no observed rise beyond 16 degrees."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 16,
+      "stored_metar_actual": 16,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-09",
+      "handoff_summary": {
+        "date": "2026-11-09",
+        "status": "evaluated",
+        "actual_c": 17.0,
+        "late_modal": 17,
+        "late_center_c": 17.40742869610137,
+        "roles": [
+          "correct_late",
+          "later_higher_bucket_after_checkpoint",
+          "negative_anchor_helped"
+        ],
+        "lesson": "The observed path still produced a later higher bucket; this protects against unconditional late damping."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 16,
+      "stored_metar_actual": 17,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-10",
+      "handoff_summary": {
+        "date": "2026-11-10",
+        "status": "evaluated",
+        "actual_c": 19.0,
+        "late_modal": 20,
+        "late_center_c": 19.834529146869347,
+        "roles": [
+          "late_warm_error",
+          "long_plateau_no_higher_bucket",
+          "anchor_overcorrection"
+        ],
+        "lesson": "A two-hour 19-degree plateau and zero heating conflicted with a +1.4 degree anchor."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 19,
+      "stored_metar_actual": 19,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-11",
+      "handoff_summary": {
+        "date": "2026-11-11",
+        "status": "evaluated",
+        "actual_c": 15.0,
+        "late_modal": 16,
+        "late_center_c": 15.902772839665804,
+        "roles": [
+          "late_warm_error",
+          "night_maximum",
+          "rain_cloud_regime",
+          "falling_temperature",
+          "wind_positive"
+        ],
+        "lesson": "Positive wind contribution offset negative evidence during rain, overcast and falling temperature."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 15,
+      "stored_metar_actual": 15,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-12",
+      "handoff_summary": {
+        "date": "2026-11-12",
+        "status": "evaluated",
+        "actual_c": 18.0,
+        "late_modal": 18,
+        "late_center_c": 18.365550955618286,
+        "roles": [
+          "correct_late",
+          "flat_or_negative_heating"
+        ],
+        "lesson": "The modal was correct despite a warm center; modal and center quality must remain separate."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 18,
+      "stored_metar_actual": 18,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-13",
+      "handoff_summary": {
+        "date": "2026-11-13",
+        "status": "evaluated",
+        "actual_c": 17.0,
+        "late_modal": 17,
+        "late_center_c": 17.149461358549548,
+        "roles": [
+          "correct_late",
+          "weather_deterioration",
+          "conditioning_protected_observed_max"
+        ],
+        "lesson": "Conditioning preserved the already observed maximum during rain and cooling instead of forecasting reheating."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 17,
+      "stored_metar_actual": 17,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-14",
+      "handoff_summary": {
+        "date": "2026-11-14",
+        "status": "evaluated",
+        "actual_c": 14.0,
+        "late_modal": 15,
+        "late_center_c": 15.399,
+        "roles": [
+          "late_warm_error",
+          "rain_cloud_regime",
+          "morning_maximum",
+          "negative_anchor_partly_offset"
+        ],
+        "checkpoint_quality": {
+          "stored": 4,
+          "reconstructed": 0,
+          "missing": 0
+        },
+        "lesson": "The morning maximum was never exceeded; positive wind, cloud and heating contributions weakened the negative anchor."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 14,
+      "stored_metar_actual": 14,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-15",
+      "handoff_summary": {
+        "date": "2026-11-15",
+        "status": "evaluated",
+        "actual_c": 14.0,
+        "late_modal": 15,
+        "late_center_c": 15.235,
+        "roles": [
+          "late_warm_error",
+          "long_plateau_no_higher_bucket",
+          "anchor_overcorrection",
+          "wind_positive",
+          "cloud_positive"
+        ],
+        "checkpoint_quality": {
+          "stored": 3,
+          "reconstructed": 1,
+          "missing": 0
+        },
+        "lesson": "A long 14-degree plateau and later clearing produced no new bucket despite a positive additive live correction."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "reconstructed",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 14,
+      "stored_metar_actual": 14,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-16",
+      "handoff_summary": {
+        "date": "2026-11-16",
+        "status": "evaluated",
+        "actual_c": 16.0,
+        "late_modal": 17,
+        "late_center_c": 17.206,
+        "roles": [
+          "late_warm_error",
+          "no_higher_bucket_after_clearing",
+          "anchor_overcorrection",
+          "wind_positive",
+          "cloud_positive"
+        ],
+        "checkpoint_quality": {
+          "stored": 2,
+          "reconstructed": 2,
+          "missing": 0
+        },
+        "lesson": "The warm error arose mainly before conditioning; clearing after the 16-degree maximum did not produce a higher bucket."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "reconstructed",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "reconstructed"
+      },
+      "late_observed_max": 16,
+      "stored_metar_actual": 16,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-17",
+      "handoff_summary": {
+        "date": "2026-11-17",
+        "status": "evaluated",
+        "actual_c": 17.0,
+        "late_modal": 17,
+        "late_center_c": 16.93,
+        "roles": [
+          "correct_late",
+          "mandatory_counterexample",
+          "late_flow_warming",
+          "later_higher_bucket_after_checkpoint",
+          "protect_against_solar_cutoff"
+        ],
+        "checkpoint_quality": {
+          "stored": 3,
+          "reconstructed": 0,
+          "missing": 1
+        },
+        "lesson": "A new bucket arrived at 21:00 under persistent southwesterly flow; ending solar heating did not end the possibility of a later maximum."
+      },
+      "summary_available": true,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 16,
+      "stored_metar_actual": 17,
+      "mandatory_counterexample": true
+    },
+    {
+      "date": "2026-11-18",
+      "handoff_summary": null,
+      "summary_available": false,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 18,
+      "stored_metar_actual": 18,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-19",
+      "handoff_summary": null,
+      "summary_available": false,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 17,
+      "stored_metar_actual": 17,
+      "mandatory_counterexample": false
+    },
+    {
+      "date": "2026-11-20",
+      "handoff_summary": null,
+      "summary_available": false,
+      "raw_export_checkpoints": {
+        "D-1 Evening @20:00": "scheduled_causal_production",
+        "D0 Morning @09:00": "scheduled_causal_production",
+        "First Live @12:00": "scheduled_causal_production",
+        "Late Live @16:00": "scheduled_causal_production"
+      },
+      "late_observed_max": 13,
+      "stored_metar_actual": 13,
+      "mandatory_counterexample": false
+    }
+  ],
+  "source": "Original case summaries through 17 November from PR31 data only; no code dependency. Daily raw exports through 20 November.",
+  "limitations": "A summary is not a raw feature/probability vector. Missing original handoffs remain explicitly missing; no invented meteorological account."
+}

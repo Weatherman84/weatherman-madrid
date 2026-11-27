@@ -1,0 +1,90 @@
+{
+  "ecmwf_ifs025": {
+    "rows": 735,
+    "variables": {
+      "temp_c": 735,
+      "dewpoint_c": 735,
+      "wind_kph": 735,
+      "wind_direction": 735,
+      "radiation_wm2": 735,
+      "temp_850hpa_c": 735
+    }
+  },
+  "gfs_global": {
+    "rows": 734,
+    "variables": {
+      "temp_c": 734,
+      "dewpoint_c": 734,
+      "wind_kph": 734,
+      "wind_direction": 734,
+      "radiation_wm2": 734,
+      "temp_850hpa_c": 730
+    }
+  },
+  "icon_eu": {
+    "rows": 734,
+    "variables": {
+      "temp_c": 734,
+      "dewpoint_c": 733,
+      "wind_kph": 733,
+      "wind_direction": 733,
+      "radiation_wm2": 733,
+      "temp_850hpa_c": 734
+    }
+  },
+  "icon_global": {
+    "rows": 735,
+    "variables": {
+      "temp_c": 735,
+      "dewpoint_c": 731,
+      "wind_kph": 731,
+      "wind_direction": 731,
+      "radiation_wm2": 733,
+      "temp_850hpa_c": 735
+    }
+  },
+  "meteofrance_arome_france": {
+    "rows": 735,
+    "variables": {
+      "temp_c": 735,
+      "dewpoint_c": 735,
+      "wind_kph": 735,
+      "wind_direction": 735,
+      "radiation_wm2": 732,
+      "temp_850hpa_c": 735
+    }
+  },
+  "meteofrance_arome_france_hd": {
+    "rows": 735,
+    "variables": {
+      "temp_c": 735,
+      "dewpoint_c": 735,
+      "wind_kph": 735,
+      "wind_direction": 735,
+      "radiation_wm2": 0,
+      "temp_850hpa_c": 0
+    }
+  },
+  "meteofrance_arpege_europe": {
+    "rows": 734,
+    "variables": {
+      "temp_c": 734,
+      "dewpoint_c": 734,
+      "wind_kph": 734,
+      "wind_direction": 734,
+      "radiation_wm2": 734,
+      "temp_850hpa_c": 734
+    }
+  },
+  "ukmo_global_deterministic_10km": {
+    "rows": 735,
+    "variables": {
+      "temp_c": 735,
+      "dewpoint_c": 735,
+      "wind_kph": 735,
+      "wind_direction": 735,
+      "radiation_wm2": 735,
+      "temp_850hpa_c": 735
+    }
+  }
+}

@@ -1,0 +1,4760 @@
+{
+  "status": "NO RELEASE CANDIDATE",
+  "splits": {
+    "discovery": [
+      "2026-04-01",
+      "2026-06-30"
+    ],
+    "calibration": [
+      "2026-07-01",
+      "2026-07-31"
+    ],
+    "historical_validation": [
+      "2026-08-01",
+      "2026-10-08"
+    ]
+  },
+  "frozen_models": {
+    "D-1 Evening @20:00": {
+      "n_train": 84,
+      "models": {
+        "ecmwf_ifs025": {
+          "bias": 0.013095238095237901,
+          "sigma": 1.4016809434105113
+        },
+        "gfs_global": {
+          "bias": 0.4333333333333333,
+          "sigma": 1.0009915718846623
+        },
+        "icon_global": {
+          "bias": 0.7059523809523809,
+          "sigma": 0.9850490911716737
+        },
+        "icon_eu": {
+          "bias": 0.3880952380952382,
+          "sigma": 1.0406505247868894
+        },
+        "meteofrance_arpege_europe": {
+          "bias": -0.36190476190476195,
+          "sigma": 1.4517563059556815
+        },
+        "ukmo_global_deterministic_10km": {
+          "bias": 0.9238095238095234,
+          "sigma": 0.9581255320402395
+        },
+        "meteofrance_arome_france": {
+          "bias": -0.7440476190476192,
+          "sigma": 1.367335886424347
+        },
+        "meteofrance_arome_france_hd": {
+          "bias": -0.9785714285714284,
+          "sigma": 1.3660049003408086
+        }
+      },
+      "weights": {
+        "ecmwf_ifs025": 0.12746375878380312,
+        "gfs_global": 0.13523593919744964,
+        "icon_global": 0.1311486506277501,
+        "icon_eu": 0.1589237629422259,
+        "meteofrance_arpege_europe": 0.11605130596246259,
+        "ukmo_global_deterministic_10km": 0.11315660218562115,
+        "meteofrance_arome_france": 0.11700366134550741,
+        "meteofrance_arome_france_hd": 0.10101631895518001
+      },
+      "best_training_single": "icon_eu",
+      "mixture_residuals": {
+        "equal": {
+          "bias": 0.04747023809523804,
+          "sigma": 0.9821278295206745
+        },
+        "inverse_mae": {
+          "bias": 0.09116131371103554,
+          "sigma": 0.9677172134155152
+        }
+      }
+    },
+    "D0 Morning @09:00": {
+      "n_train": 86,
+      "models": {
+        "ecmwf_ifs025": {
+          "bias": 0.06627906976744186,
+          "sigma": 1.3170271725681502
+        },
+        "gfs_global": {
+          "bias": 0.5162790697674418,
+          "sigma": 1.0153313659023744
+        },
+        "icon_global": {
+          "bias": 0.7523255813953488,
+          "sigma": 0.8925696825362159
+        },
+        "icon_eu": {
+          "bias": 0.40581395348837174,
+          "sigma": 0.9611469228204191
+        },
+        "meteofrance_arpege_europe": {
+          "bias": -0.1930232558139534,
+          "sigma": 1.3545608314028554
+        },
+        "ukmo_global_deterministic_10km": {
+          "bias": 0.863953488372093,
+          "sigma": 1.1027357935583701
+        },
+        "meteofrance_arome_france": {
+          "bias": -0.580232558139535,
+          "sigma": 1.2322054124515325
+        },
+        "meteofrance_arome_france_hd": {
+          "bias": -0.797674418604651,
+          "sigma": 1.2170280943219216
+        }
+      },
+      "weights": {
+        "ecmwf_ifs025": 0.12424243572009375,
+        "gfs_global": 0.13242506925542258,
+        "icon_global": 0.12712806648520567,
+        "icon_eu": 0.14996080901983927,
+        "meteofrance_arpege_europe": 0.1243993074823666,
+        "ukmo_global_deterministic_10km": 0.09901934826737123,
+        "meteofrance_arome_france": 0.12745698774389957,
+        "meteofrance_arome_france_hd": 0.11536797602580137
+      },
+      "best_training_single": "icon_eu",
+      "mixture_residuals": {
+        "equal": {
+          "bias": 0.12921511627906962,
+          "sigma": 0.9672068738716251
+        },
+        "inverse_mae": {
+          "bias": 0.12865622468835147,
+          "sigma": 0.9617510664377314
+        }
+      }
+    },
+    "First Live @12:00": {
+      "n_train": 86,
+      "models": {
+        "ecmwf_ifs025": {
+          "bias": 0.06627906976744186,
+          "sigma": 1.3170271725681502
+        },
+        "gfs_global": {
+          "bias": 0.5162790697674418,
+          "sigma": 1.0153313659023744
+        },
+        "icon_global": {
+          "bias": 0.7523255813953488,
+          "sigma": 0.8925696825362159
+        },
+        "icon_eu": {
+          "bias": 0.41046511627907,
+          "sigma": 0.9796806634161453
+        },
+        "meteofrance_arpege_europe": {
+          "bias": -0.1930232558139534,
+          "sigma": 1.3545608314028554
+        },
+        "ukmo_global_deterministic_10km": {
+          "bias": 0.863953488372093,
+          "sigma": 1.1027357935583701
+        },
+        "meteofrance_arome_france": {
+          "bias": -0.5046511627906979,
+          "sigma": 1.141694678439782
+        },
+        "meteofrance_arome_france_hd": {
+          "bias": -0.7267441860465115,
+          "sigma": 1.1464225872306901
+        }
+      },
+      "weights": {
+        "ecmwf_ifs025": 0.12181259278582039,
+        "gfs_global": 0.1298351963429511,
+        "icon_global": 0.12464178848923305,
+        "icon_eu": 0.1479286157414327,
+        "meteofrance_arpege_europe": 0.12196639656459038,
+        "ukmo_global_deterministic_10km": 0.09708280007955336,
+        "meteofrance_arome_france": 0.13643698598750792,
+        "meteofrance_arome_france_hd": 0.12029562400891106
+      },
+      "best_training_single": "icon_eu",
+      "mixture_residuals": {
+        "equal": {
+          "bias": 0.14811046511627896,
+          "sigma": 0.9508612173487377
+        },
+        "inverse_mae": {
+          "bias": 0.1336510060227454,
+          "sigma": 0.9478568734037573
+        }
+      }
+    },
+    "Late Live @16:00": {
+      "n_train": 86,
+      "models": {
+        "ecmwf_ifs025": {
+          "bias": 0.16395348837209317,
+          "sigma": 1.3231316613192754
+        },
+        "gfs_global": {
+          "bias": 0.530232558139535,
+          "sigma": 1.0665168003606862
+        },
+        "icon_global": {
+          "bias": 0.8244186046511629,
+          "sigma": 0.9367107277921203
+        },
+        "icon_eu": {
+          "bias": 0.36279069767441874,
+          "sigma": 0.9908941829347533
+        },
+        "meteofrance_arpege_europe": {
+          "bias": -0.03139534883720923,
+          "sigma": 1.2826445816238667
+        },
+        "ukmo_global_deterministic_10km": {
+          "bias": 0.9395348837209304,
+          "sigma": 1.0348889469426448
+        },
+        "meteofrance_arome_france": {
+          "bias": -0.468604651162791,
+          "sigma": 1.017550824729949
+        },
+        "meteofrance_arome_france_hd": {
+          "bias": -0.6883720930232556,
+          "sigma": 1.0290454602305967
+        }
+      },
+      "weights": {
+        "ecmwf_ifs025": 0.11675419367271399,
+        "gfs_global": 0.1213473155050162,
+        "icon_global": 0.11732722039012608,
+        "icon_eu": 0.15323987919543708,
+        "meteofrance_arpege_europe": 0.1297444838778192,
+        "ukmo_global_deterministic_10km": 0.09543082297200872,
+        "meteofrance_arome_france": 0.1429322640029189,
+        "meteofrance_arome_france_hd": 0.12322382038395974
+      },
+      "best_training_single": "icon_eu",
+      "mixture_residuals": {
+        "equal": {
+          "bias": 0.20406976744186042,
+          "sigma": 0.9218272146867629
+        },
+        "inverse_mae": {
+          "bias": 0.16958995183711587,
+          "sigma": 0.9213277601351876
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Different period/fidelity from deep cohort; do not pool",
+    "Exact initialization preserved, publication time estimated",
+    "No Meteoblue historical product or true ensemble members"
+  ],
+  "summaries": [
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "best_training_single",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.8666666666666667,
+      "mae": 0.45571428567284966,
+      "bias": -0.01857142856168039,
+      "brier": 0.6147451075552466,
+      "log_loss": 1.1486999216762879,
+      "discrete_crps": 0.341724597771425,
+      "winner_probability": 0.323181855324666,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.6333333333333333,
+      "top_label_ece": 0.24218317800271613,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3578168219972838,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "champion",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9666666666666667,
+      "mae": 0.3990190068698979,
+      "bias": 0.181646771295451,
+      "brier": 0.497475209672845,
+      "log_loss": 0.8600919555187784,
+      "discrete_crps": 0.24816089043029851,
+      "winner_probability": 0.4352756383693591,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 1.8333333333333333,
+      "top_label_ece": 0.22171153115962158,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 3,
+          "predicted": 0.363684981091816,
+          "observed": 0.6666666666666666
+        },
+        {
+          "lower": 0.4,
+          "n": 16,
+          "predicted": 0.46096614088863497,
+          "observed": 0.6875
+        },
+        {
+          "lower": 0.5,
+          "n": 11,
+          "predicted": 0.5347400788834313,
+          "observed": 0.7272727272727273
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9,
+      "mae": 0.41317460317460364,
+      "bias": -0.21023809523809417,
+      "brier": 0.6750113582871702,
+      "log_loss": 1.3475535064178015,
+      "discrete_crps": 0.38394524885881,
+      "winner_probability": 0.26104068144767806,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.7,
+      "top_label_ece": 0.39265447221098515,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2740121944556815,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.8666666666666667,
+      "mae": 0.4166666666666675,
+      "bias": -0.22333333333333355,
+      "brier": 0.6756322230576177,
+      "log_loss": 1.3489384101454827,
+      "discrete_crps": 0.38547380967881034,
+      "winner_probability": 0.2607302490577559,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.6333333333333333,
+      "top_label_ece": 0.3927980704992307,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2738685961674359,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "equal:residual",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9666666666666667,
+      "mae": 0.3489880947081919,
+      "bias": 0.10913690443042394,
+      "brier": 0.5600210792651252,
+      "log_loss": 1.0346595120342534,
+      "discrete_crps": 0.2725646394645365,
+      "winner_probability": 0.35770752023875224,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.533333333333333,
+      "top_label_ece": 0.32505689192624365,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3749431080737563,
+          "observed": 0.7
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "gfs_global",
+      "n": 30,
+      "top1": 0.4,
+      "top2": 0.7333333333333333,
+      "mae": 0.7055555555248696,
+      "bias": 0.4500000000137205,
+      "brier": 0.689631922852133,
+      "log_loss": 1.3136479678540371,
+      "discrete_crps": 0.47498632202357804,
+      "winner_probability": 0.290512247605103,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9333333333333333,
+      "width80": 2.5,
+      "top_label_ece": 0.03225651873847535,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3677434812615247,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "gfs_global:raw",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.8,
+      "mae": 0.5966666665062286,
+      "bias": 0.01666666666666702,
+      "brier": 0.6550342525016202,
+      "log_loss": 1.2206328837529266,
+      "discrete_crps": 0.41058752740825555,
+      "winner_probability": 0.3078106580519771,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.566666666666667,
+      "top_label_ece": 0.09970039819098599,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3669662684756807,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_eu",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.8666666666666667,
+      "mae": 0.45571428567284966,
+      "bias": -0.01857142856168039,
+      "brier": 0.6147451075552466,
+      "log_loss": 1.1486999216762879,
+      "discrete_crps": 0.341724597771425,
+      "winner_probability": 0.323181855324666,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.6333333333333333,
+      "top_label_ece": 0.24218317800271613,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3578168219972838,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_eu:raw",
+      "n": 30,
+      "top1": 0.43333333333333335,
+      "top2": 0.8333333333333334,
+      "mae": 0.6133333333090877,
+      "bias": -0.4066666666594109,
+      "brier": 0.6531129537670922,
+      "log_loss": 1.2192717300243294,
+      "discrete_crps": 0.40024707475397514,
+      "winner_probability": 0.30399727649309366,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.07860674664578293,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3547265866875504,
+          "observed": 0.43333333333333335
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_global",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.8,
+      "mae": 0.5549206345498356,
+      "bias": 0.1659523810914667,
+      "brier": 0.6326908762587721,
+      "log_loss": 1.16105951310495,
+      "discrete_crps": 0.372460351085911,
+      "winner_probability": 0.3209977677349189,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.12448821257626297,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.37551178742373703,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_global:raw",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.7,
+      "mae": 0.6733333331049939,
+      "bias": -0.5400000002054419,
+      "brier": 0.6754637465465219,
+      "log_loss": 1.2861834654572808,
+      "discrete_crps": 0.45557926127046766,
+      "winner_probability": 0.29961090399795737,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9333333333333333,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.0923441631888165,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3743225034778502,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "inverse_mae:residual",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9666666666666667,
+      "mae": 0.35225160020189816,
+      "bias": 0.10815498014944064,
+      "brier": 0.5565352507877448,
+      "log_loss": 1.0250125057125499,
+      "discrete_crps": 0.27096403754871873,
+      "winner_probability": 0.36133077937686725,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.5,
+      "top_label_ece": 0.32072021202433765,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3792797879756623,
+          "observed": 0.7
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 30,
+      "top1": 0.6333333333333333,
+      "top2": 0.9,
+      "mae": 0.5003968253968255,
+      "bias": 0.005952380952379836,
+      "brier": 0.6804023068555143,
+      "log_loss": 1.3508728937131582,
+      "discrete_crps": 0.40341816710022593,
+      "winner_probability": 0.26071484698164604,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.533333333333333,
+      "top_label_ece": 0.35341501678630444,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.27991831654702887,
+          "observed": 0.6333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 30,
+      "top1": 0.3333333333333333,
+      "top2": 0.6,
+      "mae": 0.8366666666666672,
+      "bias": 0.7500000000000002,
+      "brier": 0.7409514501652962,
+      "log_loss": 1.494748859589166,
+      "discrete_crps": 0.5539401674491258,
+      "winner_probability": 0.23044027530551928,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.533333333333333,
+      "top_label_ece": 0.05425159707782396,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.27908173625550936,
+          "observed": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9,
+      "mae": 0.47619047619047594,
+      "bias": -0.02523809523809414,
+      "brier": 0.6776350233300747,
+      "log_loss": 1.3451490540337678,
+      "discrete_crps": 0.39760631164224225,
+      "winner_probability": 0.26219256297221133,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.466666666666667,
+      "top_label_ece": 0.3862692127326753,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.28039745393399135,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 30,
+      "top1": 0.23333333333333334,
+      "top2": 0.5666666666666667,
+      "mae": 0.9800000000000002,
+      "bias": 0.9533333333333336,
+      "brier": 0.7722851842909073,
+      "log_loss": 1.5779053707690471,
+      "discrete_crps": 0.6378563975441943,
+      "winner_probability": 0.21486748248806756,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.466666666666667,
+      "top_label_ece": 0.04695703519401035,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2802903685273437,
+          "observed": 0.23333333333333334
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.9,
+      "mae": 0.5325396825396829,
+      "bias": -0.0119047619047605,
+      "brier": 0.6994429648409097,
+      "log_loss": 1.412563972571823,
+      "discrete_crps": 0.4347474559249577,
+      "winner_probability": 0.2455587652220606,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.7,
+      "top_label_ece": 0.23576375919413917,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.26423624080586083,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 30,
+      "top1": 0.43333333333333335,
+      "top2": 0.8,
+      "mae": 0.6433333333333339,
+      "bias": 0.35000000000000014,
+      "brier": 0.7120297295651132,
+      "log_loss": 1.4404658008686948,
+      "discrete_crps": 0.466889262764849,
+      "winner_probability": 0.23926538286109497,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.7,
+      "top_label_ece": 0.16908284133588733,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.264250491997446,
+          "observed": 0.43333333333333335
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.7666666666666667,
+      "mae": 0.6292063490767993,
+      "bias": 0.5171428573199007,
+      "brier": 0.6577737599983325,
+      "log_loss": 1.2210112572210872,
+      "discrete_crps": 0.4194101509939595,
+      "winner_probability": 0.3119931759764663,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9666666666666667,
+      "width80": 2.3666666666666667,
+      "top_label_ece": 0.0795777309074574,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3870889357592093,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 30,
+      "top1": 0.43333333333333335,
+      "top2": 0.8333333333333334,
+      "mae": 0.5599999997994741,
+      "bias": -0.4066666669712506,
+      "brier": 0.6342466305236083,
+      "log_loss": 1.1701759375768837,
+      "discrete_crps": 0.3833363378800996,
+      "winner_probability": 0.32375664792979225,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.3333333333333335,
+      "top_label_ece": 0.04683956481228768,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.38649376852104567,
+          "observed": 0.43333333333333335
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "best_training_single",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.4370542620023818,
+      "bias": -0.0041860470887233,
+      "brier": 0.5766714850370913,
+      "log_loss": 1.0628667524113782,
+      "discrete_crps": 0.30167017458526957,
+      "winner_probability": 0.3521318829684416,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.35796046371972295,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3753728696136103,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "champion",
+      "n": 30,
+      "top1": 0.5666666666666667,
+      "top2": 0.9,
+      "mae": 0.43990973745623874,
+      "bias": 0.010672097470607867,
+      "brier": 0.5537153813213561,
+      "log_loss": 0.9833741225480929,
+      "discrete_crps": 0.29220987904984796,
+      "winner_probability": 0.3878524261342552,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.1333333333333333,
+      "top_label_ece": 0.1702698177916874,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 3,
+          "predicted": 0.3542349155116196,
+          "observed": 0.3333333333333333
+        },
+        {
+          "lower": 0.4,
+          "n": 24,
+          "predicted": 0.439624673841593,
+          "observed": 0.625
+        },
+        {
+          "lower": 0.5,
+          "n": 3,
+          "predicted": 0.5321273198046647,
+          "observed": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9333333333333333,
+      "mae": 0.3835658914728706,
+      "bias": -0.2437209302325608,
+      "brier": 0.6572208200421196,
+      "log_loss": 1.2963925959135867,
+      "discrete_crps": 0.36562638493239646,
+      "winner_probability": 0.27598457742191457,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.466666666666667,
+      "top_label_ece": 0.41043161603754885,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2895683839624511,
+          "observed": 0.7
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 30,
+      "top1": 0.6333333333333333,
+      "top2": 0.9,
+      "mae": 0.4233333333333341,
+      "bias": -0.3100000000000006,
+      "brier": 0.6619122364794315,
+      "log_loss": 1.3064757207528455,
+      "discrete_crps": 0.3760539133478035,
+      "winner_probability": 0.2736388688644206,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.3,
+      "top_label_ece": 0.34457264245389574,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.28876069087943756,
+          "observed": 0.6333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "equal:residual",
+      "n": 30,
+      "top1": 0.7666666666666667,
+      "top2": 1,
+      "mae": 0.3338953474799959,
+      "bias": 0.002548448782997899,
+      "brier": 0.5448137381210438,
+      "log_loss": 1.0054032691275756,
+      "discrete_crps": 0.2555612928688892,
+      "winner_probability": 0.36725813972073357,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.3878131601047654,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3788535065619013,
+          "observed": 0.7666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "gfs_global",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.7333333333333333,
+      "mae": 0.5776744184002618,
+      "bias": 0.2629457364174919,
+      "brier": 0.6499485683036427,
+      "log_loss": 1.2189662187636947,
+      "discrete_crps": 0.4039440002727408,
+      "winner_probability": 0.30858997687164835,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.566666666666667,
+      "top_label_ece": 0.16738368074893178,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.36594965258440154,
+          "observed": 0.5333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "gfs_global:raw",
+      "n": 30,
+      "top1": 0.4,
+      "top2": 0.8666666666666667,
+      "mae": 0.6000000000362663,
+      "bias": -0.25333333332212576,
+      "brier": 0.650364232163543,
+      "log_loss": 1.216742997967816,
+      "discrete_crps": 0.40280930206743315,
+      "winner_probability": 0.30838123124854155,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.8,
+      "top_label_ece": 0.03703115624043529,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.36296884375956473,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_eu",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.4370542620023818,
+      "bias": -0.0041860470887233,
+      "brier": 0.5766714850370913,
+      "log_loss": 1.0628667524113782,
+      "discrete_crps": 0.30167017458526957,
+      "winner_probability": 0.3521318829684416,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.35796046371972295,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3753728696136103,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_eu:raw",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.8666666666666667,
+      "mae": 0.5099999996819576,
+      "bias": -0.4100000002606881,
+      "brier": 0.6190303407975499,
+      "log_loss": 1.1460716738122254,
+      "discrete_crps": 0.3631824168034593,
+      "winner_probability": 0.33096110709902565,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9666666666666667,
+      "width80": 2.2,
+      "top_label_ece": 0.11233519652067642,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3876648034793236,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_global",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.9,
+      "mae": 0.4771317731599493,
+      "bias": 0.21232559237001306,
+      "brier": 0.5858108549920085,
+      "log_loss": 1.0605114526579174,
+      "discrete_crps": 0.32376320658389207,
+      "winner_probability": 0.35734333525981044,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.2333333333333334,
+      "top_label_ece": 0.17080081300101574,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 12,
+          "predicted": 0.38626111620183673,
+          "observed": 0.3333333333333333
+        },
+        {
+          "lower": 0.4,
+          "n": 18,
+          "predicted": 0.4172838335773093,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_global:raw",
+      "n": 30,
+      "top1": 0.43333333333333335,
+      "top2": 0.8,
+      "mae": 0.6199999982882782,
+      "bias": -0.539999998288278,
+      "brier": 0.6484236773145117,
+      "log_loss": 1.2002120665507165,
+      "discrete_crps": 0.41408625762632817,
+      "winner_probability": 0.32604886413401757,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9666666666666667,
+      "width80": 2.2333333333333334,
+      "top_label_ece": 0.06912732113661561,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.3852056600196451,
+          "observed": 0.2857142857142857
+        },
+        {
+          "lower": 0.4,
+          "n": 23,
+          "predicted": 0.41837478200169775,
+          "observed": 0.4782608695652174
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "inverse_mae:residual",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 1,
+      "mae": 0.3395782756860318,
+      "bias": -0.0008539895620922759,
+      "brier": 0.544887242048234,
+      "log_loss": 1.003886395018788,
+      "discrete_crps": 0.2568055817904045,
+      "winner_probability": 0.36794678886962073,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.433333333333333,
+      "top_label_ece": 0.35229450371245163,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.38103882962088165,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9333333333333333,
+      "mae": 0.40341085271316524,
+      "bias": -0.17689922480619985,
+      "brier": 0.6383863216986789,
+      "log_loss": 1.236842562908975,
+      "discrete_crps": 0.3441484776106492,
+      "winner_probability": 0.2922334935742931,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.033333333333333,
+      "top_label_ece": 0.39160964088634925,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 3,
+          "predicted": 0.29825715088227495,
+          "observed": 0.3333333333333333
+        },
+        {
+          "lower": 0.3,
+          "n": 27,
+          "predicted": 0.3095162711393591,
+          "observed": 0.7407407407407407
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9333333333333333,
+      "mae": 0.5299999999999973,
+      "bias": 0.4033333333333321,
+      "brier": 0.660604385955446,
+      "log_loss": 1.2777939563173413,
+      "discrete_crps": 0.38554444656800096,
+      "winner_probability": 0.28112445663546126,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.1,
+      "top_label_ece": 0.29455265358080873,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 11,
+          "predicted": 0.29524468775576007,
+          "observed": 0.8181818181818182
+        },
+        {
+          "lower": 0.3,
+          "n": 19,
+          "predicted": 0.31135414880328305,
+          "observed": 0.47368421052631576
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9666666666666667,
+      "mae": 0.4125581395348597,
+      "bias": -0.2110077519379767,
+      "brier": 0.6372658863345204,
+      "log_loss": 1.2309125857226288,
+      "discrete_crps": 0.3451485017167946,
+      "winner_probability": 0.2941085671120882,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.066666666666667,
+      "top_label_ece": 0.3880767713947382,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 1,
+          "predicted": 0.294586669363732,
+          "observed": 1
+        },
+        {
+          "lower": 0.3,
+          "n": 29,
+          "predicted": 0.31252104099290084,
+          "observed": 0.6896551724137931
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 30,
+      "top1": 0.4,
+      "top2": 0.8666666666666667,
+      "mae": 0.6533333333333327,
+      "bias": 0.5866666666666764,
+      "brier": 0.685717332647773,
+      "log_loss": 1.326534772223872,
+      "discrete_crps": 0.4380394963790643,
+      "winner_probability": 0.2698828366471728,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.066666666666667,
+      "top_label_ece": 0.09056690885760292,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 4,
+          "predicted": 0.2943686896415253,
+          "observed": 0.75
+        },
+        {
+          "lower": 0.3,
+          "n": 26,
+          "predicted": 0.3117506913733004,
+          "observed": 0.34615384615384615
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9333333333333333,
+      "mae": 0.45573643410852704,
+      "bias": -0.10968992248062175,
+      "brier": 0.6680019127744729,
+      "log_loss": 1.321143756269525,
+      "discrete_crps": 0.3771459086789218,
+      "winner_probability": 0.267825109427307,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.466666666666667,
+      "top_label_ece": 0.3180267241404238,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.28197327585957616,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9666666666666667,
+      "mae": 0.4366666666666665,
+      "bias": 0.08333333333333333,
+      "brier": 0.6671067184907052,
+      "log_loss": 1.3198195456820243,
+      "discrete_crps": 0.37549582893517347,
+      "winner_probability": 0.2682727064581088,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.433333333333333,
+      "top_label_ece": 0.3870559059120563,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.27961076075461033,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9,
+      "mae": 0.5031782945710338,
+      "bias": 0.2906201550381203,
+      "brier": 0.6322256094525974,
+      "log_loss": 1.190936360521861,
+      "discrete_crps": 0.35622091758655194,
+      "winner_probability": 0.3075850703552419,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7666666666666666,
+      "top_label_ece": 0.26217991322982803,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.33782008677017195,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.7666666666666667,
+      "mae": 0.6399999999974528,
+      "bias": -0.5733333333332437,
+      "brier": 0.6735512546553973,
+      "log_loss": 1.2847627324310253,
+      "discrete_crps": 0.43348941387678136,
+      "winner_probability": 0.28692223529628974,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.933333333333333,
+      "top_label_ece": 0.12865068039393168,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.338015986272735,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "best_training_single",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9333333333333333,
+      "mae": 0.4306976736418393,
+      "bias": 0.0004651161837809781,
+      "brier": 0.5790331645962965,
+      "log_loss": 1.0669415950455832,
+      "discrete_crps": 0.2992088500547881,
+      "winner_probability": 0.3485147908768859,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.29598982060527507,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.37067684606139156,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "champion",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9666666666666667,
+      "mae": 0.46829447042657885,
+      "bias": 0.13941038404053974,
+      "brier": 0.5631505535080492,
+      "log_loss": 0.9816506282999041,
+      "discrete_crps": 0.29473546088518204,
+      "winner_probability": 0.38418889425141306,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.1,
+      "top_label_ece": 0.1993272983613183,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.38752916363661294,
+          "observed": 0.7142857142857143
+        },
+        {
+          "lower": 0.4,
+          "n": 20,
+          "predicted": 0.4444771112481968,
+          "observed": 0.6
+        },
+        {
+          "lower": 0.5,
+          "n": 3,
+          "predicted": 0.5273551070865921,
+          "observed": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9333333333333333,
+      "mae": 0.3835658914728706,
+      "bias": -0.2437209302325608,
+      "brier": 0.6572208200421196,
+      "log_loss": 1.2963925959135867,
+      "discrete_crps": 0.36562638493239646,
+      "winner_probability": 0.27598457742191457,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.466666666666667,
+      "top_label_ece": 0.41043161603754885,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2895683839624511,
+          "observed": 0.7
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 30,
+      "top1": 0.6333333333333333,
+      "top2": 0.9,
+      "mae": 0.4233333333333341,
+      "bias": -0.3100000000000006,
+      "brier": 0.6619122364794315,
+      "log_loss": 1.3064757207528455,
+      "discrete_crps": 0.3760539133478035,
+      "winner_probability": 0.2736388688644206,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.3,
+      "top_label_ece": 0.34457264245389574,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.28876069087943756,
+          "observed": 0.6333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "equal:residual",
+      "n": 30,
+      "top1": 0.8,
+      "top2": 1,
+      "mae": 0.33308139280434473,
+      "bias": 0.0189437974742989,
+      "brier": 0.5395391420231762,
+      "log_loss": 0.9928535005503477,
+      "discrete_crps": 0.2526562803216013,
+      "winner_probability": 0.3720902520967659,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.5,
+      "top_label_ece": 0.41546779660663685,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 28,
+          "predicted": 0.383370298269467,
+          "observed": 0.7857142857142857
+        },
+        {
+          "lower": 0.4,
+          "n": 2,
+          "predicted": 0.4007988751279099,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "gfs_global",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.7333333333333333,
+      "mae": 0.5776744184002618,
+      "bias": 0.2629457364174919,
+      "brier": 0.6499485683036427,
+      "log_loss": 1.2189662187636947,
+      "discrete_crps": 0.4039440002727408,
+      "winner_probability": 0.30858997687164835,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.566666666666667,
+      "top_label_ece": 0.16738368074893178,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.36594965258440154,
+          "observed": 0.5333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "gfs_global:raw",
+      "n": 30,
+      "top1": 0.4,
+      "top2": 0.8666666666666667,
+      "mae": 0.6000000000362663,
+      "bias": -0.25333333332212576,
+      "brier": 0.650364232163543,
+      "log_loss": 1.216742997967816,
+      "discrete_crps": 0.40280930206743315,
+      "winner_probability": 0.30838123124854155,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.8,
+      "top_label_ece": 0.03703115624043529,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.36296884375956473,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_eu",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9333333333333333,
+      "mae": 0.4306976736418393,
+      "bias": 0.0004651161837809781,
+      "brier": 0.5790331645962965,
+      "log_loss": 1.0669415950455832,
+      "discrete_crps": 0.2992088500547881,
+      "winner_probability": 0.3485147908768859,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.29598982060527507,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.37067684606139156,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_eu:raw",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.8666666666666667,
+      "mae": 0.5033333331803035,
+      "bias": -0.4100000001878846,
+      "brier": 0.618435149306407,
+      "log_loss": 1.1473018883330137,
+      "discrete_crps": 0.35922026836538534,
+      "winner_probability": 0.3288181281026203,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.3333333333333335,
+      "top_label_ece": 0.12031575143933604,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.37968424856066396,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_global",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.9,
+      "mae": 0.4771317731599493,
+      "bias": 0.21232559237001306,
+      "brier": 0.5858108549920085,
+      "log_loss": 1.0605114526579174,
+      "discrete_crps": 0.32376320658389207,
+      "winner_probability": 0.35734333525981044,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.2333333333333334,
+      "top_label_ece": 0.17080081300101574,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 12,
+          "predicted": 0.38626111620183673,
+          "observed": 0.3333333333333333
+        },
+        {
+          "lower": 0.4,
+          "n": 18,
+          "predicted": 0.4172838335773093,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_global:raw",
+      "n": 30,
+      "top1": 0.43333333333333335,
+      "top2": 0.8,
+      "mae": 0.6199999982882782,
+      "bias": -0.539999998288278,
+      "brier": 0.6484236773145117,
+      "log_loss": 1.2002120665507165,
+      "discrete_crps": 0.41408625762632817,
+      "winner_probability": 0.32604886413401757,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9666666666666667,
+      "width80": 2.2333333333333334,
+      "top_label_ece": 0.06912732113661561,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 7,
+          "predicted": 0.3852056600196451,
+          "observed": 0.2857142857142857
+        },
+        {
+          "lower": 0.4,
+          "n": 23,
+          "predicted": 0.41837478200169775,
+          "observed": 0.4782608695652174
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "inverse_mae:residual",
+      "n": 30,
+      "top1": 0.7666666666666667,
+      "top2": 1,
+      "mae": 0.33863112213885116,
+      "bias": 0.01263277648085186,
+      "brier": 0.5400619768427253,
+      "log_loss": 0.9927843626756188,
+      "discrete_crps": 0.2539465346480773,
+      "winner_probability": 0.37223945771397615,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.380795309710453,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 27,
+          "predicted": 0.38416891051948765,
+          "observed": 0.7407407407407407
+        },
+        {
+          "lower": 0.4,
+          "n": 3,
+          "predicted": 0.4011933748867473,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.35790697674340305,
+      "bias": -0.1079844961240525,
+      "brier": 0.6081471775241858,
+      "log_loss": 1.158075145704958,
+      "discrete_crps": 0.3094909170317633,
+      "winner_probability": 0.3156658707273588,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.8333333333333335,
+      "top_label_ece": 0.4027861385994541,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.33054719473387917,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 30,
+      "top1": 0.5666666666666667,
+      "top2": 0.9333333333333333,
+      "mae": 0.516666666666339,
+      "bias": 0.3966666666666921,
+      "brier": 0.638681592732068,
+      "log_loss": 1.2104903528176403,
+      "discrete_crps": 0.3592317751660483,
+      "winner_probability": 0.300398603500144,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.966666666666667,
+      "top_label_ece": 0.24001846710248548,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3266481995641812,
+          "observed": 0.5666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.35379844961163476,
+      "bias": -0.15341085271318194,
+      "brier": 0.6082521519013554,
+      "log_loss": 1.1600078040405004,
+      "discrete_crps": 0.30894569498490093,
+      "winner_probability": 0.3151495960353571,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.8666666666666667,
+      "top_label_ece": 0.4036476931691958,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3296856401641375,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 30,
+      "top1": 0.4,
+      "top2": 0.9333333333333333,
+      "mae": 0.6266666666666041,
+      "bias": 0.5733333333335987,
+      "brier": 0.6690844725111932,
+      "log_loss": 1.2689676360770077,
+      "discrete_crps": 0.4112224900062874,
+      "winner_probability": 0.28473339738702774,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7666666666666666,
+      "top_label_ece": 0.07251717370088312,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3274828262991169,
+          "observed": 0.4
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9333333333333333,
+      "mae": 0.45573643410852704,
+      "bias": -0.10968992248062175,
+      "brier": 0.6680019127744729,
+      "log_loss": 1.321143756269525,
+      "discrete_crps": 0.3771459086789218,
+      "winner_probability": 0.267825109427307,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.466666666666667,
+      "top_label_ece": 0.3180267241404238,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.28197327585957616,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9666666666666667,
+      "mae": 0.4366666666666665,
+      "bias": 0.08333333333333333,
+      "brier": 0.6671067184907052,
+      "log_loss": 1.3198195456820243,
+      "discrete_crps": 0.37549582893517347,
+      "winner_probability": 0.2682727064581088,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.433333333333333,
+      "top_label_ece": 0.3870559059120563,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.27961076075461033,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9,
+      "mae": 0.5031782945710338,
+      "bias": 0.2906201550381203,
+      "brier": 0.6322256094525974,
+      "log_loss": 1.190936360521861,
+      "discrete_crps": 0.35622091758655194,
+      "winner_probability": 0.3075850703552419,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7666666666666666,
+      "top_label_ece": 0.26217991322982803,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.33782008677017195,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.7666666666666667,
+      "mae": 0.6399999999974528,
+      "bias": -0.5733333333332437,
+      "brier": 0.6735512546553973,
+      "log_loss": 1.2847627324310253,
+      "discrete_crps": 0.43348941387678136,
+      "winner_probability": 0.28692223529628974,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.933333333333333,
+      "top_label_ece": 0.12865068039393168,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.338015986272735,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "best_training_single",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9,
+      "mae": 0.4433333327695784,
+      "bias": -0.027209302365035864,
+      "brier": 0.5864056863055835,
+      "log_loss": 1.0816797212293436,
+      "discrete_crps": 0.30692144154636863,
+      "winner_probability": 0.34339290787563614,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7,
+      "top_label_ece": 0.2990628216528273,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3676038450138393,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "champion",
+      "n": 30,
+      "top1": 0.5666666666666667,
+      "top2": 0.8333333333333334,
+      "mae": 0.5687642384563342,
+      "bias": 0.30407585602097315,
+      "brier": 0.6256899909372082,
+      "log_loss": 1.1301741251721673,
+      "discrete_crps": 0.3741990781740697,
+      "winner_probability": 0.3593925129658059,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9333333333333333,
+      "width80": 2.066666666666667,
+      "top_label_ece": 0.22472995104624974,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 4,
+          "predicted": 0.37813117990468115,
+          "observed": 0.75
+        },
+        {
+          "lower": 0.4,
+          "n": 23,
+          "predicted": 0.451080838658784,
+          "observed": 0.6086956521739131
+        },
+        {
+          "lower": 0.5,
+          "n": 3,
+          "predicted": 0.5430941800527495,
+          "observed": 0
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 30,
+      "top1": 0.7,
+      "top2": 0.9333333333333333,
+      "mae": 0.4073643410852705,
+      "bias": -0.29937984496123904,
+      "brier": 0.6594629833329171,
+      "log_loss": 1.3023788937849579,
+      "discrete_crps": 0.36912771949290873,
+      "winner_probability": 0.2744032007346313,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.3666666666666667,
+      "top_label_ece": 0.4123797164201752,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2876202835798248,
+          "observed": 0.7
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.8666666666666667,
+      "mae": 0.5233333333333333,
+      "bias": -0.46333333333333315,
+      "brier": 0.6755013910622472,
+      "log_loss": 1.3364337031679834,
+      "discrete_crps": 0.40468919191236324,
+      "winner_probability": 0.2663839964852104,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.1333333333333333,
+      "top_label_ece": 0.24707904614954784,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 30,
+          "predicted": 0.2862542871837855,
+          "observed": 0.5333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "equal:residual",
+      "n": 30,
+      "top1": 0.8,
+      "top2": 1,
+      "mae": 0.31262596220024447,
+      "bias": 0.0011530976054855795,
+      "brier": 0.5269150152808393,
+      "log_loss": 0.9665240443076253,
+      "discrete_crps": 0.24431229121054432,
+      "winner_probability": 0.38247011699064565,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.2666666666666666,
+      "top_label_ece": 0.40335350058204433,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 13,
+          "predicted": 0.38251668170736897,
+          "observed": 0.7692307692307693
+        },
+        {
+          "lower": 0.4,
+          "n": 17,
+          "predicted": 0.40745165413781603,
+          "observed": 0.8235294117647058
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "gfs_global",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.8333333333333334,
+      "mae": 0.5520930232472754,
+      "bias": 0.2035658914803656,
+      "brier": 0.6444187065588295,
+      "log_loss": 1.2144762975267598,
+      "discrete_crps": 0.38638618878851255,
+      "winner_probability": 0.3054016086681892,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.1498848326700168,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3501151673299832,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "gfs_global:raw",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.8,
+      "mae": 0.5733333333213234,
+      "bias": -0.3266666666747729,
+      "brier": 0.6524174939986723,
+      "log_loss": 1.2411774235647128,
+      "discrete_crps": 0.40529762528449115,
+      "winner_probability": 0.3014020628431263,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7666666666666666,
+      "top_label_ece": 0.18527723391145084,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3480560994218825,
+          "observed": 0.5333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_eu",
+      "n": 30,
+      "top1": 0.6666666666666666,
+      "top2": 0.9,
+      "mae": 0.4433333327695784,
+      "bias": -0.027209302365035864,
+      "brier": 0.5864056863055835,
+      "log_loss": 1.0816797212293436,
+      "discrete_crps": 0.30692144154636863,
+      "winner_probability": 0.34339290787563614,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7,
+      "top_label_ece": 0.2990628216528273,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3676038450138393,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_eu:raw",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.9,
+      "mae": 0.49666666659507813,
+      "bias": -0.3900000001783097,
+      "brier": 0.6210330648243912,
+      "log_loss": 1.1525390743907749,
+      "discrete_crps": 0.3605623394153817,
+      "winner_probability": 0.326081795084374,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.4,
+      "top_label_ece": 0.12597951127455137,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.37402048872544863,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_global",
+      "n": 30,
+      "top1": 0.5333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.45480620057323584,
+      "bias": 0.1577519391657841,
+      "brier": 0.5844199617901248,
+      "log_loss": 1.0721132278570107,
+      "discrete_crps": 0.3168984670580485,
+      "winner_probability": 0.35160257166915737,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.2648921130803756,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 18,
+          "predicted": 0.37703730124983437,
+          "observed": 0.2777777777777778
+        },
+        {
+          "lower": 0.4,
+          "n": 12,
+          "predicted": 0.40332566917381263,
+          "observed": 0.9166666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_global:raw",
+      "n": 30,
+      "top1": 0.43333333333333335,
+      "top2": 0.7333333333333333,
+      "mae": 0.6933333316012129,
+      "bias": -0.6666666653096238,
+      "brier": 0.6743854013438371,
+      "log_loss": 1.290062607847776,
+      "discrete_crps": 0.46044938469624414,
+      "winner_probability": 0.3066230313076051,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9666666666666667,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.05747032439730223,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 22,
+          "predicted": 0.38715721920831264,
+          "observed": 0.45454545454545453
+        },
+        {
+          "lower": 0.4,
+          "n": 8,
+          "predicted": 0.40519606931274316,
+          "observed": 0.375
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "inverse_mae:residual",
+      "n": 30,
+      "top1": 0.7666666666666667,
+      "top2": 1,
+      "mae": 0.3110978376562631,
+      "bias": -0.01102121954435482,
+      "brier": 0.5268207570739052,
+      "log_loss": 0.9664499195523272,
+      "discrete_crps": 0.24441152327468768,
+      "winner_probability": 0.38258961927019697,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.2333333333333334,
+      "top_label_ece": 0.3693958285700105,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 13,
+          "predicted": 0.38346718399943003,
+          "observed": 0.6923076923076923
+        },
+        {
+          "lower": 0.4,
+          "n": 17,
+          "predicted": 0.40782657358277025,
+          "observed": 0.8235294117647058
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 1,
+      "mae": 0.38038759677010886,
+      "bias": -0.06860465115422301,
+      "brier": 0.5790213295641794,
+      "log_loss": 1.0748383143888023,
+      "discrete_crps": 0.2908374777479643,
+      "winner_probability": 0.34378433646566253,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.466666666666667,
+      "top_label_ece": 0.369377144708551,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3639561886247823,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 30,
+      "top1": 0.6,
+      "top2": 0.9666666666666667,
+      "mae": 0.519999999897765,
+      "bias": 0.399999999984621,
+      "brier": 0.6188703478041394,
+      "log_loss": 1.1440410632343623,
+      "discrete_crps": 0.34810688088772335,
+      "winner_probability": 0.32385920661085243,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7333333333333334,
+      "top_label_ece": 0.23787502057611729,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.36212497942388266,
+          "observed": 0.6
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 30,
+      "top1": 0.7333333333333333,
+      "top2": 1,
+      "mae": 0.3810077518398953,
+      "bias": -0.09837209302538406,
+      "brier": 0.5812890274445075,
+      "log_loss": 1.081962299173778,
+      "discrete_crps": 0.29184098126902736,
+      "winner_probability": 0.3412729960143758,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.6666666666666665,
+      "top_label_ece": 0.3723153613095018,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.36101797202383146,
+          "observed": 0.7333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 30,
+      "top1": 0.5,
+      "top2": 0.8,
+      "mae": 0.6366666666341584,
+      "bias": 0.5900000000181007,
+      "brier": 0.6623170154749528,
+      "log_loss": 1.2297008787738695,
+      "discrete_crps": 0.41342657889640877,
+      "winner_probability": 0.30075873422628907,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.6666666666666665,
+      "top_label_ece": 0.142300259881915,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.35769974011808503,
+          "observed": 0.5
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 30,
+      "top1": 0.6333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.41131782945736434,
+      "bias": -0.19472868217054184,
+      "brier": 0.6534179167504686,
+      "log_loss": 1.2775468244196408,
+      "discrete_crps": 0.36285520789745934,
+      "winner_probability": 0.28055446042618903,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.433333333333333,
+      "top_label_ece": 0.3355693336159972,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 15,
+          "predicted": 0.29304797735255594,
+          "observed": 0.6
+        },
+        {
+          "lower": 0.3,
+          "n": 15,
+          "predicted": 0.3024800220821163,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 30,
+      "top1": 0.6333333333333333,
+      "top2": 0.9333333333333333,
+      "mae": 0.39666666666666733,
+      "bias": -0.163333333333334,
+      "brier": 0.6517595492015489,
+      "log_loss": 1.274299268255774,
+      "discrete_crps": 0.35948627630948937,
+      "winner_probability": 0.2813836443293617,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 3.433333333333333,
+      "top_label_ece": 0.33584296189787477,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 17,
+          "predicted": 0.293384968718616,
+          "observed": 0.5882352941176471
+        },
+        {
+          "lower": 0.3,
+          "n": 13,
+          "predicted": 0.30285897498825254,
+          "observed": 0.6923076923076923
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.8666666666666667,
+      "mae": 0.5498449612159175,
+      "bias": 0.3362015504410557,
+      "brier": 0.6356155051399867,
+      "log_loss": 1.1853319169281533,
+      "discrete_crps": 0.3741131169683476,
+      "winner_probability": 0.31341959639176803,
+      "zero_winner_mass": 0,
+      "coverage80": 1,
+      "width80": 2.7,
+      "top_label_ece": 0.1086816081424432,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.35798505852422347,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "calibration",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 30,
+      "top1": 0.4666666666666667,
+      "top2": 0.6666666666666666,
+      "mae": 0.6899999999329209,
+      "bias": -0.6033333332795506,
+      "brier": 0.6821206887124232,
+      "log_loss": 1.293838722461608,
+      "discrete_crps": 0.45609677712678076,
+      "winner_probability": 0.2901672650774527,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9666666666666667,
+      "width80": 2.7666666666666666,
+      "top_label_ece": 0.10800951028733846,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 30,
+          "predicted": 0.3586571563793282,
+          "observed": 0.4666666666666667
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "best_training_single",
+      "n": 68,
+      "top1": 0.45588235294117646,
+      "top2": 0.7352941176470589,
+      "mae": 0.8306022408636006,
+      "bias": -0.4810224089547292,
+      "brier": 0.6942266590305929,
+      "log_loss": 1.7444976166403827,
+      "discrete_crps": 0.6219076302085729,
+      "winner_probability": 0.28344084332877356,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.676470588235294,
+      "top_label_ece": 0.09944479959808383,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.35643755334309263,
+          "observed": 0.45588235294117646
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "champion",
+      "n": 68,
+      "top1": 0.5,
+      "top2": 0.8235294117647058,
+      "mae": 0.6873134242605938,
+      "bias": -0.3110283273324309,
+      "brier": 0.623506154679883,
+      "log_loss": 1.1970924461558958,
+      "discrete_crps": 0.4453200419793863,
+      "winner_probability": 0.3601868917915571,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9558823529411765,
+      "width80": 2.0294117647058822,
+      "top_label_ece": 0.09188427756199094,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 4,
+          "predicted": 0.2515991822698391,
+          "observed": 0.25
+        },
+        {
+          "lower": 0.3,
+          "n": 10,
+          "predicted": 0.3547253743855563,
+          "observed": 0.2
+        },
+        {
+          "lower": 0.4,
+          "n": 29,
+          "predicted": 0.4542346542012519,
+          "observed": 0.5862068965517241
+        },
+        {
+          "lower": 0.5,
+          "n": 25,
+          "predicted": 0.5253085850753292,
+          "observed": 0.56
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 68,
+      "top1": 0.4117647058823529,
+      "top2": 0.75,
+      "mae": 0.7933823529411755,
+      "bias": -0.556022408963584,
+      "brier": 0.7371654737400483,
+      "log_loss": 1.52744022166627,
+      "discrete_crps": 0.5639160558203224,
+      "winner_probability": 0.2299636236709317,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 3.573529411764706,
+      "top_label_ece": 0.13870934041305039,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.27305536546930254,
+          "observed": 0.4117647058823529
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 68,
+      "top1": 0.3382352941176471,
+      "top2": 0.6911764705882353,
+      "mae": 0.8014705882352939,
+      "bias": -0.5691176470588234,
+      "brier": 0.7385650989857339,
+      "log_loss": 1.53103450895683,
+      "discrete_crps": 0.5676934657763357,
+      "winner_probability": 0.22926381104696297,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 3.485294117647059,
+      "top_label_ece": 0.06526106591386599,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.2729742282037811,
+          "observed": 0.3382352941176471
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "equal:residual",
+      "n": 68,
+      "top1": 0.35294117647058826,
+      "top2": 0.7647058823529411,
+      "mae": 0.7734331231688736,
+      "bias": -0.4681547618029633,
+      "brier": 0.6962729770205939,
+      "log_loss": 1.4359559146748322,
+      "discrete_crps": 0.5285470795883259,
+      "winner_probability": 0.2895810508280842,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.514705882352941,
+      "top_label_ece": 0.02147495889758516,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3744161353681734,
+          "observed": 0.35294117647058826
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "gfs_global",
+      "n": 68,
+      "top1": 0.3382352941176471,
+      "top2": 0.75,
+      "mae": 0.8191176471022642,
+      "bias": -0.11813725489854425,
+      "brier": 0.7136744251220967,
+      "log_loss": 1.4784263037813843,
+      "discrete_crps": 0.5575927530207463,
+      "winner_probability": 0.2784907734527941,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9411764705882353,
+      "width80": 2.6176470588235294,
+      "top_label_ece": 0.03032321846208647,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.36855851257973354,
+          "observed": 0.3382352941176471
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "gfs_global:raw",
+      "n": 68,
+      "top1": 0.3088235294117647,
+      "top2": 0.5735294117647058,
+      "mae": 0.9544117645020427,
+      "bias": -0.5514705882396682,
+      "brier": 0.767336775046503,
+      "log_loss": 1.6117686391091286,
+      "discrete_crps": 0.6544204218637472,
+      "winner_probability": 0.25165962808922027,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 2.5,
+      "top_label_ece": 0.059750277097918525,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.36857380650968324,
+          "observed": 0.3088235294117647
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_eu",
+      "n": 68,
+      "top1": 0.45588235294117646,
+      "top2": 0.7352941176470589,
+      "mae": 0.8306022408636006,
+      "bias": -0.4810224089547292,
+      "brier": 0.6942266590305929,
+      "log_loss": 1.7444976166403827,
+      "discrete_crps": 0.6219076302085729,
+      "winner_probability": 0.28344084332877356,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.676470588235294,
+      "top_label_ece": 0.09944479959808383,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.35643755334309263,
+          "observed": 0.45588235294117646
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_eu:raw",
+      "n": 68,
+      "top1": 0.29411764705882354,
+      "top2": 0.6029411764705882,
+      "mae": 1.06911764705773,
+      "bias": -0.8691176470616866,
+      "brier": 0.7634655676201392,
+      "log_loss": 1.969666252468093,
+      "discrete_crps": 0.7613487015735453,
+      "winner_probability": 0.24882115794894083,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 2.75,
+      "top_label_ece": 0.06131367966058604,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3554313267194096,
+          "observed": 0.29411764705882354
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_global",
+      "n": 68,
+      "top1": 0.5588235294117647,
+      "top2": 0.75,
+      "mae": 0.8495448175353219,
+      "bias": -0.47492997197234715,
+      "brier": 0.6947129646456225,
+      "log_loss": 1.8580122537374257,
+      "discrete_crps": 0.6445864377735123,
+      "winner_probability": 0.2899862696891895,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 2.5,
+      "top_label_ece": 0.18445323123302626,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.37437029817873846,
+          "observed": 0.5588235294117647
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "icon_global:raw",
+      "n": 68,
+      "top1": 0.14705882352941177,
+      "top2": 0.4264705882352941,
+      "mae": 1.3455882353073418,
+      "bias": -1.1808823530236403,
+      "brier": 0.8534936456475426,
+      "log_loss": 2.4142174154437233,
+      "discrete_crps": 0.9653384958220971,
+      "winner_probability": 0.21059550280791134,
+      "zero_winner_mass": 0,
+      "coverage80": 0.7794117647058824,
+      "width80": 2.5294117647058822,
+      "top_label_ece": 0.22642198166966673,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3734808051990785,
+          "observed": 0.14705882352941177
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "inverse_mae:residual",
+      "n": 68,
+      "top1": 0.38235294117647056,
+      "top2": 0.7647058823529411,
+      "mae": 0.7703407043237713,
+      "bias": -0.4616336659909985,
+      "brier": 0.6923336435412454,
+      "log_loss": 1.4391636593397084,
+      "discrete_crps": 0.5262230625022772,
+      "winner_probability": 0.29343100817404033,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9411764705882353,
+      "width80": 2.5,
+      "top_label_ece": 0.003568586183329059,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3787843549931415,
+          "observed": 0.38235294117647056
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 68,
+      "top1": 0.38235294117647056,
+      "top2": 0.7058823529411765,
+      "mae": 0.853676470588236,
+      "bias": -0.5969887955182084,
+      "brier": 0.7479208658362637,
+      "log_loss": 1.5782317967732822,
+      "discrete_crps": 0.6137652989683504,
+      "winner_probability": 0.22695556738951986,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 3.426470588235294,
+      "top_label_ece": 0.10362222223497253,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.27873071894149803,
+          "observed": 0.38235294117647056
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 68,
+      "top1": 0.45588235294117646,
+      "top2": 0.7205882352941176,
+      "mae": 0.7147058823529419,
+      "bias": 0.14705882352941196,
+      "brier": 0.7235804415004925,
+      "log_loss": 1.4925670853697166,
+      "discrete_crps": 0.5354011152505638,
+      "winner_probability": 0.23912577969453863,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9852941176470589,
+      "width80": 3.5441176470588234,
+      "top_label_ece": 0.17600704588997063,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.27987530705120583,
+          "observed": 0.45588235294117646
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 68,
+      "top1": 0.36764705882352944,
+      "top2": 0.7058823529411765,
+      "mae": 0.8955882352941171,
+      "bias": -0.669747899159663,
+      "brier": 0.7541978983428345,
+      "log_loss": 1.6036718435764585,
+      "discrete_crps": 0.6358230272475942,
+      "winner_probability": 0.22391112533699284,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 3.411764705882353,
+      "top_label_ece": 0.08829522519475752,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.2793518336287719,
+          "observed": 0.36764705882352944
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 68,
+      "top1": 0.4411764705882353,
+      "top2": 0.75,
+      "mae": 0.7764705882352939,
+      "bias": 0.3088235294117647,
+      "brier": 0.7318266274006782,
+      "log_loss": 1.513116795245184,
+      "discrete_crps": 0.5561719186919974,
+      "winner_probability": 0.235096760819428,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9852941176470589,
+      "width80": 3.411764705882353,
+      "top_label_ece": 0.16187601349400416,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.2793004570942311,
+          "observed": 0.4411764705882353
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 68,
+      "top1": 0.3382352941176471,
+      "top2": 0.5882352941176471,
+      "mae": 1.1787114845938367,
+      "bias": -0.87955182072829,
+      "brier": 0.8034094151343922,
+      "log_loss": 1.9038547783931097,
+      "discrete_crps": 0.8632987079993079,
+      "winner_probability": 0.19357554007791858,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8529411764705882,
+      "width80": 3.676470588235294,
+      "top_label_ece": 0.07381829095436981,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.26441700316327726,
+          "observed": 0.3382352941176471
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 68,
+      "top1": 0.4264705882352941,
+      "top2": 0.6029411764705882,
+      "mae": 1.0264705882352942,
+      "bias": -0.5176470588235293,
+      "brier": 0.7793309383823331,
+      "log_loss": 1.7884451829798202,
+      "discrete_crps": 0.7648839086937915,
+      "winner_probability": 0.20561477844960074,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 3.6176470588235294,
+      "top_label_ece": 0.16268244520646025,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.26378814302883385,
+          "observed": 0.4264705882352941
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 68,
+      "top1": 0.35294117647058826,
+      "top2": 0.6911764705882353,
+      "mae": 0.8286414565124557,
+      "bias": 0.031162464753480123,
+      "brier": 0.7265503152922922,
+      "log_loss": 1.4553336888337258,
+      "discrete_crps": 0.5601820027858554,
+      "winner_probability": 0.2776027946656446,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.4705882352941178,
+      "top_label_ece": 0.030930655201941826,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3838718316725301,
+          "observed": 0.35294117647058826
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D-1 Evening @20:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 68,
+      "top1": 0.25,
+      "top2": 0.47058823529411764,
+      "mae": 1.1191176470871962,
+      "bias": -0.8926470591665611,
+      "brier": 0.8317970541311985,
+      "log_loss": 1.8527202638448195,
+      "discrete_crps": 0.7920191284863919,
+      "winner_probability": 0.22497900654769085,
+      "zero_winner_mass": 0,
+      "coverage80": 0.7647058823529411,
+      "width80": 2.4558823529411766,
+      "top_label_ece": 0.13236750779631556,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.38236750779631556,
+          "observed": 0.25
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "best_training_single",
+      "n": 67,
+      "top1": 0.5223880597014925,
+      "top2": 0.7910447761194029,
+      "mae": 0.6789482812671829,
+      "bias": -0.27478306166453464,
+      "brier": 0.663900597328908,
+      "log_loss": 1.392071459955935,
+      "discrete_crps": 0.48742591536201324,
+      "winner_probability": 0.308521238962818,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9402985074626866,
+      "width80": 2.537313432835821,
+      "top_label_ece": 0.14176929534623328,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.3806187643552592,
+          "observed": 0.5223880597014925
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "champion",
+      "n": 67,
+      "top1": 0.4626865671641791,
+      "top2": 0.7910447761194029,
+      "mae": 0.6875562844140286,
+      "bias": -0.2397945428207188,
+      "brier": 0.6546733484432692,
+      "log_loss": 1.2456057534119889,
+      "discrete_crps": 0.46065706093316183,
+      "winner_probability": 0.32695896301781263,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9552238805970149,
+      "width80": 2.283582089552239,
+      "top_label_ece": 0.07738164638422315,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 5,
+          "predicted": 0.25591139621398357,
+          "observed": 0.4
+        },
+        {
+          "lower": 0.3,
+          "n": 14,
+          "predicted": 0.35358026562194855,
+          "observed": 0.2857142857142857
+        },
+        {
+          "lower": 0.4,
+          "n": 45,
+          "predicted": 0.44353464616374777,
+          "observed": 0.5111111111111111
+        },
+        {
+          "lower": 0.5,
+          "n": 2,
+          "predicted": 0.5369478457010137,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.6,
+          "n": 1,
+          "predicted": 0.6008330439277876,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 67,
+      "top1": 0.3582089552238806,
+      "top2": 0.7014925373134329,
+      "mae": 0.7589552238805979,
+      "bias": -0.5143179451579319,
+      "brier": 0.721855785123416,
+      "log_loss": 1.4559983588865812,
+      "discrete_crps": 0.5222182760637013,
+      "winner_probability": 0.24366709454651198,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9701492537313433,
+      "width80": 3.328358208955224,
+      "top_label_ece": 0.06921581931838411,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 67,
+          "predicted": 0.28899313590549647,
+          "observed": 0.3582089552238806
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 67,
+      "top1": 0.29850746268656714,
+      "top2": 0.6417910447761194,
+      "mae": 0.8014925373134331,
+      "bias": -0.5805970149253731,
+      "brier": 0.7305018193713151,
+      "log_loss": 1.4759375504341798,
+      "discrete_crps": 0.5423801478129894,
+      "winner_probability": 0.23934407729806137,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9701492537313433,
+      "width80": 3.2686567164179103,
+      "top_label_ece": 0.009929741127534086,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 67,
+          "predicted": 0.28857772155903305,
+          "observed": 0.29850746268656714
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "equal:residual",
+      "n": 67,
+      "top1": 0.5074626865671642,
+      "top2": 0.8059701492537313,
+      "mae": 0.6572522554885984,
+      "bias": -0.3360833907358396,
+      "brier": 0.6599065991029396,
+      "log_loss": 1.3122790515587277,
+      "discrete_crps": 0.45374229328682825,
+      "winner_probability": 0.3097109037425589,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9701492537313433,
+      "width80": 2.5671641791044775,
+      "top_label_ece": 0.1314198031231532,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.376042883444011,
+          "observed": 0.5074626865671642
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "gfs_global",
+      "n": 67,
+      "top1": 0.4626865671641791,
+      "top2": 0.7761194029850746,
+      "mae": 0.7306837903205008,
+      "bias": -0.15387018389191529,
+      "brier": 0.6863151058002053,
+      "log_loss": 1.3984684087137238,
+      "discrete_crps": 0.4977905999960675,
+      "winner_probability": 0.29040606872439717,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9850746268656716,
+      "width80": 2.6417910447761193,
+      "top_label_ece": 0.09947074493931857,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.36321582222486054,
+          "observed": 0.4626865671641791
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "gfs_global:raw",
+      "n": 67,
+      "top1": 0.29850746268656714,
+      "top2": 0.5671641791044776,
+      "mae": 0.9507462686085927,
+      "bias": -0.670149253800723,
+      "brier": 0.7649150990942581,
+      "log_loss": 1.5887453001482157,
+      "discrete_crps": 0.6418712571252294,
+      "winner_probability": 0.2511065120497407,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8955223880597015,
+      "width80": 2.6865671641791047,
+      "top_label_ece": 0.06571079318383338,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.3642182558704005,
+          "observed": 0.29850746268656714
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_eu",
+      "n": 67,
+      "top1": 0.5223880597014925,
+      "top2": 0.7910447761194029,
+      "mae": 0.6789482812671829,
+      "bias": -0.27478306166453464,
+      "brier": 0.663900597328908,
+      "log_loss": 1.392071459955935,
+      "discrete_crps": 0.48742591536201324,
+      "winner_probability": 0.308521238962818,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9402985074626866,
+      "width80": 2.537313432835821,
+      "top_label_ece": 0.14176929534623328,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.3806187643552592,
+          "observed": 0.5223880597014925
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_eu:raw",
+      "n": 67,
+      "top1": 0.29850746268656714,
+      "top2": 0.6268656716417911,
+      "mae": 0.8925373130056138,
+      "bias": -0.6805970147829661,
+      "brier": 0.7405603391127885,
+      "log_loss": 1.5843312254348305,
+      "discrete_crps": 0.6150344731022357,
+      "winner_probability": 0.27019224717770685,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8955223880597015,
+      "width80": 2.4925373134328357,
+      "top_label_ece": 0.08278083028240973,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.38128829296897687,
+          "observed": 0.29850746268656714
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_global",
+      "n": 67,
+      "top1": 0.5373134328358209,
+      "top2": 0.8059701492537313,
+      "mae": 0.6425025930910269,
+      "bias": -0.056629636268660445,
+      "brier": 0.6393102806664014,
+      "log_loss": 1.3527152333984604,
+      "discrete_crps": 0.4547083255835751,
+      "winner_probability": 0.3305991747940101,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9402985074626866,
+      "width80": 2.1791044776119404,
+      "top_label_ece": 0.12970987532254233,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 22,
+          "predicted": 0.386748083723048,
+          "observed": 0.5454545454545454
+        },
+        {
+          "lower": 0.4,
+          "n": 45,
+          "predicted": 0.41779956692183573,
+          "observed": 0.5333333333333333
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "icon_global:raw",
+      "n": 67,
+      "top1": 0.26865671641791045,
+      "top2": 0.5970149253731343,
+      "mae": 0.9552238826035885,
+      "bias": -0.8089552280516397,
+      "brier": 0.7703717518228843,
+      "log_loss": 1.722160071361254,
+      "discrete_crps": 0.6743374811117113,
+      "winner_probability": 0.2650703644206037,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8059701492537313,
+      "width80": 2.2238805970149254,
+      "top_label_ece": 0.13988384294966003,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 15,
+          "predicted": 0.382824392069911,
+          "observed": 0.2
+        },
+        {
+          "lower": 0.4,
+          "n": 52,
+          "predicted": 0.4159586845495876,
+          "observed": 0.28846153846153844
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "inverse_mae:residual",
+      "n": 67,
+      "top1": 0.5373134328358209,
+      "top2": 0.7910447761194029,
+      "mae": 0.6568812767630836,
+      "bias": -0.34189643891831606,
+      "brier": 0.6593221003545269,
+      "log_loss": 1.3110190690797596,
+      "discrete_crps": 0.45342033284381583,
+      "winner_probability": 0.31072831926137595,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9701492537313433,
+      "width80": 2.537313432835821,
+      "top_label_ece": 0.15972692171637504,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.37758651111944586,
+          "observed": 0.5373134328358209
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 67,
+      "top1": 0.44776119402985076,
+      "top2": 0.8208955223880597,
+      "mae": 0.7117841027421026,
+      "bias": -0.4862027073932681,
+      "brier": 0.7041948814152392,
+      "log_loss": 1.41586757305298,
+      "discrete_crps": 0.5005715473913516,
+      "winner_probability": 0.2593292111873237,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9701492537313433,
+      "width80": 3.1194029850746268,
+      "top_label_ece": 0.1406109261547418,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 12,
+          "predicted": 0.2961672695598738,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.3,
+          "n": 55,
+          "predicted": 0.30954655841661477,
+          "observed": 0.43636363636363634
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 67,
+      "top1": 0.6567164179104478,
+      "top2": 0.8507462686567164,
+      "mae": 0.5507462686567042,
+      "bias": 0.09402985074626882,
+      "brier": 0.6727447446808777,
+      "log_loss": 1.3449147995824084,
+      "discrete_crps": 0.43447482271066074,
+      "winner_probability": 0.2750542809886213,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9552238805970149,
+      "width80": 3.1044776119402986,
+      "top_label_ece": 0.349393797376654,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 20,
+          "predicted": 0.2972798247854378,
+          "observed": 0.65
+        },
+        {
+          "lower": 0.3,
+          "n": 47,
+          "predicted": 0.31159615063947715,
+          "observed": 0.6595744680851063
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 67,
+      "top1": 0.40298507462686567,
+      "top2": 0.7761194029850746,
+      "mae": 0.7448455397431407,
+      "bias": -0.5409580006942063,
+      "brier": 0.7106972132224927,
+      "log_loss": 1.430042942089097,
+      "discrete_crps": 0.516523368265846,
+      "winner_probability": 0.2573929007728324,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9552238805970149,
+      "width80": 3.0597014925373136,
+      "top_label_ece": 0.09213831050681706,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 7,
+          "predicted": 0.2945866693637321,
+          "observed": 0.5714285714285714
+        },
+        {
+          "lower": 0.3,
+          "n": 60,
+          "predicted": 0.3127437751749522,
+          "observed": 0.38333333333333336
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 67,
+      "top1": 0.5671641791044776,
+      "top2": 0.835820895522388,
+      "mae": 0.5820895522387934,
+      "bias": 0.2567164179104489,
+      "brier": 0.6787942526608195,
+      "log_loss": 1.3576690286923851,
+      "discrete_crps": 0.4501561464035977,
+      "winner_probability": 0.2733443820718172,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9552238805970149,
+      "width80": 3.1044776119402986,
+      "top_label_ece": 0.2560909284571643,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 6,
+          "predicted": 0.2943686896415253,
+          "observed": 0.6666666666666666
+        },
+        {
+          "lower": 0.3,
+          "n": 61,
+          "predicted": 0.312716322221653,
+          "observed": 0.5573770491803278
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 67,
+      "top1": 0.373134328358209,
+      "top2": 0.6716417910447762,
+      "mae": 1.0850746268656726,
+      "bias": -0.7601874349184325,
+      "brier": 0.7831020137041329,
+      "log_loss": 1.8161464493710349,
+      "discrete_crps": 0.7826687568879047,
+      "winner_probability": 0.21027505907701252,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8805970149253731,
+      "width80": 3.537313432835821,
+      "top_label_ece": 0.09139382778960314,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 67,
+          "predicted": 0.28174050056860583,
+          "observed": 0.373134328358209
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 67,
+      "top1": 0.40298507462686567,
+      "top2": 0.7014925373134329,
+      "mae": 0.9701492537313434,
+      "bias": -0.5671641791044775,
+      "brier": 0.7636990659773384,
+      "log_loss": 1.7494026133592082,
+      "discrete_crps": 0.7220245371356676,
+      "winner_probability": 0.2199765328896261,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8805970149253731,
+      "width80": 3.4776119402985075,
+      "top_label_ece": 0.12061224349522703,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 67,
+          "predicted": 0.28237283113163864,
+          "observed": 0.40298507462686567
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 67,
+      "top1": 0.2835820895522388,
+      "top2": 0.7014925373134329,
+      "mae": 0.8711037834075802,
+      "bias": 0.09828184657907107,
+      "brier": 0.7269833686740133,
+      "log_loss": 1.5446573021074956,
+      "discrete_crps": 0.5895825266885786,
+      "winner_probability": 0.2602061185703336,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9253731343283582,
+      "width80": 2.8805970149253732,
+      "top_label_ece": 0.05305005167495963,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.3366321412271984,
+          "observed": 0.2835820895522388
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "D0 Morning @09:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 67,
+      "top1": 0.26865671641791045,
+      "top2": 0.4626865671641791,
+      "mae": 1.1149253731323783,
+      "bias": -0.765671641790745,
+      "brier": 0.8102125737645068,
+      "log_loss": 1.76605190033784,
+      "discrete_crps": 0.7667506474772628,
+      "winner_probability": 0.2185914778649833,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8805970149253731,
+      "width80": 2.955223880597015,
+      "top_label_ece": 0.0673070883874799,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 67,
+          "predicted": 0.33596380480539034,
+          "observed": 0.26865671641791045
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "best_training_single",
+      "n": 68,
+      "top1": 0.5147058823529411,
+      "top2": 0.8235294117647058,
+      "mae": 0.6639534881765722,
+      "bias": -0.33659370726684945,
+      "brier": 0.6585894140002748,
+      "log_loss": 1.4239958549511234,
+      "discrete_crps": 0.4922181339473526,
+      "winner_probability": 0.3087394806543282,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 2.4411764705882355,
+      "top_label_ece": 0.13853457023352372,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3761713121194174,
+          "observed": 0.5147058823529411
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "champion",
+      "n": 68,
+      "top1": 0.5147058823529411,
+      "top2": 0.8235294117647058,
+      "mae": 0.5920579731438118,
+      "bias": 0.007733523923541978,
+      "brier": 0.6269391316162259,
+      "log_loss": 1.2528914121727774,
+      "discrete_crps": 0.4137322554156072,
+      "winner_probability": 0.341953274416892,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9558823529411765,
+      "width80": 2.3823529411764706,
+      "top_label_ece": 0.09679000183910715,
+      "reliability": [
+        {
+          "lower": 0.1,
+          "n": 1,
+          "predicted": 0.1847375547775336,
+          "observed": 1
+        },
+        {
+          "lower": 0.2,
+          "n": 4,
+          "predicted": 0.24510422715316318,
+          "observed": 0.5
+        },
+        {
+          "lower": 0.3,
+          "n": 19,
+          "predicted": 0.3654572795390077,
+          "observed": 0.5263157894736842
+        },
+        {
+          "lower": 0.4,
+          "n": 36,
+          "predicted": 0.4444889401437172,
+          "observed": 0.4722222222222222
+        },
+        {
+          "lower": 0.5,
+          "n": 8,
+          "predicted": 0.5384794068919451,
+          "observed": 0.625
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 68,
+      "top1": 0.35294117647058826,
+      "top2": 0.6911764705882353,
+      "mae": 0.7659370725034208,
+      "bias": -0.5248974008207942,
+      "brier": 0.7232958001343238,
+      "log_loss": 1.4586492881355617,
+      "discrete_crps": 0.5251497333264572,
+      "winner_probability": 0.2429470870477268,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 3.323529411764706,
+      "top_label_ece": 0.06391287330228218,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.2890283031683061,
+          "observed": 0.35294117647058826
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 68,
+      "top1": 0.29411764705882354,
+      "top2": 0.6323529411764706,
+      "mae": 0.8088235294117649,
+      "bias": -0.5911764705882352,
+      "brier": 0.732072944332042,
+      "log_loss": 1.4789738726224821,
+      "discrete_crps": 0.5456738864618124,
+      "winner_probability": 0.23855851480771498,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 3.264705882352941,
+      "top_label_ece": 0.005540083906418192,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.28857756315240535,
+          "observed": 0.29411764705882354
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "equal:residual",
+      "n": 68,
+      "top1": 0.5,
+      "top2": 0.7647058823529411,
+      "mae": 0.6678565307776053,
+      "bias": -0.34122776911539926,
+      "brier": 0.6609480145521617,
+      "log_loss": 1.3268242010746625,
+      "discrete_crps": 0.4591801400336415,
+      "winner_probability": 0.3113852484347658,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 2.514705882352941,
+      "top_label_ece": 0.11718481692783954,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 59,
+          "predicted": 0.38008583741725993,
+          "observed": 0.4745762711864407
+        },
+        {
+          "lower": 0.4,
+          "n": 9,
+          "predicted": 0.40070756014317505,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "gfs_global",
+      "n": 68,
+      "top1": 0.45588235294117646,
+      "top2": 0.7647058823529411,
+      "mae": 0.7358755129628495,
+      "bias": -0.16754445956997846,
+      "brier": 0.6882896738232843,
+      "log_loss": 1.3999520166979675,
+      "discrete_crps": 0.49989733423190547,
+      "winner_probability": 0.28941883836450477,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9852941176470589,
+      "width80": 2.6323529411764706,
+      "top_label_ece": 0.0924723896342064,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.36340996330697006,
+          "observed": 0.45588235294117646
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "gfs_global:raw",
+      "n": 68,
+      "top1": 0.29411764705882354,
+      "top2": 0.5588235294117647,
+      "mae": 0.9602941176036428,
+      "bias": -0.6838235294841242,
+      "brier": 0.7687707387598383,
+      "log_loss": 1.5965603630312932,
+      "discrete_crps": 0.648139181805855,
+      "winner_probability": 0.24917864092739214,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8970588235294118,
+      "width80": 2.6911764705882355,
+      "top_label_ece": 0.06991401851816259,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.36403166557698613,
+          "observed": 0.29411764705882354
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_eu",
+      "n": 68,
+      "top1": 0.5147058823529411,
+      "top2": 0.8235294117647058,
+      "mae": 0.6639534881765722,
+      "bias": -0.33659370726684945,
+      "brier": 0.6585894140002748,
+      "log_loss": 1.4239958549511234,
+      "discrete_crps": 0.4922181339473526,
+      "winner_probability": 0.3087394806543282,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 2.4411764705882355,
+      "top_label_ece": 0.13853457023352372,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3761713121194174,
+          "observed": 0.5147058823529411
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_eu:raw",
+      "n": 68,
+      "top1": 0.29411764705882354,
+      "top2": 0.6176470588235294,
+      "mae": 0.9176470585150335,
+      "bias": -0.7470588234441453,
+      "brier": 0.741314793661376,
+      "log_loss": 1.6369090014298247,
+      "discrete_crps": 0.6359803044056236,
+      "winner_probability": 0.2673757395541795,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8970588235294118,
+      "width80": 2.5,
+      "top_label_ece": 0.07895244745205449,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.373070094510878,
+          "observed": 0.29411764705882354
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_global",
+      "n": 68,
+      "top1": 0.5441176470588235,
+      "top2": 0.8088235294117647,
+      "mae": 0.6366962957145413,
+      "bias": -0.059439117668974466,
+      "brier": 0.6369694058887471,
+      "log_loss": 1.3459274472087517,
+      "discrete_crps": 0.4509427661110117,
+      "winner_probability": 0.331769561990201,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9411764705882353,
+      "width80": 2.176470588235294,
+      "top_label_ece": 0.13647611974228435,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 22,
+          "predicted": 0.386748083723048,
+          "observed": 0.5454545454545454
+        },
+        {
+          "lower": 0.4,
+          "n": 46,
+          "predicted": 0.417634043817774,
+          "observed": 0.5434782608695652
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "icon_global:raw",
+      "n": 68,
+      "top1": 0.2647058823529412,
+      "top2": 0.5882352941176471,
+      "mae": 0.9558823549182416,
+      "bias": -0.8117647099920567,
+      "brier": 0.7710734342338135,
+      "log_loss": 1.717744666730894,
+      "discrete_crps": 0.6731631773644127,
+      "winner_probability": 0.2647200968112047,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8088235294117647,
+      "width80": 2.2205882352941178,
+      "top_label_ece": 0.1440714860455999,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 15,
+          "predicted": 0.382824392069911,
+          "observed": 0.2
+        },
+        {
+          "lower": 0.4,
+          "n": 53,
+          "predicted": 0.41612255037834206,
+          "observed": 0.2830188679245283
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "inverse_mae:residual",
+      "n": 68,
+      "top1": 0.5147058823529411,
+      "top2": 0.7794117647058824,
+      "mae": 0.6695284119211977,
+      "bias": -0.35076074923635037,
+      "brier": 0.6610407134195185,
+      "log_loss": 1.326523150910066,
+      "discrete_crps": 0.4594815048173909,
+      "winner_probability": 0.31174905229765354,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 2.514705882352941,
+      "top_label_ece": 0.13146514186125285,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 56,
+          "predicted": 0.3793342947826297,
+          "observed": 0.48214285714285715
+        },
+        {
+          "lower": 0.4,
+          "n": 12,
+          "predicted": 0.40147082046729526,
+          "observed": 0.6666666666666666
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 68,
+      "top1": 0.47058823529411764,
+      "top2": 0.75,
+      "mae": 0.7348153214769947,
+      "bias": -0.44876880984958767,
+      "brier": 0.703709735164615,
+      "log_loss": 1.425324483622323,
+      "discrete_crps": 0.5201668002670131,
+      "winner_probability": 0.2678845403257504,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.8970588235294117,
+      "top_label_ece": 0.14307979591123549,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.32750843938288215,
+          "observed": 0.47058823529411764
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 68,
+      "top1": 0.5441176470588235,
+      "top2": 0.8529411764705882,
+      "mae": 0.6147058823526294,
+      "bias": 0.05588235294123625,
+      "brier": 0.6701773073832182,
+      "log_loss": 1.3540211479082145,
+      "discrete_crps": 0.454944501316691,
+      "winner_probability": 0.28465079789160785,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 2.926470588235294,
+      "top_label_ece": 0.2148695600669855,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.329248086991838,
+          "observed": 0.5441176470588235
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 68,
+      "top1": 0.4411764705882353,
+      "top2": 0.75,
+      "mae": 0.7606361149108112,
+      "bias": -0.5061559507524952,
+      "brier": 0.7115484311938675,
+      "log_loss": 1.4476289633473904,
+      "discrete_crps": 0.5372294314467766,
+      "winner_probability": 0.2635014115837532,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.8823529411764706,
+      "top_label_ece": 0.11454913220637902,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.32662733838185626,
+          "observed": 0.4411764705882353
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 68,
+      "top1": 0.5441176470588235,
+      "top2": 0.8235294117647058,
+      "mae": 0.6411764705879219,
+      "bias": 0.22058823529404864,
+      "brier": 0.6756327838248856,
+      "log_loss": 1.3736114701614373,
+      "discrete_crps": 0.46680494218854185,
+      "winner_probability": 0.28145926056367643,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 2.911764705882353,
+      "top_label_ece": 0.2153967902919608,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3287208567668627,
+          "observed": 0.5441176470588235
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 68,
+      "top1": 0.36764705882352944,
+      "top2": 0.6617647058823529,
+      "mae": 1.0881326949384416,
+      "bias": -0.768023255813955,
+      "brier": 0.7838065379790361,
+      "log_loss": 1.8141484579656617,
+      "discrete_crps": 0.7823227721634607,
+      "winner_probability": 0.20992279693423335,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 3.5294117647058822,
+      "top_label_ece": 0.08590864971810219,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.28173840910542725,
+          "observed": 0.36764705882352944
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 68,
+      "top1": 0.39705882352941174,
+      "top2": 0.6911764705882353,
+      "mae": 0.9720588235294119,
+      "bias": -0.575,
+      "brier": 0.7639884060138612,
+      "log_loss": 1.7466170777686023,
+      "discrete_crps": 0.7207714317149906,
+      "winner_probability": 0.21983186288430692,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 3.485294117647059,
+      "top_label_ece": 0.11461477735881853,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.2824440461705932,
+          "observed": 0.39705882352941174
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 68,
+      "top1": 0.27941176470588236,
+      "top2": 0.6911764705882353,
+      "mae": 0.873529411763722,
+      "bias": 0.08160054719371382,
+      "brier": 0.727823943442699,
+      "log_loss": 1.543450956668293,
+      "discrete_crps": 0.589741249544472,
+      "winner_probability": 0.2597858413236828,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9264705882352942,
+      "width80": 2.8676470588235294,
+      "top_label_ece": 0.05741075233143195,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3368225170373143,
+          "observed": 0.27941176470588236
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "First Live @12:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 68,
+      "top1": 0.2647058823529412,
+      "top2": 0.45588235294117646,
+      "mae": 1.1264705882334762,
+      "bias": -0.7823529411762787,
+      "brier": 0.8140724450875771,
+      "log_loss": 1.7759299318863886,
+      "discrete_crps": 0.7747320764432856,
+      "winner_probability": 0.21666155144531718,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 2.9558823529411766,
+      "top_label_ece": 0.0714409900840065,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3361468724369477,
+          "observed": 0.2647058823529412
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "best_training_single",
+      "n": 68,
+      "top1": 0.5147058823529411,
+      "top2": 0.7647058823529411,
+      "mae": 0.7042749654650593,
+      "bias": -0.35632694937167936,
+      "brier": 0.6702707618598289,
+      "log_loss": 1.4276725406696038,
+      "discrete_crps": 0.5052193134107309,
+      "winner_probability": 0.3014617227041423,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8970588235294118,
+      "width80": 2.6029411764705883,
+      "top_label_ece": 0.1430928393694776,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.37161304298346354,
+          "observed": 0.5147058823529411
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "champion",
+      "n": 68,
+      "top1": 0.5,
+      "top2": 0.8529411764705882,
+      "mae": 0.5650090767957845,
+      "bias": 0.3073027371863365,
+      "brier": 0.5881955119655214,
+      "log_loss": 1.051697268342217,
+      "discrete_crps": 0.35702213580239345,
+      "winner_probability": 0.37574410019551757,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9852941176470589,
+      "width80": 2.176470588235294,
+      "top_label_ece": 0.08194573988417925,
+      "reliability": [
+        {
+          "lower": 0.1,
+          "n": 1,
+          "predicted": 0.17063883478280842,
+          "observed": 0
+        },
+        {
+          "lower": 0.2,
+          "n": 2,
+          "predicted": 0.2905312283016762,
+          "observed": 0
+        },
+        {
+          "lower": 0.3,
+          "n": 14,
+          "predicted": 0.3581028863090515,
+          "observed": 0.42857142857142855
+        },
+        {
+          "lower": 0.4,
+          "n": 42,
+          "predicted": 0.44225035029325493,
+          "observed": 0.5238095238095238
+        },
+        {
+          "lower": 0.5,
+          "n": 7,
+          "predicted": 0.5640809404622124,
+          "observed": 0.5714285714285714
+        },
+        {
+          "lower": 0.7,
+          "n": 1,
+          "predicted": 0.7229966091569276,
+          "observed": 1
+        },
+        {
+          "lower": 0.9,
+          "n": 1,
+          "predicted": 0.9198726662261303,
+          "observed": 1
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ecmwf_ifs025",
+      "n": 68,
+      "top1": 0.36764705882352944,
+      "top2": 0.7205882352941176,
+      "mae": 0.761149110807113,
+      "bias": -0.47869357045143524,
+      "brier": 0.7243230068424408,
+      "log_loss": 1.4660726324699032,
+      "discrete_crps": 0.5293555243623117,
+      "winner_probability": 0.24197318913041624,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 3.3676470588235294,
+      "top_label_ece": 0.07944099545934558,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.28820606336418386,
+          "observed": 0.36764705882352944
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ecmwf_ifs025:raw",
+      "n": 68,
+      "top1": 0.23529411764705882,
+      "top2": 0.6029411764705882,
+      "mae": 0.8720588235294119,
+      "bias": -0.6426470588235293,
+      "brier": 0.7470114578828038,
+      "log_loss": 1.516138628546688,
+      "discrete_crps": 0.5813283983848735,
+      "winner_probability": 0.23062896353806012,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9558823529411765,
+      "width80": 3.2941176470588234,
+      "top_label_ece": 0.05215029368544777,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 68,
+          "predicted": 0.2874444113325066,
+          "observed": 0.23529411764705882
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "equal:residual",
+      "n": 68,
+      "top1": 0.45588235294117646,
+      "top2": 0.7647058823529411,
+      "mae": 0.690364223662578,
+      "bias": -0.3760772904741161,
+      "brier": 0.6689955024102634,
+      "log_loss": 1.3057340228457142,
+      "discrete_crps": 0.4630248339337692,
+      "winner_probability": 0.3114254556140818,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9411764705882353,
+      "width80": 2.3529411764705883,
+      "top_label_ece": 0.061668792301770706,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 41,
+          "predicted": 0.38583883817702225,
+          "observed": 0.4634146341463415
+        },
+        {
+          "lower": 0.4,
+          "n": 27,
+          "predicted": 0.40693073178598815,
+          "observed": 0.4444444444444444
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "gfs_global",
+      "n": 68,
+      "top1": 0.38235294117647056,
+      "top2": 0.7058823529411765,
+      "mae": 0.80434336525364,
+      "bias": -0.2182968536308214,
+      "brier": 0.7123564621326478,
+      "log_loss": 1.4693394890068172,
+      "discrete_crps": 0.5481986027448801,
+      "winner_probability": 0.27143253178144056,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 2.7205882352941178,
+      "top_label_ece": 0.034137724272644554,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.348215216903826,
+          "observed": 0.38235294117647056
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "gfs_global:raw",
+      "n": 68,
+      "top1": 0.22058823529411764,
+      "top2": 0.4411764705882353,
+      "mae": 1.0691176470463453,
+      "bias": -0.7485294117583158,
+      "brier": 0.8009760570174691,
+      "log_loss": 1.67876969695074,
+      "discrete_crps": 0.7157877273165234,
+      "winner_probability": 0.22712291798768452,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8676470588235294,
+      "width80": 2.676470588235294,
+      "top_label_ece": 0.1292468653974887,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.34983510069160634,
+          "observed": 0.22058823529411764
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_eu",
+      "n": 68,
+      "top1": 0.5147058823529411,
+      "top2": 0.7647058823529411,
+      "mae": 0.7042749654650593,
+      "bias": -0.35632694937167936,
+      "brier": 0.6702707618598289,
+      "log_loss": 1.4276725406696038,
+      "discrete_crps": 0.5052193134107309,
+      "winner_probability": 0.3014617227041423,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8970588235294118,
+      "width80": 2.6029411764705883,
+      "top_label_ece": 0.1430928393694776,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.37161304298346354,
+          "observed": 0.5147058823529411
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_eu:raw",
+      "n": 68,
+      "top1": 0.25,
+      "top2": 0.6323529411764706,
+      "mae": 0.9191176470272402,
+      "bias": -0.719117647082365,
+      "brier": 0.7454952062537892,
+      "log_loss": 1.6106233341293799,
+      "discrete_crps": 0.6314798635586684,
+      "winner_probability": 0.2638496284851255,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8823529411764706,
+      "width80": 2.5,
+      "top_label_ece": 0.1205225664967189,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3705225664967189,
+          "observed": 0.25
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_global",
+      "n": 68,
+      "top1": 0.5588235294117647,
+      "top2": 0.8088235294117647,
+      "mae": 0.6507865913465697,
+      "bias": -0.16087551219277163,
+      "brier": 0.6474246915750672,
+      "log_loss": 1.42382776532329,
+      "discrete_crps": 0.4820847054424332,
+      "winner_probability": 0.3201027960994645,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 2.3823529411764706,
+      "top_label_ece": 0.16826522383387288,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 40,
+          "predicted": 0.3810616947797811,
+          "observed": 0.45
+        },
+        {
+          "lower": 0.4,
+          "n": 28,
+          "predicted": 0.40412489243233574,
+          "observed": 0.7142857142857143
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "icon_global:raw",
+      "n": 68,
+      "top1": 0.17647058823529413,
+      "top2": 0.5,
+      "mae": 1.1352941176981937,
+      "bias": -0.9852941175959242,
+      "brier": 0.8225893395954973,
+      "log_loss": 1.9149057391198423,
+      "discrete_crps": 0.7888040001038017,
+      "winner_probability": 0.23252154209956105,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8088235294117647,
+      "width80": 2.3970588235294117,
+      "top_label_ece": 0.214672478230568,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 45,
+          "predicted": 0.38403622848393376,
+          "observed": 0.17777777777777778
+        },
+        {
+          "lower": 0.4,
+          "n": 23,
+          "predicted": 0.40504774947398287,
+          "observed": 0.17391304347826086
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "inverse_mae:residual",
+      "n": 68,
+      "top1": 0.4411764705882353,
+      "top2": 0.7647058823529411,
+      "mae": 0.6956080463703631,
+      "bias": -0.3892635010465309,
+      "brier": 0.6703594221204897,
+      "log_loss": 1.3134849295670252,
+      "discrete_crps": 0.46685325160725466,
+      "winner_probability": 0.3108149173010049,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9411764705882353,
+      "width80": 2.3970588235294117,
+      "top_label_ece": 0.04731008469309821,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 40,
+          "predicted": 0.38466329370779706,
+          "observed": 0.45
+        },
+        {
+          "lower": 0.4,
+          "n": 28,
+          "predicted": 0.40701366044848,
+          "observed": 0.42857142857142855
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france",
+      "n": 68,
+      "top1": 0.4411764705882353,
+      "top2": 0.7647058823529411,
+      "mae": 0.6852257181298177,
+      "bias": -0.40978112177182374,
+      "brier": 0.6818978138573989,
+      "log_loss": 1.325888963352173,
+      "discrete_crps": 0.4734759841016653,
+      "winner_probability": 0.2923454931549768,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9558823529411765,
+      "width80": 2.6323529411764706,
+      "top_label_ece": 0.07864158395818083,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.36253488663005445,
+          "observed": 0.4411764705882353
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france:raw",
+      "n": 68,
+      "top1": 0.5588235294117647,
+      "top2": 0.8235294117647058,
+      "mae": 0.5941176469421393,
+      "bias": 0.05882352943824219,
+      "brier": 0.6490567396055406,
+      "log_loss": 1.25257436563953,
+      "discrete_crps": 0.4173714243447964,
+      "winner_probability": 0.3087665482944822,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9705882352941176,
+      "width80": 2.676470588235294,
+      "top_label_ece": 0.19436725635748225,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.36445627305428246,
+          "observed": 0.5588235294117647
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france_hd",
+      "n": 68,
+      "top1": 0.4411764705882353,
+      "top2": 0.7647058823529411,
+      "mae": 0.7066347468771839,
+      "bias": -0.45896032832926503,
+      "brier": 0.6900293462748834,
+      "log_loss": 1.343853407484825,
+      "discrete_crps": 0.48577166607406363,
+      "winner_probability": 0.286902765811075,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9411764705882353,
+      "width80": 2.7205882352941178,
+      "top_label_ece": 0.08026438440860201,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3609120861796333,
+          "observed": 0.4411764705882353
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arome_france_hd:raw",
+      "n": 68,
+      "top1": 0.5294117647058824,
+      "top2": 0.7941176470588235,
+      "mae": 0.6235294117250654,
+      "bias": 0.22941176472185343,
+      "brier": 0.6593217295941395,
+      "log_loss": 1.2748886250140432,
+      "discrete_crps": 0.4315194166015728,
+      "winner_probability": 0.3022565057808859,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9852941176470589,
+      "width80": 2.661764705882353,
+      "top_label_ece": 0.16967585234173305,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3597359123641493,
+          "observed": 0.5294117647058824
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arpege_europe",
+      "n": 68,
+      "top1": 0.27941176470588236,
+      "top2": 0.5,
+      "mae": 1.1662790697674406,
+      "bias": -0.8725718194254429,
+      "brier": 0.8004934826476342,
+      "log_loss": 1.834628849549171,
+      "discrete_crps": 0.8109226364396875,
+      "winner_probability": 0.20701667687065517,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8676470588235294,
+      "width80": 3.411764705882353,
+      "top_label_ece": 0.11700520227609047,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 33,
+          "predicted": 0.2917199251617752,
+          "observed": 0.3939393939393939
+        },
+        {
+          "lower": 0.3,
+          "n": 35,
+          "predicted": 0.30237460814607814,
+          "observed": 0.17142857142857143
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "meteofrance_arpege_europe:raw",
+      "n": 68,
+      "top1": 0.27941176470588236,
+      "top2": 0.5,
+      "mae": 1.1441176470588235,
+      "bias": -0.8411764705882351,
+      "brier": 0.7961841235541808,
+      "log_loss": 1.8190691215470907,
+      "discrete_crps": 0.798187971137243,
+      "winner_probability": 0.2091713564693403,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8676470588235294,
+      "width80": 3.411764705882353,
+      "top_label_ece": 0.11395289158590262,
+      "reliability": [
+        {
+          "lower": 0.2,
+          "n": 40,
+          "predicted": 0.2932830492133852,
+          "observed": 0.375
+        },
+        {
+          "lower": 0.3,
+          "n": 28,
+          "predicted": 0.3028613784420281,
+          "observed": 0.14285714285714285
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ukmo_global_deterministic_10km",
+      "n": 68,
+      "top1": 0.29411764705882354,
+      "top2": 0.7205882352941176,
+      "mae": 0.8349863201125168,
+      "bias": -0.053112175142244575,
+      "brier": 0.7238695835936285,
+      "log_loss": 1.4430912826884261,
+      "discrete_crps": 0.5527261883964196,
+      "winner_probability": 0.26929251369050616,
+      "zero_winner_mass": 0,
+      "coverage80": 0.9117647058823529,
+      "width80": 2.676470588235294,
+      "top_label_ece": 0.06299474279923967,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3571123898580632,
+          "observed": 0.29411764705882354
+        }
+      ]
+    },
+    {
+      "phase": "historical_validation",
+      "checkpoint": "Late Live @16:00",
+      "candidate": "ukmo_global_deterministic_10km:raw",
+      "n": 68,
+      "top1": 0.25,
+      "top2": 0.47058823529411764,
+      "mae": 1.18970588236174,
+      "bias": -0.992647058854936,
+      "brier": 0.8451429834854063,
+      "log_loss": 1.8684900475311108,
+      "discrete_crps": 0.8301189743714993,
+      "winner_probability": 0.2086556411699183,
+      "zero_winner_mass": 0,
+      "coverage80": 0.8235294117647058,
+      "width80": 2.7794117647058822,
+      "top_label_ece": 0.10591185725793628,
+      "reliability": [
+        {
+          "lower": 0.3,
+          "n": 68,
+          "predicted": 0.3559118572579363,
+          "observed": 0.25
+        }
+      ]
+    }
+  ]
+}

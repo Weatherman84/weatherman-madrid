@@ -1,0 +1,40 @@
+{
+  "version": "v11_oos_gate_proposal_1",
+  "status": "predeclared_for_future_OOS_only",
+  "research_only": true,
+  "automatic_promotion": false,
+  "automatic_execution": false,
+  "checkpoints_evaluated_separately": ["First Live @12:00", "Late Live @16:00"],
+  "gates": {
+    "frozen_code_parameters_features_hash": "must match every admitted day",
+    "prospective_sequential_target_days_min": 30,
+    "calendar_day_coverage": 1.0,
+    "missing_scheduled_days": "retain in denominator and fail completeness gate",
+    "reconstructed_or_unknown_days_allowed": 0,
+    "observation_reception_and_model_publication": "verified <= cutoff",
+    "latest_observation_age_minutes_max": 30,
+    "model_count_min": 5,
+    "brier_gain_vs_champion_min": 0.02,
+    "log_loss_gain_vs_champion_min": 0.02,
+    "brier_gain_vs_frozen_probabilistic_hold_baseline_min": 0.01,
+    "log_loss_gain_vs_frozen_probabilistic_hold_baseline_min": 0.01,
+    "top1_accuracy_loss_vs_champion_max": 0.03,
+    "coverage80_min": 0.75,
+    "zero_actual_probability_cases_allowed": 0,
+    "calibration_assessment_days_min": 100,
+    "top_label_ece_max": 0.08,
+    "reliability_bin_min": 20,
+    "recent_10_day_brier_regression_vs_champion_max": 0.03,
+    "unsupported_season_or_regime": "provisional; additional shadow evidence required",
+    "market_log_loss_gain": "must be positive on exact matched verified market distributions",
+    "positive_after_cost_edge": "required with ask, spread, fees, depth, frozen fill assumptions and official resolution",
+    "release": "separate explicit approval required after all gates; never automatic"
+  },
+  "notes": [
+    "These new thresholds do not change any existing Analog or production gate.",
+    "Thirty days is only a duration floor, not sufficient calibration evidence.",
+    "No candidate is admitted to this OOS protocol by this draft.",
+    "No meaningful confidence statement can be inferred from tiny reliability bins.",
+    "Revised formulas or newly selected candidates require a new version and fresh prospective cohort."
+  ]
+}
